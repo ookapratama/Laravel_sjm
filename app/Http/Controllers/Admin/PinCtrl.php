@@ -1,0 +1,86 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\PinRequest;
+use App\Models\ActivationPin;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;         
+use GuzzleHttp\Client; 
+use Illuminate\Http\Request;
+class PinCtrl extends Controller
+{
+    public function index(){
+        return view('admin.pin_request', ['list'=> PinRequest::with('requester')->latest()->get()]);
+    }
+
+    public function generate(Request $r, $id){
+        $notes = $r->validate(['admin_notes'=>'nullable|string|max:500'])['admin_notes'] ?? null;
+
+        DB::transaction(function() use($id,$notes,&$req){
+            $req = PinRequest::lockForUpdate()->findOrFail($id);
+            if (!in_array($req->status,['finance_approved','generated'])) {
+                throw ValidationException::withMessages(['status'=>'Invalid.']);
+            }
+
+            $remaining = $req->qty - $req->generated_count;
+            if ($remaining > 0) {
+                for($i=0;$i<$remaining;$i++){
+                    ActivationPin::create([
+                        'code'=>strtoupper(Str::random(16)),
+                        'status'=>'unused','bagan'=>1,'price'=>$req->unit_price,
+                        'purchased_by'=>$req->requester_id,'pin_request_id'=>$req->id,
+                    ]);
+                }
+                $req->generated_count += $remaining;
+            }
+
+            $req->update([
+                'status'=>'generated','admin_id'=>auth()->id(),
+                'admin_notes'=>$notes,'generated_at'=>now(),
+            ]);
+        });
+
+        // Kirim WA (pakai fungsi/driver Anda)
+        $user  = $req->requester()->first();
+        $codes = $req->pins()->pluck('code')->implode(', ');
+        $msg   = "Assalamu'alaikum {$user->name},\n\n"
+                ."PIN Aktivasi Anda sudah TERBIT ✅\n"
+                ."Jumlah: {$req->generated_count}\nKode: {$codes}\n\n"
+                ."Gunakan PIN untuk aktivasi downline.";
+                $req->load('requester:id,name,no_telp'); // sesuaikan nama kolom di users
+
+                $user  = $req->requester;
+        $this->sendWhatsApp($user->no_telp, $msg); // gunakan fungsi WA Anda yang sudah ada
+
+        return back()->with('success','PIN dibuat & WA terkirim.');
+    }
+
+    // Reuse util Anda (Fonnte)
+       // ✅ PASTIKAN fungsi ini ada DI DALAM class
+    protected function sendWhatsApp($phone, $message)
+    {
+        if (str_starts_with($phone, '0')) {
+            $phone = '+62' . substr($phone, 1);
+        }
+
+        try {
+            $client = new Client();
+            $client->post('https://api.fonnte.com/send', [
+                'headers' => [
+                    'Authorization' => env('FONNTE_TOKEN'),
+                ],
+                'form_params' => [
+                    'target' => $phone,
+                    'message' => $message,
+                    'delay' => 2,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("❌ Gagal kirim WA ke {$phone}: " . $e->getMessage());
+        }
+    }
+}
+
