@@ -24,13 +24,14 @@ use App\Http\Controllers\Finance\WithdrawController as FinanceWithdrawController
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\AccessController;
 use App\Events\MemberCountUpdated;
-use App\Models\User; 
+use App\Models\User;
 use App\Models\Notification;
 use App\Http\Controllers\ReferralQrController;
 use App\Http\Controllers\Admin\PinCtrl as AdminPinCtrl;
 use App\Http\Controllers\Finance\PinCtrl as FinancePinCtrl;
 use App\Http\Controllers\Member\PinCtrl as MemberPinCtrl;
 use App\Http\Controllers\Auth\ReferralRegisterController;
+
 Route::middleware('auth')->group(function () {
     Route::get('/me/ref-qr.png', [ReferralQrController::class, 'png'])->name('member.ref.qr.png');
     Route::get('/me/ref-qr/download', [ReferralQrController::class, 'download'])->name('member.ref.qr.download');
@@ -109,26 +110,26 @@ Route::middleware(['auth', 'role:finance'])->group(function () {
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/pre-register', [PreRegistrationController::class, 'create'])->name('pre-register.form');
-    Route::post('/approve-member/{id}', [PreRegistrationApprovalController::class, 'approve']) ->name('approve-member');
-    Route::get('/pin-requests', [AdminPinCtrl::class,'index'])->name('admin.pin.index');
-  Route::post('/pin-requests/{id}/generate', [AdminPinCtrl::class, 'generate'])->name('pin.generate'); 
+    Route::post('/approve-member/{id}', [PreRegistrationApprovalController::class, 'approve'])->name('approve-member');
+    Route::get('/pin-requests', [AdminPinCtrl::class, 'index'])->name('admin.pin.index');
+    Route::post('/pin-requests/{id}/generate', [AdminPinCtrl::class, 'generate'])->name('pin.generate');
 });
 
 // ✅ Admin
-    Route::prefix('admin')->middleware('role:admin,super-admin')->group(function () {
-        Route::get('/', [DashboardController::class, 'admin'])->name('admin');
+Route::prefix('admin')->middleware('role:admin,super-admin')->group(function () {
+    Route::get('/', [DashboardController::class, 'admin'])->name('admin');
 
-        Route::get('/withdraws', [AdminWithdrawController::class, 'index'])->name('withdraws.index');
-        Route::put('admin/withdraws/approve/{id}', [AdminWithdrawController::class, 'approve'])->name('withdraws.approve');
-        Route::put('admin/withdraws/{id}/reject', [AdminWithdrawController::class, 'reject'])->name('withdraws.reject');
-    });
+    Route::get('/withdraws', [AdminWithdrawController::class, 'index'])->name('withdraws.index');
+    Route::put('admin/withdraws/approve/{id}', [AdminWithdrawController::class, 'approve'])->name('withdraws.approve');
+    Route::put('admin/withdraws/{id}/reject', [AdminWithdrawController::class, 'reject'])->name('withdraws.reject');
+});
 
 
 // ✅ Authenticated Only
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/redirect', function () {
-        return match(Auth::user()->role) {
+        return match (Auth::user()->role) {
             'super-admin' => redirect()->route('super-admin'),
             'admin' => redirect()->route('admin'),
             'finance' => redirect()->route('finance'),
@@ -137,10 +138,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         };
     })->name('redirect');
 
-Route::middleware(['auth'])->prefix('profile')->group(function () {
-    Route::get('/', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
-    Route::post('/update', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
-});
+    Route::middleware(['auth'])->prefix('profile')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
+        Route::post('/update', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    });
 
     // ✅ Change Credentials
     Route::get('/change-credentials', [ChangeCredentialsController::class, 'edit'])->name('change.credentials');
@@ -149,7 +150,6 @@ Route::middleware(['auth'])->prefix('profile')->group(function () {
     // ✅ Super Admin
     Route::prefix('super-admin')->middleware('role:super-admin')->group(function () {
         Route::get('/', [DashboardController::class, 'superAdmin'])->name('super-admin');
-        
     });
     Route::prefix('bonus-settings')->middleware('role:super-admin')->group(function () {
         Route::get('/json', [BonusSettingController::class, 'json']);
@@ -172,7 +172,7 @@ Route::middleware(['auth'])->prefix('profile')->group(function () {
 
     // ✅ Finance
     Route::prefix('finance')->middleware('role:finance')->group(function () {
-         Route::get('/statistics', [FinanceController::class, 'index'])->name('finance.statistics.index');
+        Route::get('/statistics', [FinanceController::class, 'index'])->name('finance.statistics.index');
         Route::get('/', [DashboardController::class, 'finance'])->name('finance');
         Route::get('withdraws', [FinanceWithdrawController::class, 'index'])->name('finance.withdraws.index');
         Route::put('/withdraws/{id}/process', [FinanceWithdrawController::class, 'process'])->name('finance.withdraws.process');
@@ -182,31 +182,30 @@ Route::middleware(['auth'])->prefix('profile')->group(function () {
         Route::get('/target-vs-actual', [FinanceController::class, 'targetPendaftaran'])->name('finance.target');
         Route::get('/growth-chart', [FinanceController::class, 'growthChart'])->name('finance.growth');
         Route::get('/top-bonus', [FinanceController::class, 'topBonus'])->name('finance.topbonus');
-        Route::get('/pin-requests', [FinancePinCtrl::class,'index'])->name('finance.pin.index');
-        Route::put('/pin-requests/{id}/approve', [FinancePinCtrl::class,'approve'])->name('finance.pin.approve');
-        Route::put('/pin-requests/{id}/reject', [FinancePinCtrl::class,'reject'])->name('finance.pin.reject');
-
+        Route::get('/pin-requests', [FinancePinCtrl::class, 'index'])->name('finance.pin.index');
+        Route::put('/pin-requests/{id}/approve', [FinancePinCtrl::class, 'approve'])->name('finance.pin.approve');
+        Route::put('/pin-requests/{id}/reject', [FinancePinCtrl::class, 'reject'])->name('finance.pin.reject');
     });
 
     // ✅ Member
     Route::prefix('member')->middleware('role:member')->group(function () {
         Route::get('/pins', [MemberPinCtrl::class, 'index'])->name('member.pin.index');
-        Route::post('/pins/request', [MemberPinCtrl::class,'store'])->name('member.pin.request');
+        Route::post('/pins/request', [MemberPinCtrl::class, 'store'])->name('member.pin.request');
         Route::get('/', [DashboardController::class, 'member'])->name('member');
         Route::get('/withdraw', [MemberWithdrawController::class, 'index'])->name('member.withdraw');
         Route::post('/withdraw', [MemberWithdrawController::class, 'store'])->name('member.withdraw.store');
         Route::get('/withdraw/bonus', [MemberWithdrawController::class, 'getBonusAvailable'])->name('member.withdraw.bonus');
         Route::get('/withdraw/history', [MemberWithdrawController::class, 'history'])->name('member.withdraw.history');
-      // Bagan Upgrade
+        // Bagan Upgrade
 
         Route::post('/bagan/cek-saldo/{bagan}', [MemberController::class, 'cekSaldo']);
         Route::post('/bagan/upgrade/{bagan}', [MemberController::class, 'upgradeBagan'])->name('member.bagan.upgrade');
     });
-    Route::middleware(['auth','role:member'])->get('/member/pins/status', function () {
-    $open = \App\Models\PinRequest::where('requester_id', auth()->id())
-      ->whereIn('status',['requested','finance_approved'])->exists();
-    return response()->json(['hasOpen'=>$open]);
-})->name('member.pin.status');
+    Route::middleware(['auth', 'role:member'])->get('/member/pins/status', function () {
+        $open = \App\Models\PinRequest::where('requester_id', auth()->id())
+            ->whereIn('status', ['requested', 'finance_approved'])->exists();
+        return response()->json(['hasOpen' => $open]);
+    })->name('member.pin.status');
 
     // ✅ Bonus
     Route::get('/bonus', [BonusController::class, 'index'])->name('bonus.index');
@@ -229,8 +228,6 @@ Route::middleware(['auth'])->prefix('profile')->group(function () {
     Route::get('/tree/search', [MLMController::class, 'searchDownline']);
     Route::get('/tree/available-users/{id}', [MLMController::class, 'getAvailableUsers']);
     Route::put('/tree/{id}', [UserController::class, 'update'])->name('users.update');
-
-
 });
 
 // ✅ Tree API (Public)
@@ -238,4 +235,4 @@ Route::get('tree/root', [TreeApiController::class, 'getRoot']);
 Route::get('tree/children/{id}', [TreeApiController::class, 'getChildren']);
 
 // ✅ Auth Routes
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

@@ -18,17 +18,21 @@ class MLMController extends Controller
         $user = User::with(['left', 'right'])->findOrFail($id);
         return view('users.detail', compact('user'));
     }
-public function getAvailableUsers($id)
-{
-    $users = User::whereNull('upline_id')
-                ->where('sponsor_id', '1015')
+    public function getAvailableUsers($id)
+    {
+        try {
+            $users = User::whereNull('position')
+                ->where('sponsor_id', $id)
                 ->select('id', 'username', 'name', 'created_at')
                 ->orderBy('created_at', 'desc')
                 ->limit(10)
                 ->get();
 
-    return response()->json($users);
-}
+            return response()->json($users);
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
     public function loadTree(Request $request, $id)
     {
         $max = $request->get('limit', 7); // default 7 level
@@ -37,102 +41,102 @@ public function getAvailableUsers($id)
         return response()->json($tree);
     }
 
-private function buildTreeRecursive($user, $level = 1, $max = 7)
-{
-    if (!$user || $level > $max) return null;
+    private function buildTreeRecursive($user, $level = 1, $max = 7)
+    {
+        if (!$user || $level > $max) return null;
 
-    $left = $user->leftChild()->first();
-    $right = $user->rightChild()->first();
+        $left = $user->leftChild()->first();
+        $right = $user->rightChild()->first();
 
-    $children = [];
-    $leftChild = $left;
-    $rightChild = $right;
-    $leftCount = $leftChild ? $this->countAllDownlines($leftChild) : 0;
-    $rightCount = $rightChild ? $this->countAllDownlines($rightChild) : 0;
+        $children = [];
+        $leftChild = $left;
+        $rightChild = $right;
+        $leftCount = $leftChild ? $this->countAllDownlines($leftChild) : 0;
 
-    if ($left) {
-        $childLeft = $this->buildTreeRecursive($left, $level + 1, $max);
-        if ($childLeft !== null) $children[] = $childLeft;
-    } else {
-        $children[] = [
-            'id' => 'add-' . $user->id . '-left',
-            'name' => 'Tambah',
-            'isAddButton' => true,
-            'position' => 'left',
-            'parent_id' => $user->id,
-            'children' => [],
+        $rightCount = $rightChild ? $this->countAllDownlines($rightChild) : 0;
+
+        if ($left) {
+            $childLeft = $this->buildTreeRecursive($left, $level + 1, $max);
+            if ($childLeft !== null) $children[] = $childLeft;
+        } else {
+            $children[] = [
+                'id' => 'add-' . $user->id . '-left',
+                'name' => 'Tambah',
+                'isAddButton' => true,
+                'position' => 'left',
+                'parent_id' => $user->id,
+                'children' => [],
+                'is_active_bagan_1' => $user->is_active_bagan_1,
+                'is_active_bagan_2' => $user->is_active_bagan_2,
+                'is_active_bagan_3' => $user->is_active_bagan_3,
+                'is_active_bagan_4' => $user->is_active_bagan_4,
+                'is_active_bagan_5' => $user->is_active_bagan_5,
+                'left_count' => $leftCount,
+                'right_count' => $rightCount,
+            ];
+        }
+
+        if ($right) {
+            $childRight = $this->buildTreeRecursive($right, $level + 1, $max);
+            if ($childRight !== null) $children[] = $childRight;
+        } else {
+            $children[] = [
+                'id' => 'add-' . $user->id . '-right',
+                'name' => 'Tambah',
+                'isAddButton' => true,
+                'position' => 'right',
+                'parent_id' => $user->id,
+                'children' => [],
+                'is_active_bagan_1' => $user->is_active_bagan_1,
+                'is_active_bagan_2' => $user->is_active_bagan_2,
+                'is_active_bagan_3' => $user->is_active_bagan_3,
+                'is_active_bagan_4' => $user->is_active_bagan_4,
+                'is_active_bagan_5' => $user->is_active_bagan_5,
+                'left_count' => $leftCount,
+                'right_count' => $rightCount,
+            ];
+        }
+
+        return [
+            'id' => $user->id,
+            'name' => $user->username,
+            'status' => $user->is_active ? 'aktif' : 'tidak aktif',
+            'pairing_count' => $user->pairing_count ?? 0,
+            'voucher' => $user->voucher ?? 0,
+            'position' => $user->position ?? 0,
+            'children' => $children,
+            'left_count' => $leftCount,
+            'right_count' => $rightCount,
             'is_active_bagan_1' => $user->is_active_bagan_1,
             'is_active_bagan_2' => $user->is_active_bagan_2,
             'is_active_bagan_3' => $user->is_active_bagan_3,
             'is_active_bagan_4' => $user->is_active_bagan_4,
             'is_active_bagan_5' => $user->is_active_bagan_5,
-            'left_count' => $leftCount,
-            'right_count' => $rightCount,
         ];
     }
+    private function countAllDownlines(User $user): int
+    {
+        $count = 1; // hitung diri sendiri
 
-    if ($right) {
-        $childRight = $this->buildTreeRecursive($right, $level + 1, $max);
-        if ($childRight !== null) $children[] = $childRight;
-    } else {
-        $children[] = [
-            'id' => 'add-' . $user->id . '-right',
-            'name' => 'Tambah',
-            'isAddButton' => true,
-            'position' => 'right',
-            'parent_id' => $user->id,
-            'children' => [],
-            'is_active_bagan_1' => $user->is_active_bagan_1,
-            'is_active_bagan_2' => $user->is_active_bagan_2,
-            'is_active_bagan_3' => $user->is_active_bagan_3,
-            'is_active_bagan_4' => $user->is_active_bagan_4,
-            'is_active_bagan_5' => $user->is_active_bagan_5,
-            'left_count' => $leftCount,
-            'right_count' => $rightCount,
-        ];
+        $left = User::where('upline_id', $user->id)->where('position', 'left')->first();
+        $right = User::where('upline_id', $user->id)->where('position', 'right')->first();
+        if ($left) $count += $this->countAllDownlines($left);
+        if ($right) $count += $this->countAllDownlines($right);
+
+        return $count;
     }
 
-    return [
-        'id' => $user->id,
-    'name' => $user->username,
-    'status' => $user->is_active ? 'aktif' : 'tidak aktif',
-    'pairing_count' => $user->pairing_count ?? 0,
-    'voucher' => $user->voucher ?? 0,
-    'position' => $user->position ?? 0,
-    'children' => $children,
-    'left_count' => $leftCount,
-    'right_count' => $rightCount,
-    'is_active_bagan_1' => $user->is_active_bagan_1,
-    'is_active_bagan_2' => $user->is_active_bagan_2,
-    'is_active_bagan_3' => $user->is_active_bagan_3,
-    'is_active_bagan_4' => $user->is_active_bagan_4,
-    'is_active_bagan_5' => $user->is_active_bagan_5,
-    ];
-}
-private function countAllDownlines(User $user): int
-{
-    $count = 1; // hitung diri sendiri
+    public function searchDownline(Request $request)
+    {
+        $keyword = $request->query('query');
+        $user = User::where('name', 'like', "%$keyword%")
+            ->orWhere('username', 'like', "%$keyword%")
+            ->first();
 
-    $left = User::where('upline_id', $user->id)->where('position', 'left')->first();
-    $right = User::where('upline_id', $user->id)->where('position', 'right')->first();
+        if (!$user) return response()->json(null);
 
-    if ($left) $count += $this->countAllDownlines($left);
-    if ($right) $count += $this->countAllDownlines($right);
-
-    return $count;
-}
-
-public function searchDownline(Request $request)
-{
-    $keyword = $request->query('query');
-    $user = User::where('name', 'like', "%$keyword%")
-                ->orWhere('username', 'like', "%$keyword%")
-                ->first();
-
-    if (!$user) return response()->json(null);
-
-    return response()->json(['id' => $user->id]);
-}
+        return response()->json(['id' => $user->id]);
+    }
 
     public function show($id)
     {
