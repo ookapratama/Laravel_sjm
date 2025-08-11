@@ -21,7 +21,7 @@ class MLMController extends Controller
 public function getAvailableUsers($id)
 {
     $users = User::whereNull('upline_id')
-                ->where('sponsor_id', '1015')
+                ->where('sponsor_id', '2060')
                 ->select('id', 'username', 'name', 'created_at')
                 ->orderBy('created_at', 'desc')
                 ->limit(10)

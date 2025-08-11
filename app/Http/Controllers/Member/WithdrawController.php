@@ -37,7 +37,7 @@ class WithdrawController extends Controller
     $user = auth()->user();
 
     // Hitung bonus tersedia = total bonus - total yang sudah dicairkan (bukan yang masih menunggu)
-    $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('net_amount');
+    $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('amount');
     $totalWithdrawn = Withdrawal::where('user_id', $user->id)
         ->where('status', 'processed') // hanya yang sudah ditransfer
         ->sum('amount');
@@ -75,7 +75,7 @@ public function getBonusAvailable()
     $user = auth()->user();
 
     // Total bonus dari transaksi (netto)
-    $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('net_amount');
+    $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('amount');
 
     // Semua withdraw yang sudah dan sedang diajukan (approved + pending)
     $totalWithdrawn = Withdrawal::where('user_id', $user->id)
