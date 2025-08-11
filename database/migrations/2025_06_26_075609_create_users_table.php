@@ -10,7 +10,7 @@ return new class extends Migration {
         $table->id();
         $table->string('name');
          $table->string('username');
-        $table->string('email')->unique();
+        $table->string('email');
         $table->string('password');
         $table->unsignedBigInteger('sponsor_id')->nullable();
         $table->unsignedBigInteger('upline_id')->nullable();

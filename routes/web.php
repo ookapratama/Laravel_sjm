@@ -49,6 +49,13 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [ReferralRegisterController::class, 'store'])
         ->name('referral.register.store')
         ->withoutMiddleware(['auth']);
+
+    // verifikasi username
+    Route::post('/check-username', [ReferralRegisterController::class, 'checkUsername'])->name('check.username');
+    Route::post('/check-pin', [ReferralRegisterController::class, 'checkPin'])->name('check.pin');
+    Route::post('/check-sponsor', [ReferralRegisterController::class, 'checkSponsor'])->name('check.sponsor');
+    Route::post('/check-whatsapp', [ReferralRegisterController::class, 'checkWhatsApp'])->name('check.whatsapp');
+
 });
 
 
