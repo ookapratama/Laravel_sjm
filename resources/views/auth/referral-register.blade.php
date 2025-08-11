@@ -2,12 +2,15 @@
 @section('title', 'Registrasi Member')
 
 @push('styles')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/formvalidation/0.6.2-dev/css/formValidation.min.css"
+        integrity="sha512-B9GRVQaYJ7aMZO3WC2UvS9xds1D+gWQoNiXiZYRlqIVszL073pHXi0pxWxVycBk0fnacKIE3UHuWfSeETDCe7w=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        .wizard-step {
+        .js-step {
             display: none;
         }
 
-        .wizard-step.active {
+        .js-step.active {
             display: block;
         }
 
@@ -141,12 +144,13 @@
                             <span id="sponsorText"></span>
                         </div>
 
-                        <form id="ref-register-form" action="{{ route('referral.register.store') }}" method="POST" novalidate>
+                        <form id="ref-register-form" action="{{ route('referral.register.store') }}" method="POST"
+                            novalidate>
                             @csrf <!-- Laravel CSRF token directive -->
                             <input type="hidden" name="ref" id="ref" value="">
 
                             <!-- Step 1: PIN & Sponsor -->
-                            <div class="wizard-step active" data-step="1">
+                            <div class="js-step active" data-step="1">
                                 <h4 class="mb-3">Step 1: PIN Aktivasi & Kode Sponsor</h4>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -166,7 +170,7 @@
                             </div>
 
                             <!-- Step 2: Data Diri -->
-                            <div class="wizard-step" data-step="2">
+                            <div class="js-step" data-step="2">
                                 <h4 class="mb-3">Step 2: Data Diri</h4>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -256,7 +260,7 @@
                             </div>
 
                             <!-- Step 3: Akun Login -->
-                            <div class="wizard-step" data-step="3">
+                            <div class="js-step" data-step="3">
                                 <h4 class="mb-3">Step 3: Data Akun Login</h4>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -281,7 +285,7 @@
                             </div>
 
                             <!-- Step 4: Alamat -->
-                            <div class="wizard-step" data-step="4">
+                            <div class="js-step" data-step="4">
                                 <h4 class="mb-3">Step 4: Data Alamat</h4>
                                 <div class="row g-3">
                                     <div class="col-md-12">
@@ -326,7 +330,7 @@
                             </div>
 
                             <!-- Step 5: Rekening & Ahli Waris -->
-                            <div class="wizard-step" data-step="5">
+                            <div class="js-step" data-step="5">
                                 <h4 class="mb-3">Step 5: Data Rekening & Ahli Waris</h4>
                                 <div class="row g-3">
                                     <div class="col-md-6">
@@ -395,178 +399,364 @@
 @endsection
 
 @push('scripts')
+
     <script>
         (function() {
             // script wizard step nya
-            if (typeof AOS !== 'undefined') {
-                AOS.init();
-            }
+            'use strict';
 
+            // Wizard variables
             let currentStep = 1;
             const totalSteps = 5;
-
-            const nextBtn = document.getElementById('nextBtn');
-            const prevBtn = document.getElementById('prevBtn');
-            const submitBtn = document.getElementById('submitBtn');
             const errorContainer = document.getElementById('errorContainer');
             const errorList = document.getElementById('errorList');
 
-            // Helper to clear all validation feedback
+            // Validation rules for each step
+            const validationRules = {
+                1: { // Step 1: PIN & Sponsor
+                    pin_aktivasi: {
+                        required: true,
+                        minLength: 8,
+                        pattern: /^[A-Z0-9]+$/,
+                        message: 'PIN aktivasi harus diisi minimal 8 karakter (huruf kapital dan angka)'
+                    },
+                    sponsor_code: {
+                        required: true,
+                        minLength: 3,
+                        pattern: /^[A-Za-z0-9]+$/,
+                        message: 'Kode sponsor harus diisi minimal 3 karakter alfanumerik'
+                    }
+                },
+                2: { // Step 2: Data Diri
+                    name: {
+                        required: true,
+                        minLength: 3,
+                        pattern: /^[a-zA-Z\s.,']+$/,
+                        message: 'Nama lengkap harus diisi minimal 3 karakter (hanya huruf dan tanda baca umum)'
+                    },
+                    phone: {
+                        required: true,
+                        pattern: /^(\+?62|0)[0-9]{8,13}$/,
+                        message: 'Nomor HP harus valid format Indonesia (08xx atau +62xxx)'
+                    },
+                    email: {
+                        required: false,
+                        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: 'Format email tidak valid'
+                    },
+                    jenis_kelamin: {
+                        required: true,
+                        type: 'radio',
+                        message: 'Pilih jenis kelamin'
+                    },
+                    no_ktp: {
+                        required: false,
+                        pattern: /^[0-9]{16}$/,
+                        message: 'No KTP harus 16 digit angka'
+                    },
+                    tempat_lahir: {
+                        required: true,
+                        minLength: 3,
+                        pattern: /^[a-zA-Z\s.]+$/,
+                        message: 'Tempat lahir harus diisi minimal 3 karakter'
+                    },
+                    tanggal_lahir: {
+                        required: true,
+                        customValidator: (value) => {
+                            const birthDate = new Date(value);
+                            const today = new Date();
+                            const age = today.getFullYear() - birthDate.getFullYear();
+                            return age >= 17 && age <= 100;
+                        },
+                        message: 'Tanggal lahir tidak valid (minimal usia 17 tahun)'
+                    },
+                    agama: {
+                        required: true,
+                        type: 'radio',
+                        message: 'Pilih agama'
+                    }
+                },
+                3: { // Step 3: Akun Login
+                    username: {
+                        required: true,
+                        minLength: 4,
+                        maxLength: 20,
+                        pattern: /^[a-zA-Z0-9_]+$/,
+                        message: 'Username 4-20 karakter, hanya huruf, angka, dan underscore'
+                    },
+                    password: {
+                        required: true,
+                        minLength: 6,
+                        customValidator: (value) => {
+                            // Password harus mengandung minimal 1 huruf dan 1 angka
+                            return /[a-zA-Z]/.test(value) && /[0-9]/.test(value);
+                        },
+                        message: 'Password minimal 6 karakter dengan kombinasi huruf dan angka'
+                    },
+                    password_confirmation: {
+                        required: true,
+                        customValidator: (value) => {
+                            const password = document.getElementById('password').value;
+                            return value === password;
+                        },
+                        message: 'Konfirmasi password tidak cocok'
+                    }
+                },
+                4: { // Step 4: Alamat
+                    alamat: {
+                        required: true,
+                        minLength: 10,
+                        message: 'Alamat lengkap harus diisi minimal 10 karakter'
+                    },
+                    rt: {
+                        required: false,
+                        pattern: /^[0-9]{1,3}$/,
+                        message: 'RT harus berupa angka 1-3 digit'
+                    },
+                    rw: {
+                        required: false,
+                        pattern: /^[0-9]{1,3}$/,
+                        message: 'RW harus berupa angka 1-3 digit'
+                    },
+                    desa: {
+                        required: true,
+                        minLength: 3,
+                        pattern: /^[a-zA-Z\s.]+$/,
+                        message: 'Desa/Kelurahan harus diisi minimal 3 karakter'
+                    },
+                    kecamatan: {
+                        required: true,
+                        minLength: 3,
+                        pattern: /^[a-zA-Z\s.]+$/,
+                        message: 'Kecamatan harus diisi minimal 3 karakter'
+                    },
+                    kota: {
+                        required: true,
+                        minLength: 3,
+                        pattern: /^[a-zA-Z\s.]+$/,
+                        message: 'Kota/Kabupaten harus diisi minimal 3 karakter'
+                    },
+                    kode_pos: {
+                        required: false,
+                        pattern: /^[0-9]{5}$/,
+                        message: 'Kode pos harus 5 digit angka'
+                    }
+                },
+                5: { // Step 5: Rekening
+                    nama_rekening: {
+                        required: true,
+                        minLength: 3,
+                        pattern: /^[a-zA-Z\s.,']+$/,
+                        message: 'Nama rekening harus diisi minimal 3 karakter'
+                    },
+                    nomor_rekening: {
+                        required: true,
+                        pattern: /^[0-9]{5,20}$/,
+                        message: 'Nomor rekening harus 5-20 digit angka'
+                    },
+                    nama_bank: {
+                        required: true,
+                        minLength: 3,
+                        message: 'Nama bank harus dipilih atau diisi'
+                    },
+                    nama_ahli_waris: {
+                        required: false,
+                        minLength: 3,
+                        pattern: /^[a-zA-Z\s.,']*$/,
+                        message: 'Nama ahli waris minimal 3 karakter jika diisi'
+                    },
+                    hubungan_ahli_waris: {
+                        required: false,
+                        minLength: 3,
+                        pattern: /^[a-zA-Z\s.,']*$/,
+                        message: 'Hubungan ahli waris minimal 3 karakter jika diisi'
+                    },
+                    agree: {
+                        required: true,
+                        type: 'checkbox',
+                        message: 'Anda harus menyetujui Syarat & Ketentuan'
+                    }
+                }
+            };
+
+            // Validation function for individual field
+            function validateField(fieldName, value, rules) {
+                const rule = rules[fieldName];
+                if (!rule) return {
+                    isValid: true
+                };
+
+                // Check required
+                if (rule.required && (!value || value.trim() === '')) {
+                    return {
+                        isValid: false,
+                        message: rule.message
+                    };
+                }
+
+                // Skip other validations if field is not required and empty
+                if (!rule.required && (!value || value.trim() === '')) {
+                    return {
+                        isValid: true
+                    };
+                }
+
+                // Check minimum length
+                if (rule.minLength && value.length < rule.minLength) {
+                    return {
+                        isValid: false,
+                        message: rule.message
+                    };
+                }
+
+                // Check maximum length
+                if (rule.maxLength && value.length > rule.maxLength) {
+                    return {
+                        isValid: false,
+                        message: rule.message
+                    };
+                }
+
+                // Check pattern
+                if (rule.pattern && !rule.pattern.test(value)) {
+                    return {
+                        isValid: false,
+                        message: rule.message
+                    };
+                }
+
+                // Check custom validator
+                if (rule.customValidator && !rule.customValidator(value)) {
+                    return {
+                        isValid: false,
+                        message: rule.message
+                    };
+                }
+
+                return {
+                    isValid: true
+                };
+            }
+
+            // Validation function for radio buttons and checkboxes
+            function validateSpecialField(fieldName, rules) {
+                const rule = rules[fieldName];
+                if (!rule) return {
+                    isValid: true
+                };
+
+                if (rule.type === 'radio') {
+                    const radios = document.querySelectorAll(`input[name="${fieldName}"]`);
+                    const isChecked = Array.from(radios).some(radio => radio.checked);
+                    if (rule.required && !isChecked) {
+                        return {
+                            isValid: false,
+                            message: rule.message
+                        };
+                    }
+                }
+
+                if (rule.type === 'checkbox') {
+                    const checkbox = document.querySelector(`input[name="${fieldName}"]`);
+                    if (rule.required && (!checkbox || !checkbox.checked)) {
+                        return {
+                            isValid: false,
+                            message: rule.message
+                        };
+                    }
+                }
+
+                return {
+                    isValid: true
+                };
+            }
+
+            // Clear validation feedback
             function clearValidationFeedback() {
-                document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-                document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+                document.querySelectorAll('.is-invalid').forEach(el => {
+                    el.classList.remove('is-invalid');
+                });
+                document.querySelectorAll('.invalid-feedback').forEach(el => {
+                    el.textContent = '';
+                });
                 errorContainer.classList.add('d-none');
                 errorList.innerHTML = '';
             }
 
-            function showStep(step) {
-                clearValidationFeedback(); // Clear feedback when changing steps
+            // Show validation error for field
+            function showFieldError(fieldName, message) {
+                const inputs = document.querySelectorAll(`[name="${fieldName}"]`);
+                inputs.forEach(input => {
+                    input.classList.add('is-invalid');
 
-                document.querySelectorAll('.wizard-step').forEach(el => {
-                    el.classList.remove('active');
-                });
+                    let feedback = input.parentNode.querySelector('.invalid-feedback');
+                    if (!feedback) {
+                        // For radio buttons, find the container
+                        const container = input.closest('.col-md-6, .col-md-12, .col-12');
+                        if (container) {
+                            feedback = container.querySelector('.invalid-feedback');
+                        }
+                    }
 
-                document.querySelector(`.wizard-step[data-step="${step}"]`).classList.add('active');
+                    if (feedback) {
+                        feedback.textContent = message;
+                    } else {
+                        // Create new feedback element
+                        feedback = document.createElement('div');
+                        feedback.className = 'invalid-feedback';
+                        feedback.textContent = message;
 
-                document.querySelectorAll('.step-item').forEach((item, index) => {
-                    const stepNum = index + 1;
-                    item.classList.remove('active', 'completed');
-
-                    if (stepNum < step) {
-                        item.classList.add('completed');
-                    } else if (stepNum === step) {
-                        item.classList.add('active');
+                        if (input.type === 'radio' || input.type === 'checkbox') {
+                            const container = input.closest('.col-md-6, .col-md-12, .col-12');
+                            if (container) {
+                                container.appendChild(feedback);
+                            }
+                        } else {
+                            input.parentNode.insertBefore(feedback, input.nextSibling);
+                        }
                     }
                 });
-
-                prevBtn.style.display = step > 1 ? 'inline-block' : 'none';
-                nextBtn.style.display = step < totalSteps ? 'inline-block' : 'none';
-                submitBtn.style.display = step === totalSteps ? 'inline-block' : 'none';
-
-                // Scroll to top of the card when changing steps
-                const card = document.querySelector('.card');
-                if (card) {
-                    card.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
             }
 
+            // Validate entire step
             function validateStep(step) {
-                const stepElement = document.querySelector(`[data-step="${step}"]`);
-                const requiredFields = stepElement.querySelectorAll('[required]');
-                let isValid = true;
+                clearValidationFeedback();
+
+                const stepRules = validationRules[step];
+                if (!stepRules) return true;
+
+                let isStepValid = true;
                 const errors = [];
 
-                // Clear previous invalid states for the current step
-                stepElement.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-                stepElement.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+                Object.keys(stepRules).forEach(fieldName => {
+                    const rule = stepRules[fieldName];
 
-
-                requiredFields.forEach(field => {
-                    let fieldIsValid = true;
-                    let errorMessage = '';
-
-                    if (field.type === 'radio') {
-                        const radioGroup = stepElement.querySelectorAll(`[name="${field.name}"]`);
-                        const isChecked = Array.from(radioGroup).some(radio => radio.checked);
-                        if (!isChecked) {
-                            fieldIsValid = false;
-                            errorMessage = 'Pilihan ini wajib diisi.';
-                            // Mark all radios in the group as invalid to show feedback near one of them
-                            radioGroup.forEach(radio => radio.classList.add('is-invalid'));
-                        } else {
-                            radioGroup.forEach(radio => radio.classList.remove('is-invalid'));
-                        }
-                    } else if (field.type === 'checkbox') {
-                        if (!field.checked) {
-                            fieldIsValid = false;
-                            errorMessage = field.labels[0] ? field.labels[0].textContent + ' harus dicentang.' :
-                                'Bidang ini wajib dicentang.';
-                            field.classList.add('is-invalid');
-                        } else {
-                            field.classList.remove('is-invalid');
+                    if (rule.type === 'radio' || rule.type === 'checkbox') {
+                        const validation = validateSpecialField(fieldName, stepRules);
+                        if (!validation.isValid) {
+                            showFieldError(fieldName, validation.message);
+                            errors.push(validation.message);
+                            isStepValid = false;
                         }
                     } else {
-                        if (!field.value.trim()) {
-                            fieldIsValid = false;
-                            errorMessage = 'Bidang ini wajib diisi.';
-                            field.classList.add('is-invalid');
-                        } else {
-                            field.classList.remove('is-invalid');
-                        }
-                    }
-
-                    if (!fieldIsValid) {
-                        isValid = false;
-                        if (errorMessage) {
-                            // Find or create invalid-feedback element
-                            let feedback = field.nextElementSibling;
-                            if (!feedback || !feedback.classList.contains('invalid-feedback')) {
-                                feedback = document.createElement('div');
-                                feedback.className = 'invalid-feedback';
-                                field.parentNode.insertBefore(feedback, field.nextSibling);
+                        const input = document.querySelector(`[name="${fieldName}"]`);
+                        if (input) {
+                            const validation = validateField(fieldName, input.value, stepRules);
+                            if (!validation.isValid) {
+                                showFieldError(fieldName, validation.message);
+                                errors.push(validation.message);
+                                isStepValid = false;
                             }
-                            feedback.textContent = errorMessage;
                         }
                     }
                 });
 
-                if (step === 3) {
-                    const password = stepElement.querySelector('[name="password"]');
-                    const confirmPassword = stepElement.querySelector('[name="password_confirmation"]');
+                // Show global errors if any
+                if (errors.length > 0) {
+                    errorList.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
+                    errorContainer.classList.remove('d-none');
 
-                    if (password && confirmPassword) {
-                        if (password.value !== confirmPassword.value) {
-                            isValid = false;
-                            confirmPassword.classList.add('is-invalid');
-                            let feedback = confirmPassword.nextElementSibling;
-                            if (!feedback || !feedback.classList.contains('invalid-feedback')) {
-                                feedback = document.createElement('div');
-                                feedback.className = 'invalid-feedback';
-                                confirmPassword.parentNode.insertBefore(feedback, confirmPassword.nextSibling);
-                            }
-                            feedback.textContent = 'Konfirmasi password tidak cocok.';
-                        } else {
-                            confirmPassword.classList.remove('is-invalid');
-                            let feedback = confirmPassword.nextElementSibling;
-                            if (feedback && feedback.classList.contains('invalid-feedback')) {
-                                feedback.textContent = '';
-                            }
-                        }
-
-                        if (password.value.length < 6) {
-                            isValid = false;
-                            password.classList.add('is-invalid');
-                            let feedback = password.nextElementSibling;
-                            if (!feedback || !feedback.classList.contains('invalid-feedback')) {
-                                feedback = document.createElement('div');
-                                feedback.className = 'invalid-feedback';
-                                password.parentNode.insertBefore(feedback, password.nextSibling);
-                            }
-                            feedback.textContent = 'Password minimal 6 karakter.';
-                        } else {
-                            password.classList.remove('is-invalid');
-                            let feedback = password.nextElementSibling;
-                            if (feedback && feedback.classList.contains('invalid-feedback')) {
-                                feedback.textContent = '';
-                            }
-                        }
-                    }
-                }
-
-                return isValid;
-            }
-
-            nextBtn.addEventListener('click', function() {
-                if (validateStep(currentStep)) {
-                    if (currentStep < totalSteps) {
-                        currentStep++;
-                        showStep(currentStep);
-                    }
-                } else {
-                    // Scroll to the first invalid field
+                    // Scroll to first invalid field
                     const firstInvalidField = document.querySelector('.is-invalid');
                     if (firstInvalidField) {
                         firstInvalidField.scrollIntoView({
@@ -574,18 +764,144 @@
                             block: 'center'
                         });
                     }
-                    if (window.toastr) toastr.error('Harap lengkapi semua bidang yang wajib diisi.');
                 }
-            });
 
-            prevBtn.addEventListener('click', function() {
-                if (currentStep > 1) {
+                return isStepValid;
+            }
+
+            // Real-time validation for individual fields
+            function setupRealTimeValidation() {
+                Object.keys(validationRules).forEach(step => {
+                    const stepRules = validationRules[step];
+                    Object.keys(stepRules).forEach(fieldName => {
+                        const inputs = document.querySelectorAll(`[name="${fieldName}"]`);
+
+                        inputs.forEach(input => {
+                            if (input.type === 'radio' || input.type === 'checkbox') {
+                                input.addEventListener('change', () => {
+                                    // Clear previous errors for this field
+                                    input.classList.remove('is-invalid');
+                                    const feedback = input.closest(
+                                            '.col-md-6, .col-md-12, .col-12')
+                                        ?.querySelector('.invalid-feedback');
+                                    if (feedback) feedback.textContent = '';
+
+                                    // Validate
+                                    const validation = validateSpecialField(fieldName,
+                                        stepRules);
+                                    if (!validation.isValid) {
+                                        showFieldError(fieldName, validation.message);
+                                    }
+                                });
+                            } else {
+                                // For text inputs, validate on blur
+                                input.addEventListener('blur', () => {
+                                    // Clear previous errors
+                                    input.classList.remove('is-invalid');
+                                    const feedback = input.parentNode.querySelector(
+                                        '.invalid-feedback');
+                                    if (feedback) feedback.textContent = '';
+
+                                    // Validate
+                                    const validation = validateField(fieldName, input
+                                        .value, stepRules);
+                                    if (!validation.isValid) {
+                                        showFieldError(fieldName, validation.message);
+                                    }
+                                });
+
+                                // For password confirmation, also validate on input
+                                if (fieldName === 'password_confirmation') {
+                                    input.addEventListener('input', () => {
+                                        const validation = validateField(fieldName,
+                                            input.value, stepRules);
+                                        if (!validation.isValid) {
+                                            showFieldError(fieldName, validation
+                                                .message);
+                                        } else {
+                                            input.classList.remove('is-invalid');
+                                            const feedback = input.parentNode
+                                                .querySelector('.invalid-feedback');
+                                            if (feedback) feedback.textContent = '';
+                                        }
+                                    });
+                                }
+                            }
+                        });
+                    });
+                });
+            }
+
+            // Wizard navigation functions
+            function showStep(step) {
+                // Hide all steps
+                document.querySelectorAll('.js-step').forEach(s => {
+                    s.classList.remove('active');
+                });
+
+                // Show current step
+                const currentStepElement = document.querySelector(`.js-step[data-step="${step}"]`);
+                if (currentStepElement) {
+                    currentStepElement.classList.add('active');
+                }
+
+                // Update step indicators
+                document.querySelectorAll('.step-item').forEach((item, index) => {
+                    const stepNumber = index + 1;
+                    item.classList.remove('active', 'completed');
+
+                    if (stepNumber < step) {
+                        item.classList.add('completed');
+                    } else if (stepNumber === step) {
+                        item.classList.add('active');
+                    }
+                });
+
+                // Update button visibility
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+                const submitBtn = document.getElementById('submitBtn');
+
+                prevBtn.style.display = step > 1 ? 'block' : 'none';
+                nextBtn.style.display = step < totalSteps ? 'block' : 'none';
+                submitBtn.style.display = step === totalSteps ? 'block' : 'none';
+            }
+
+            // Initialize wizard
+            function initWizard() {
+                const prevBtn = document.getElementById('prevBtn');
+                const nextBtn = document.getElementById('nextBtn');
+
+                nextBtn.addEventListener('click', () => {
+                    if (validateStep(currentStep)) {
+                        currentStep++;
+                        showStep(currentStep);
+                    }
+                });
+
+                prevBtn.addEventListener('click', () => {
                     currentStep--;
                     showStep(currentStep);
-                }
-            });
+                });
 
-            showStep(1);
+                // Initialize first step
+                showStep(currentStep);
+
+                // Setup real-time validation
+                setupRealTimeValidation();
+            }
+
+            // Initialize when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initWizard);
+            } else {
+                initWizard();
+            }
+
+            // Make validateStep available globally for form submission
+            window.validateStep = validateStep;
+            window.clearValidationFeedback = clearValidationFeedback;
+            window.totalSteps = totalSteps;
 
 
             // isi sponsor display dari ?ref
@@ -619,12 +935,15 @@
                 ];
                 const UMUM = ['Bank Central Asia (BCA)', 'CIMB Niaga', 'Bank Danamon', 'OCBC NISP', 'Permata Bank',
                     'Panin Bank', 'Maybank Indonesia', 'KB Bukopin', 'Bank BTPN', 'Bank Mega', 'Bank Sinarmas',
-                    'UOB Indonesia', 'HSBC Indonesia', 'Standard Chartered Indonesia', 'Citibank N.A. Indonesia',
-                    'ICBC Indonesia', 'Bank China Construction Bank Indonesia (CCB Indonesia)', 'Bank Commonwealth',
+                    'UOB Indonesia', 'HSBC Indonesia', 'Standard Chartered Indonesia',
+                    'Citibank N.A. Indonesia',
+                    'ICBC Indonesia', 'Bank China Construction Bank Indonesia (CCB Indonesia)',
+                    'Bank Commonwealth',
                     'QNB Indonesia', 'Bank Woori Saudara', 'Bank Shinhan Indonesia', 'Bank JTrust Indonesia',
                     'Bank MNC Internasional', 'Bank Artha Graha Internasional', 'Bank Capital Indonesia',
                     'Bank Maspion Indonesia', 'Bank Ina Perdana', 'Bank Index Selindo',
-                    'Bank Victoria International', 'Bank Mayora', 'Bank Oke Indonesia', 'Bank Sahabat Sampoerna',
+                    'Bank Victoria International', 'Bank Mayora', 'Bank Oke Indonesia',
+                    'Bank Sahabat Sampoerna',
                     'Krom Bank Indonesia', 'Bank Fama Internasional', 'Bank Neo Commerce (BNC)',
                     'Allo Bank Indonesia', 'SeaBank Indonesia', 'Bank Jago', 'BCA Digital (blu)',
                     'Bank Muamalat Indonesia', 'BTPN Syariah', 'Bank Mega Syariah'
@@ -643,6 +962,7 @@
 
             // submit via fetch → balas JSON (ok untuk SPA feel)
             const form = document.getElementById('ref-register-form');
+
             form.addEventListener('submit', async function(e) {
                 e.preventDefault();
 
@@ -718,7 +1038,8 @@
                             if (input) {
                                 input.classList.add('is-invalid');
                                 let feedback = input.nextElementSibling;
-                                if (!feedback || !feedback.classList.contains('invalid-feedback')) {
+                                if (!feedback || !feedback.classList.contains(
+                                        'invalid-feedback')) {
                                     feedback = document.createElement('div');
                                     feedback.className = 'invalid-feedback';
                                     input.parentNode.insertBefore(feedback, input.nextSibling);
@@ -733,15 +1054,15 @@
                                 // For radio groups, apply invalid class to all
                                 if (input.type === 'radio') {
                                     document.querySelectorAll(`[name="${field}"]`).forEach(
-                                    radio => {
-                                        radio.classList.add('is-invalid');
-                                    });
+                                        radio => {
+                                            radio.classList.add('is-invalid');
+                                        });
                                 }
                             } else {
                                 // If no specific input found, add to global error container only
                                 console.warn(
                                     `Validation error for unknown field: ${field} - ${firstMsg}`
-                                    );
+                                );
                             }
                         });
 
@@ -752,7 +1073,7 @@
                         // Scroll to the first invalid field or error container
                         if (firstInvalidField) {
                             // Determine which step the first invalid field belongs to
-                            let parentStep = firstInvalidField.closest('.wizard-step');
+                            let parentStep = firstInvalidField.closest('.js-step');
                             if (parentStep) {
                                 let stepNumber = parseInt(parentStep.dataset.step);
                                 if (stepNumber && stepNumber !== currentStep) {
