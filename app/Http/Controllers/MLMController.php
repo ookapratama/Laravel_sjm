@@ -18,6 +18,7 @@ class MLMController extends Controller
         $user = User::with(['left', 'right'])->findOrFail($id);
         return view('users.detail', compact('user'));
     }
+
     public function getAvailableUsers($id)
     {
         try {

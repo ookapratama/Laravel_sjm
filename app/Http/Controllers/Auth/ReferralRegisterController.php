@@ -1,6 +1,5 @@
 <?php
 
-// app/Http/Controllers/Auth/ReferralRegisterController.php
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -12,7 +11,6 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
 use App\Models\MitraProfile;
-// Ganti model/tablename PIN sesuai sistem Anda
 use App\Models\ActivationPin; // -> table: activation_pins (atau pin_codes)
 
 class ReferralRegisterController extends Controller

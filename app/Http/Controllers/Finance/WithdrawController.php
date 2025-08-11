@@ -12,7 +12,7 @@ class WithdrawController extends Controller
 {
     public function index()
     {
-        $withdraws = Withdrawal::where('status', 'menunggu')->latest()->get();
+        $withdraws = Withdrawal::where('status', 'pending')->latest()->get();
         return view('finance.index', compact('withdraws'));
     }
 
