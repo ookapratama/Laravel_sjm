@@ -3,18 +3,20 @@
 @section('content')
 @php
     $baganNames = [
-        1 => 'Starter',
-        2 => 'Booster',
-        3 => 'Growth',
-        4 => 'Champion',
-        5 => 'Legacy',
+      1 => 'Basic',
+        2 => 'Starter',
+        3 => 'Booster',
+        4 => 'Growth',
+        5 => 'Champion',
+        6 => 'Legacy',
     ];
     $biaya = [
-        1 => 1500000,
-        2 => 3000000,
-        3 => 6000000,
-        4 => 12000000,
-        5 => 24000000,
+      1 => 750000,
+        2 => 1500000,
+        3 => 3000000,
+        4 => 6000000,
+        5 => 12000000,
+        6 => 24000000,
     ];
       $userBaganAktif = collect($userBagans)
         ->filter(fn($b) => $b->is_active)
@@ -85,20 +87,6 @@
     </div>
   </div>
 </div>
-            <div class="col-md-12">
-            <div class="card card-secondary bg-secondary-gradient">
-              <div class="card-body text-center">
-                <h5 class="mb-2">Kode Referral Anda</h5>
-                <div class="justify-content-center align-items-center">
-                  <span id="referralCode" class="badge bg-info text-white px-3 py-2" style="cursor: pointer;" onclick="copyReferral()"> 
-                    <h2>{{ auth()->user()->referral_code ?? 'Tidak ada kode' }}</h2>
-                  </span>
-                  
-                </div>
-                <small class="text-white mt-2 d-block">Klik untuk menyalin ke clipboard</small>
-              </div>
-            </div>
-            </div>
             @php
    $refCode = auth()->user()->referral_code;
 
@@ -106,28 +94,42 @@
     ? route('register', ['ref' => $refCode])
     : url('/register') . '?ref=' . urlencode($refCode);
 @endphp
-<div class="card">
-  <div class="card-header">
-    <h5 class="mb-0">Referral QR</h5>
-  </div>
-  <div class="card-body text-center">
-    {{-- Preview QR (inline) --}}
-    <img src="{{ route('member.ref.qr.png') }}" alt="QR Referral" class="img-fluid mb-3" style="max-width: 260px;">
-
-    <div class="d-flex flex-wrap justify-content-center gap-2 mb-2">
-      <span id="referralLink" class="badge bg-dark px-3 py-2" style="cursor:pointer;" onclick="copyReferralLink()">
-        {{ $refUrl }}
-      </span>
-
-      {{-- Tombol Download PNG (force attachment + filename) --}}
-      <a href="{{ route('member.ref.qr.download') }}" class="btn btn-outline-primary btn-sm">
-        Download PNG
+            <div class="col-md-12">
+            <div class="card card-secondary bg-secondary-gradient">
+              
+              <div class="card-body">
+  <div class="row align-items-center g-3">
+    <!-- QR di kiri -->
+    <div class="col-auto">
+      <img src="{{ route('member.ref.qr.png') }}"
+           alt="QR Referral"
+           class="img-fluid rounded shadow-sm"
+           style="width:120px;height:120px;object-fit:cover;">
+            <a href="{{ route('member.ref.qr.download') }}" class="text-white-50 "><i class="fas fa-download me-1"></i> 
+       
       </a>
     </div>
 
-    <small class="text-muted d-block">Scan untuk registrasi, atau klik untuk salin link.</small>
+    <!-- Teks di kanan -->
+    <div class="col">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <h5 class="mb-0 text-white"><b>Kode Referral Anda</b></h5>
+        <span id="referralCode"
+              class="badge text-white fs-5 px-3 py-2"
+              role="button"
+              onclick="copyReferral()">
+         {{ $refUrl ?? 'Tidak ada kode' }} 
+        </span>
+      </div>
+      <small class="text-white-50 d-block mt-1">Klik untuk menyalin ke clipboard</small>
+    </div>
   </div>
 </div>
+
+</div>
+            </div>
+
+
 <div class="card card-black">
     <div class="card-header text-white">
         <h4 class="mb-0">🔰 Status Bagan & Upgrade</h4>

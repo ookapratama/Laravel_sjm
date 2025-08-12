@@ -38,7 +38,6 @@ Route::middleware('auth')->group(function () {
 });
 
 Broadcast::routes(['middleware' => ['web', 'auth']]);
-
 Route::middleware('guest')->group(function () {
     // Halaman form
     Route::get('/register', [ReferralRegisterController::class, 'create'])
@@ -228,6 +227,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/tree/search', [MLMController::class, 'searchDownline']);
     Route::get('/tree/available-users/{id}', [MLMController::class, 'getAvailableUsers']);
     Route::put('/tree/{id}', [UserController::class, 'update'])->name('users.update');
+    Route::get('/tree/parent/{id}', [MLMController::class, 'parentId']);
 });
 
 // ✅ Tree API (Public)

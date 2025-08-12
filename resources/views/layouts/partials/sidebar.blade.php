@@ -204,7 +204,24 @@
 
       {{-- MEMBER --}}
       @case('member')
-        <li class="nav-item"><a href="/tree"><i class="fas fa-sitemap"></i><p>Jaringan Saya</p></a></li>
+             <li class="nav-item">
+      <a data-bs-toggle="collapse" href="#manajemen">
+        <i class="fas fa-sitemap"></i>
+        <p>Jaringan Saya</p>
+        <span class="caret"></span>
+      </a>
+      <div class="collapse" id="manajemen">
+        <ul class="nav nav-collapse">
+          <li><a href="/tree"><span class="sub-item">Basic P1</span></a></li>
+          <li><a href="/tree-p2"><span class="sub-item">Starter P2</span></a></li>
+          <li><a href="/tree-p3"><span class="sub-item">Booster P3</span></a></li>
+          <li><a href="/tree-p4"><span class="sub-item">Growth P4</span></a></li>
+          <li><a href="/tree-p5"><span class="sub-item">Champion P5</span></a></li>
+          <li><a href="/tree-p6"><span class="sub-item">Legacy P6</span></a></li>
+        </ul>
+      </div>
+    </li>
+       
         <li class="nav-item"><a href="/bonus"><i class="fas fa-money-check-alt"></i><p>Bonus Saya</p></a></li>
         <li class="nav-item"><a href="/member/withdraw"><i class="fas fa-credit-card"></i><p>Penarikan Bonus</p></a></li>
         <li class="nav-item"><a href="member/pins"><i class="fas fa-cart-plus"></i><p>Pin Aktivasi</p></a></li>

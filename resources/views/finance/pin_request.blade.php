@@ -80,18 +80,6 @@
                                 <td class="d-flex gap-1">
                                     @if ($r->status === 'requested')
                                         {{-- APPROVE --}}
-                                        {{-- <form method="POST" action="{{ route('finance.pin.approve', $r->id) }}"
-                                            class="d-inline"
-                                            onsubmit="return confirm('Approve request #{{ $r->id }}?')">
-                                            @csrf @method('PUT')
-                                            <input type="hidden" name="payment_method"
-                                                value="{{ $r->payment_method ?: 'transfer' }}">
-                                            <input type="hidden" name="payment_reference"
-                                                value="{{ $r->payment_reference ?: 'REF-' . $r->id . '-' . now()->format('YmdHis') }}">
-                                            <button class="btn btn-success btn-sm">Approve</button>
-                                        </form> --}}
-
-                                        {{-- APPROVE --}}
                                         <form method="POST" action="{{ route('finance.pin.approve', $r->id) }}"
                                             class="d-inline approve-form">
                                             @csrf @method('PUT')

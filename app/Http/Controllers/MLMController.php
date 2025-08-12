@@ -18,6 +18,10 @@ class MLMController extends Controller
         $user = User::with(['left', 'right'])->findOrFail($id);
         return view('users.detail', compact('user'));
     }
+   public function parentId($id){
+    $user = User::select('upline_id')->findOrFail($id);
+    return response()->json(['id' => $user->upline_id]); // null jika root
+}
     public function getAvailableUsers($id)
     {
         try {
@@ -128,14 +132,27 @@ class MLMController extends Controller
 
     public function searchDownline(Request $request)
     {
-        $keyword = $request->query('query');
-        $user = User::where('name', 'like', "%$keyword%")
-            ->orWhere('username', 'like', "%$keyword%")
-            ->first();
+        $keyword = trim((string) $request->query('query', ''));
+    if ($keyword === '') return response()->json([]);
 
-        if (!$user) return response()->json(null);
+    $users = User::select('id','username','name')
+        ->where(function($w) use ($keyword){
+            if (ctype_digit($keyword)) $w->orWhere('id', (int)$keyword);
+            $w->orWhere('username','like',"%{$keyword}%")
+              ->orWhere('name','like',"%{$keyword}%");
+        })
+        ->orderByRaw("
+            CASE 
+              WHEN id = ? THEN 0
+              WHEN username LIKE ? THEN 1
+              WHEN name LIKE ? THEN 2
+              ELSE 3
+            END, id DESC
+        ", [(int)$keyword, "{$keyword}%", "{$keyword}%"])
+        ->limit(10)
+        ->get();
 
-        return response()->json(['id' => $user->id]);
+    return response()->json($users);
     }
 
     public function show($id)

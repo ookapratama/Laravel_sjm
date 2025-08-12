@@ -163,17 +163,15 @@ class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bo
   >
   <i class="fa fa-search"></i>
 </a>
-<ul class="dropdown-menu dropdown-search animated fadeIn">
-  <form class="navbar-left navbar-form nav-search">
-    <div class="input-group">
-      <input
-      type="text"
-      placeholder="Search ..."
-      class="form-control"
-      />
+<ul class="dropdown-menu dropdown-search animated fadeIn" style="min-width:320px">
+  <form id="navSearchForm" class="navbar-left navbar-form nav-search" onsubmit="return false;">
+    <div class="input-group p-2">
+      <input id="navSearchInput" type="text" placeholder="Cari ID / username / nama..." class="form-control" autocomplete="off" />
     </div>
   </form>
+  <li id="navSearchResults" class="px-2 pb-2" style="max-height:320px; overflow:auto;"></li>
 </ul>
+
 </li>
 
  
@@ -554,6 +552,143 @@ function copyReferral() {
         toastr.error('Gagal menyalin kode referral.');
     });
 }
+(() => {
+  "use strict";
+
+  const SEARCH_URL = "/tree/search";
+
+  // --- Elemen desktop & mobile ---
+  const dForm   = document.getElementById("global-search-form");
+  const dInput  = document.getElementById("global-search-input");
+
+  const mForm    = document.getElementById("navSearchForm");
+  const mInput   = document.getElementById("navSearchInput");
+  const mResults = document.getElementById("navSearchResults");
+  const mMenu    = mResults ? mResults.closest(".dropdown-menu") : null;
+
+  // --- Kontainer hasil untuk DESKTOP (dropdown custom) ---
+  let dResults = document.getElementById("global-search-results");
+  if (!dResults && dForm) {
+    dForm.style.position = "relative";
+    dResults = document.createElement("div");
+    dResults.id = "global-search-results";
+    dResults.className = "dropdown-menu show";
+    Object.assign(dResults.style, {
+      position: "absolute",
+      top: "100%",
+      left: "0",
+      minWidth: "320px",
+      maxHeight: "320px",
+      overflow: "auto",
+      display: "none",
+      zIndex: "1051"
+    });
+    dForm.appendChild(dResults);
+  }
+
+  // --- Helpers ---
+  const debounce = (fn, ms = 300) => {
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+  };
+  const toArray = (data) => Array.isArray(data) ? data : (data ? [data] : []);
+
+  function render(container, items) {
+    if (!container) return;
+    container.innerHTML = items.length
+      ? items.map(u => `
+          <a href="#" class="dropdown-item search-item" data-id="${u.id}">
+            #${u.id} — ${u.username ?? ""} <small class="text-muted">${u.name ?? ""}</small>
+          </a>
+        `).join("")
+      : `<div class="text-muted small px-2">Tidak ada hasil</div>`;
+  }
+
+  async function doSearch(target, q) {
+    // kosongkan saat input kosong
+    if (!q) {
+      if (target === "desktop" && dResults) dResults.style.display = "none";
+      if (target === "mobile" && mResults) { mResults.innerHTML = ""; mMenu?.classList.remove("show"); }
+      return;
+    }
+    try {
+      const res = await fetch(`${SEARCH_URL}?` + new URLSearchParams({ query: q }), {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const items = toArray(await res.json());
+
+      if (target === "desktop" && dResults) {
+        render(dResults, items);
+        dResults.style.display = items.length ? "block" : "none";
+      } else if (target === "mobile" && mResults) {
+        render(mResults, items);
+        if (items.length) mMenu?.classList.add("show");
+      }
+    } catch (e) {
+      console.warn("[search] gagal fetch:", e);
+    }
+  }
+
+  function pickFirst(target) {
+    const first = target === "desktop"
+      ? dResults?.querySelector(".search-item")
+      : mResults?.querySelector(".search-item");
+    if (first) first.click();
+  }
+
+  function setRootAndReload(id) {
+    // jadikan global & reload tree jika fungsi tersedia
+    window.currentRootId = Number(id);
+    if (typeof window.setRoot === "function") {
+      window.setRoot(id);
+      return;
+    }
+    if (typeof window.loadTree === "function") {
+      window.loadTree();
+      return;
+    }
+    // fallback (kalau dipakai di luar halaman MLM, boleh di-nonaktifkan)
+    // window.location.href = `/mlm/tree?root=${id}`;
+  }
+
+  // --- Cegah reload form ---
+  dForm?.addEventListener("submit", (e) => { e.preventDefault(); e.stopPropagation(); });
+  mForm?.addEventListener("submit", (e) => { e.preventDefault(); e.stopPropagation(); });
+
+  // --- Desktop listeners ---
+  dInput?.addEventListener("input", debounce(e => doSearch("desktop", e.target.value.trim()), 250));
+  dInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); pickFirst("desktop"); }
+    if (e.key === "Escape" && dResults) dResults.style.display = "none";
+  });
+  dResults?.addEventListener("click", (e) => {
+    const a = e.target.closest(".search-item"); if (!a) return;
+    e.preventDefault();
+    setRootAndReload(a.dataset.id);
+    if (dInput) dInput.value = "";
+    dResults.style.display = "none";
+  });
+
+  // --- Mobile listeners ---
+  mInput?.addEventListener("input", debounce(e => doSearch("mobile", e.target.value.trim()), 250));
+  mInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); pickFirst("mobile"); }
+    if (e.key === "Escape") { mResults.innerHTML = ""; mMenu?.classList.remove("show"); }
+  });
+  mResults?.addEventListener("click", (e) => {
+    const a = e.target.closest(".search-item"); if (!a) return;
+    e.preventDefault();
+    setRootAndReload(a.dataset.id);
+    if (mInput) mInput.value = "";
+    mResults.innerHTML = "";
+    mMenu?.classList.remove("show");
+  });
+
+  // --- Tutup hasil desktop bila klik di luar ---
+  document.addEventListener("click", (e) => {
+    if (dResults && dForm && !dForm.contains(e.target)) dResults.style.display = "none";
+  });
+})();
 </script>
 @stack('scripts')
 </body>

@@ -1,27 +1,30 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="page-inner relative">
-        <div class="absolute right-5 top-3 z-10 flex gap-2">
-            <button onclick="zoomIn()" class="px-3 py-1 bg-blue-600 text-white rounded btn-primary">＋</button>
-            <button onclick="zoomOut()" class="px-3 py-1 bg-blue-600 text-white rounded btn-primary">－</button>
-            <button onclick="resetZoom()" class="px-3 py-1  text-white rounded btn-black">⟳</button>
-            <button id="rotateTreeBtn" class="px-3 py-1 bg-gray-700 text-white rounded btn-black"><i
-                    class="fas fa-sync-alt"></i></button>
-            <button onclick="prevLevel()" class="px-3 py-1 bg-yellow-600 text-white rounded btn-warning">Prev</button>
-            <button onclick="nextLevel()" class="px-3 py-1 bg-green-600 text-white rounded btn-success">Next</button>
-            <label for="hSpacing" class="text-sm ">Spacing X:</label>
-            <input type="range" id="hSpacing" min="60" max="300" step="10" />
-            <label for="vSpacing" class="text-sm ">Spacing Y:</label>
-            <input type="range" id="vSpacing" min="60" max="300" step="10" />
-        </div>
-        <div id="tree-scroll" class="overflow-auto w-full h-[85vh] border">
-            <div id="tree-container"></div>
-        </div>
-    </div>
-    <div id="tree-tooltip" class="hidden"></div>
+<div class="page-inner relative">
+  <div class="absolute right-5 top-3 z-10 flex gap-2">
+    <button onclick="zoomIn()"  class="px-3 py-1 bg-blue-600 text-white rounded btn-primary">＋</button>
+    <button onclick="zoomOut()" class="px-3 py-1 bg-blue-600 text-white rounded btn-primary">－</button>
+    <button onclick="resetZoom()" class="px-3 py-1 text-white rounded btn-black">⟳</button>
+    <button id="rotateTreeBtn" class="px-3 py-1 bg-gray-700 text-white rounded btn-black"><i class="fas fa-sync-alt"></i></button>
+    <button onclick="navLeft()"  class="px-3 py-1 bg-yellow-600 text-white rounded btn-warning">Prev</button>
+    <button onclick="navRight()" class="px-3 py-1 bg-green-600  text-white rounded btn-success">Next</button>
+  </div>
 
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+  <!-- Penting: position:relative supaya overlay panah relatif ke area tree -->
+  <div id="tree-scroll" class="overflow-auto w-full h-[85vh] border" style="position:relative;">
+    <div id="tree-container"></div>
+
+    <!-- overlay panah di DALAM area tree -->
+    <div class="tree-nav left"><button onclick="navLeft()">◀</button></div>
+    <div class="tree-nav right"><button onclick="navRight()">▶</button></div>
+    <div class="tree-nav up"><button onclick="navUp()">▲</button></div>
+    <div class="tree-nav down"><button onclick="navDown()">▼</button></div>
+  </div>
+</div>
+
+<div id="tree-tooltip" class="hidden"></div>
+<meta name="csrf-token" content="{{ csrf_token() }}">
     <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -35,510 +38,349 @@
             </div>
         </div>
     </div>
-
-    <style>
-        .star-glow {
-            animation: glow 1.5s ease-in-out infinite alternate;
-            fill: gold;
-        }
-
-        @keyframes glow {
-            0% {
-                opacity: 0.6;
-                transform: scale(1);
-            }
-
-            100% {
-                opacity: 1;
-                transform: scale(1.2);
-            }
-        }
-
-        .star-glow {
-            animation: glow 1.5s ease-in-out infinite alternate;
-        }
-
-        @keyframes glow {
-            0% {
-                opacity: 0.7;
-                transform: scale(1);
-            }
-
-            100% {
-                opacity: 1;
-                transform: scale(1.15);
-            }
-        }
-
-        #tree-tooltip {
-            position: absolute;
-            background: white;
-            border: 1px solid #ccc;
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-            pointer-events: none;
-            z-index: 1000;
-        }
-    </style>
 @endsection
+<style>
+.tree-nav{position:absolute;z-index:30;opacity:.9}
+.tree-nav.left{left:10px;top:50%;transform:translateY(-50%)}
+.tree-nav.right{right:10px;top:50%;transform:translateY(-50%)}
+.tree-nav.up{left:50%;top:10px;transform:translateX(-50%)}
+.tree-nav.down{left:50%;bottom:10px;transform:translateX(-50%)}
+.tree-nav button{background:#60a5fa;border:none;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+@media (max-width:640px){.tree-nav button{padding:8px 10px}}
+#tree-tooltip{position:absolute;background:#fff;border:1px solid #ddd;padding:8px 12px;border-radius:6px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:40}
+</style>
+
 
 @push('scripts')
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script>
-        let rootId = {{ $root->id }};
-        let currentRootId = rootId;
-        let levelLimit = 3;
-        let isVertical = true;
-        let lastLoadedData = null;
-        let svg, g;
-        let currentZoomTransform = d3.zoomIdentity;
-        const AUTH_USER_ID = {{ auth()->user()->id }};
-        const width = 1600;
-        const height = 900;
-        let horizontalSpacing = parseInt(localStorage.getItem('hSpacing')) || 160;
-        let verticalSpacing = parseInt(localStorage.getItem('vSpacing')) || 100;
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+/* ====== CONFIG ====== */
+const VIEW_LEVELS = 3;
+const NODE_W_MIN  = 70;
+const NODE_W_MAX  = 110;
+const NODE_ASPECT = 0.90;
 
-        document.getElementById('nodeSpacing')?.addEventListener('input', (e) => {
-            const val = parseInt(e.target.value);
-            horizontalSpacing = val;
-            verticalSpacing = val;
-            drawTree(lastLoadedData, true, currentZoomTransform);
-        });
-        document.addEventListener('DOMContentLoaded', () => {
-            setupControls();
-            loadTree();
-        });
+const AUTH_USER_ID = {{ auth()->user()->id }};
+const rootId       = {{ $root->id }};
+window.currentRootId = rootId;
 
-        function getNodeColor(data) {
-            // console.log('function getnodecolor : ',data)
-            console.log(data.name, data.pairing_count)
-            if (data.isAddButton) return 'url(#blueGradient)';
-            if ((data.pairing_count ?? 0) >= 5) return 'url(#goldGradient)';
-            return 'url(#greenGradient)';
+/* ====== STATE ====== */
+let isVertical = true;
+let lastLoadedData = null;
+let svgSel = null;       // d3 selection dari SVG yg SUDAH ditempel ke DOM
+let g = null;
+let currentZoomTransform = d3.zoomIdentity;
 
-        }
+/* ====== HELPERS ====== */
+const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+function topSafeOffset(nodeH){
+  const upBtn = document.querySelector('.tree-nav.up button');
+  const upH   = upBtn ? upBtn.getBoundingClientRect().height : 36;
+  const pad   = 18;
+  return upH + pad + (nodeH/2);
+}
+function getNodeColor(d){
+  if (d.isAddButton) return 'url(#blueGradient)';
+  if ((d.pairing_count ?? 0) >= 5) return 'url(#goldGradient)';
+  return 'url(#greenGradient)';
+}
+function ensureNavOverlay(){
+  const wrap = document.getElementById('tree-scroll');
+  if (!wrap) return;
+  if (!wrap.querySelector('.tree-nav.left')){
+    wrap.insertAdjacentHTML('beforeend', `
+      <div class="tree-nav left"><button onclick="navLeft()">◀</button></div>
+      <div class="tree-nav right"><button onclick="navRight()">▶</button></div>
+      <div class="tree-nav up"><button onclick="navUp()">▲</button></div>
+      <div class="tree-nav down"><button onclick="navDown()">▼</button></div>
+    `);
+  }
+}
 
-        function drawProgressBar(node) {
-            node.filter(d => !d.data.isAddButton).append("rect")
-                .attr("x", -20)
-                .attr("y", 30)
-                .attr("width", 40)
-                .attr("height", 5)
-                .attr("fill", "#ccc")
-                .attr("rx", 2);
+/* ====== MODAL (GLOBAL) ====== */
+window.openAddModal = function(sponsorId, position, uplineId){
+  console.debug('[MODAL] openAddModal', { sponsorId, position, uplineId });
 
-            node.filter(d => !d.data.isAddButton).append("rect")
-                .attr("x", -20)
-                .attr("y", 30)
-                .attr("width", d => {
-                    const level = d.data.pairing_count ?? 0;
-                    return Math.min((level / 5) * 40, 40);
-                })
-                .attr("height", 5)
-                .attr("fill", "limegreen")
-                .attr("rx", 2);
-        }
+  const modalEl = document.getElementById('addUserModal');
+  const userList = document.getElementById('userList');
+  if (!modalEl || !userList) { toastr.error('Modal element tidak ditemukan'); return; }
 
-
-        // Gradient defs
-        function appendGradients(svg) {
-            const defs = svg.append("defs");
-
-            defs.append("linearGradient")
-                .attr("id", "goldGradient")
-                .attr("x1", "0%").attr("y1", "0%")
-                .attr("x2", "100%").attr("y2", "100%")
-                .selectAll("stop")
-                .data([{
-                        offset: "0%",
-                        color: "#FFD700"
-                    }, // gold
-                    {
-                        offset: "100%",
-                        color: "#000000"
-                    } // black
-                ])
-                .enter()
-                .append("stop")
-                .attr("offset", d => d.offset)
-                .attr("stop-color", d => d.color);
-
-            defs.append("linearGradient")
-                .attr("id", "greenGradient")
-                .attr("x1", "0%").attr("y1", "0%")
-                .attr("x2", "100%").attr("y2", "100%")
-                .selectAll("stop")
-                .data([{
-                        offset: "0%",
-                        color: "#00ff00"
-                    }, // Hijau terang
-                    {
-                        offset: "100%",
-                        color: "#000000"
-                    } // Hitam
-                ])
-                .enter()
-                .append("stop")
-                .attr("offset", d => d.offset)
-                .attr("stop-color", d => d.color);
+  userList.innerHTML = 'Memuat...';
+  fetch(`/tree/available-users/${sponsorId}`, { headers:{'X-Requested-With':'XMLHttpRequest'} })
+    .then(r => { if(!r.ok) throw new Error('Gagal ambil data'); return r.json(); })
+    .then(users => {
+      userList.innerHTML = '';
+      if (!Array.isArray(users) || !users.length){
+        userList.innerHTML = '<div class="text-center text-muted">Tidak ada user tersedia.</div>'; return;
+      }
+      users.forEach(u=>{
+        const div = document.createElement('div');
+        div.className = 'list-group-item d-flex justify-content-between align-items-center';
+        div.innerHTML = `<div><strong>${u.username}</strong><br><small>${u.name}</small></div>
+                         <button class="btn btn-sm btn-primary">Pasang</button>`;
+        div.querySelector('button').onclick = () => window.submitAddUser(u.id, position, uplineId);
+        userList.appendChild(div);
+      });
+    })
+    .catch(err => {
+      console.error('Gagal load available-users:', err);
+      userList.innerHTML = '<div class="text-center text-danger">Gagal memuat data user.</div>';
+    })
+    .finally(()=>{
+      if (window.bootstrap?.Modal) {
+        new bootstrap.Modal(modalEl).show();
+      } else {
+        console.error('Bootstrap Modal tidak tersedia');
+      }
+    });
+};
 
 
-            defs.append("linearGradient")
-                .attr("id", "blueGradient")
-                .attr("x1", "0%").attr("y1", "0%")
-                .attr("x2", "100%").attr("y2", "100%")
-                .selectAll("stop")
-                .data([{
-                        offset: "0%",
-                        color: "#66ccff"
-                    },
-                    {
-                        offset: "100%",
-                        color: "#003366"
-                    }
-                ])
-                .enter()
-                .append("stop")
-                .attr("offset", d => d.offset)
-                .attr("stop-color", d => d.color);
-        }
+window.submitAddUser = function(userId, position, uplineId){
+  fetch(`/tree/${userId}`, {
+    method:'PUT',
+    headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},
+    body: JSON.stringify({ user_id:userId, position, upline_id:uplineId })
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    updateNode(uplineId, position, data.id, data.name);
+    bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+  })
+  .catch(()=> toastr?.error?.('Gagal memasang user'));
+};
 
+window.updateNode = function(parentId, position, id, name){
+  const stack = [lastLoadedData];
+  while (stack.length){
+    const n = stack.pop();
+    if (n.id == parentId){
+      n.children = (n.children || []).filter(c => !(c.isAddButton && c.position === position));
+      n.children.push({ id, name, parent_id: parentId, position, isAddButton:false, level:(n.level??0)+1, children:[] });
+      break;
+    }
+    (n.children || []).forEach(c=>stack.push(c));
+  }
+  drawTree(lastLoadedData, true, currentZoomTransform);
+  toastr?.success?.(`User berhasil dipasang di posisi ${position}`);
+};
 
+/* ====== BACKEND HELPERS ====== */
+async function getParentIdFromAPI(id){
+  try{
+    const r = await fetch(`/tree/parent/${id}`, { headers:{'X-Requested-With':'XMLHttpRequest'} });
+    if(!r.ok) return null; const j = await r.json(); return j?.id ?? null;
+  }catch{ return null; }
+}
 
-        const zoomBehavior = d3.zoom().on("zoom", (event) => {
-            currentZoomTransform = event.transform;
-            g.attr("transform", currentZoomTransform);
-        });
+/* ====== ZOOM ====== */
+const zoomBehavior = d3.zoom().on("zoom", e => {
+  currentZoomTransform = e.transform;
+  if (g) g.attr("transform", currentZoomTransform);
+});
 
-        function setupControls() {
-            // 🔄 ROTASI POHON
-            document.getElementById('rotateTreeBtn')?.addEventListener('click', () => {
-                isVertical = !isVertical;
-                loadTree();
-                drawTree(lastLoadedData, true, currentZoomTransform);
-            });
+function hasSvg() { return !!(svgSel && svgSel.node()); }
+function ensureZoomBound(){
+  if (!hasSvg()) return false;
+  // kalau belum pernah di-apply zoom, apply dulu.
+  if (!svgSel.node().__zoom) svgSel.call(zoomBehavior);
+  return true;
+}
 
-            // 🔍 ZOOM CONTROL
-            window.zoomIn = () => zoomSmooth(1.2);
-            window.zoomOut = () => zoomSmooth(0.8);
-            window.resetZoom = () => {
-                currentZoomTransform = d3.zoomIdentity;
-                levelLimit = 3;
-                loadTree();
-            };
+window.zoomIn  = () => {
+  if (!ensureZoomBound()) return;
+  const t=currentZoomTransform.scale(1.2);
+  svgSel.transition().duration(300).call(zoomBehavior.transform, t);
+  currentZoomTransform=t;
+};
+window.zoomOut = () => {
+  if (!ensureZoomBound()) return;
+  const t=currentZoomTransform.scale(0.83);
+  svgSel.transition().duration(300).call(zoomBehavior.transform, t);
+  currentZoomTransform=t;
+};
+window.resetZoom = () => { currentZoomTransform = d3.zoomIdentity; loadTree(); };
 
-            // ⬆⬇ LEVEL CONTROL
-            window.nextLevel = () => {
-                levelLimit += 3;
-                loadTree();
-            };
-            window.prevLevel = () => {
-                levelLimit = Math.max(1, levelLimit - 3);
-                loadTree();
-            };
+/* ====== LOAD TREE (AMAN) ====== */
+async function loadTree(){
+  const prevSvg = document.querySelector("#tree-container svg");
+  const keepT = prevSvg ? d3.zoomTransform(prevSvg) : null;
 
-            // ⚙️ SLIDER SPACING
-            const h = document.getElementById('hSpacing');
-            const v = document.getElementById('vSpacing');
-            const all = document.getElementById('nodeSpacing');
+  const url = `/tree/load/${window.currentRootId}?limit=${VIEW_LEVELS}`;
+  try{
+    const res = await fetch(url, { headers:{'X-Requested-With':'XMLHttpRequest'} });
+    if(!res.ok){ const txt = await res.text(); console.error('loadTree failed', res.status, txt.slice(0,120)); toastr?.error?.('Gagal memuat tree'); return; }
+    const data = await res.json();
 
-            const hVal = parseInt(localStorage.getItem('hSpacing') || 100);
-            const vVal = parseInt(localStorage.getItem('vSpacing') || 100);
-            horizontalSpacing = hVal;
-            verticalSpacing = vVal;
+    // normalisasi parent untuk tombol ↑
+    if (data && data.parent_id == null && data.upline_id != null) data.parent_id = data.upline_id;
+    if (data && (data.parent_id == null || data.parent_id === undefined)){
+      data.parent_id = await getParentIdFromAPI(window.currentRootId);
+    }
 
-            if (h) {
-                h.value = hVal;
-                h.addEventListener('input', (e) => {
-                    horizontalSpacing = parseInt(e.target.value);
-                    localStorage.setItem('hSpacing', horizontalSpacing);
-                    drawTree(lastLoadedData, true, currentZoomTransform);
-                });
-            }
+    lastLoadedData = data;
+    drawTree(data, true, (keepT && keepT.k) ? keepT : null);
+  }catch(e){ console.error(e); toastr?.error?.('Koneksi bermasalah'); }
+}
+window.loadTree = loadTree;
 
-            if (v) {
-                v.value = vVal;
-                v.addEventListener('input', (e) => {
-                    verticalSpacing = parseInt(e.target.value);
-                    localStorage.setItem('vSpacing', verticalSpacing);
-                    drawTree(lastLoadedData, true, currentZoomTransform);
-                });
-            }
+/* ====== GRADIENT ====== */
+function appendGradients(sel){
+  const defs = sel.append("defs");
+  defs.append("linearGradient").attr("id","goldGradient").attr("x1","0%").attr("y1","0%").attr("x2","100%").attr("y2","100%")
+    .selectAll("stop").data([{offset:"0%",color:"#FFD700"},{offset:"100%",color:"#000"}])
+    .enter().append("stop").attr("offset",d=>d.offset).attr("stop-color",d=>d.color);
+  defs.append("linearGradient").attr("id","greenGradient").attr("x1","0%").attr("y1","0%").attr("x2","100%").attr("y2","100%")
+    .selectAll("stop").data([{offset:"0%",color:"#00c853"},{offset:"100%",color:"#003300"}])
+    .enter().append("stop").attr("offset",d=>d.offset).attr("stop-color",d=>d.color);
+  defs.append("linearGradient").attr("id","blueGradient").attr("x1","0%").attr("y1","0%").attr("x2","100%").attr("y2","100%")
+    .selectAll("stop").data([{offset:"0%",color:"#66ccff"},{offset:"100%",color:"#003366"}])
+    .enter().append("stop").attr("offset",d=>d.offset).attr("stop-color",d=>d.color);
+}
 
-            if (all) {
-                all.value = Math.min(hVal, vVal);
-                all.addEventListener('input', (e) => {
-                    const val = parseInt(e.target.value);
-                    horizontalSpacing = val;
-                    verticalSpacing = val;
-                    localStorage.setItem('hSpacing', val);
-                    localStorage.setItem('vSpacing', val);
-                    drawTree(lastLoadedData, true, currentZoomTransform);
-                });
-            }
-        }
+/* ====== DRAW ====== */
+function drawTree(data, preserveZoom=false, zoomOverride=null){
+  if (!data) return;
 
+  const board = document.getElementById('tree-scroll');
+  const W = board.clientWidth  || 1200;
+  const H = board.clientHeight || 750;
 
-        function zoomSmooth(scaleFactor) {
-            const newTransform = currentZoomTransform.scale(scaleFactor);
-            svg.transition().duration(400).call(zoomBehavior.transform, newTransform);
-            currentZoomTransform = newTransform;
-        }
+  const maxCols = Math.pow(2, VIEW_LEVELS - 1);
+  const hGap  = clamp(Math.floor(W/(maxCols + 4)), 16, 48);
+  const vGap  = clamp(Math.floor(H/(VIEW_LEVELS + 3)), 60, 110);
+  const NODE_W = clamp(Math.floor((W - (maxCols + 1) * hGap) / maxCols), NODE_W_MIN, NODE_W_MAX);
+  const NODE_H = clamp(Math.floor(NODE_W * NODE_ASPECT), 60, 100);
+  const RADIUS = clamp(Math.floor(NODE_W * 0.16), 8, 14);
 
-        function loadTree() {
-            // Pastikan svg sudah ada
-            const svgElement = document.querySelector("#tree-container svg");
-            const currentTransform = svgElement ? d3.zoomTransform(svgElement) : null;
+  // Bersihkan & BUAT SVG → TEMPEL ke DOM lebih dulu
+  const container = document.getElementById("tree-container");
+  container.innerHTML = "";
+  const svgEl = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svgEl.setAttribute("width", W);
+  svgEl.setAttribute("height", H);
+  container.appendChild(svgEl);
 
-            fetch(`/tree/load/${currentRootId}?limit=${levelLimit}`)
-                .then(res => res.json())
-                .then(data => {
-                    lastLoadedData = data;
-                    drawTree(data, true, currentTransform);
-                });
-        }
+  // simpan selection dari elemen yg sudah ditempel
+  svgSel = d3.select(svgEl);
+  appendGradients(svgSel);
+  g = svgSel.append("g");
 
+  // posisi awal aman (root di bawah panah ↑)
+  const centerX = W/2;
+  const centerY = topSafeOffset(NODE_H);
 
+  if (preserveZoom && zoomOverride){
+    currentZoomTransform = zoomOverride;
+    if (isVertical && currentZoomTransform.y < centerY){
+      currentZoomTransform = d3.zoomIdentity.translate(centerX, centerY).scale(zoomOverride.k);
+    }
+  } else {
+    currentZoomTransform = isVertical
+      ? d3.zoomIdentity.translate(centerX, centerY)
+      : d3.zoomIdentity.translate(36, H/2);
+  }
 
-        function drawTree(data, preserveZoom = false, zoomTransformOverride = null) {
-            if (!data) return;
-            d3.select("#tree-container").html("");
+  // BARU apply zoom & transform (elemen sudah ada → tidak error __zoom)
+  svgSel.call(zoomBehavior).call(zoomBehavior.transform, currentZoomTransform);
 
-            const root = d3.hierarchy(data);
-            const treeLayout = d3.tree().nodeSize(isVertical ? [horizontalSpacing, verticalSpacing] : [verticalSpacing,
-                horizontalSpacing
-            ]);
-            root.eachBefore(d => {
-                if (d.children) {
-                    d.children.sort((a, b) => {
-                        if (a.data.position === 'left') return -1;
-                        if (a.data.position === 'right') return 1;
-                        return 0;
-                    });
-                }
-            });
-            treeLayout(root);
+  const root = d3.hierarchy(data);
+  root.eachBefore(d=>{
+    if (d.children){
+      d.children.sort((a,b)=>{
+        if (a.data.position==='left')  return -1;
+        if (a.data.position==='right') return 1;
+        return 0;
+      });
+    }
+    if (d.depth >= VIEW_LEVELS - 1) d.children = null;
+  });
 
-            root.each((d) => {
-                d.data.pairing_point = d.depth; // Menyisipkan level ke dalam tiap node
-            });
-            svg = d3.create("svg")
-                .attr("width", width)
-                .attr("height", height);
+  const treeLayout = d3.tree().nodeSize(isVertical ? [hGap + NODE_W, vGap + NODE_H] : [vGap + NODE_H, hGap + NODE_W]);
+  treeLayout(root);
 
-            appendGradients(svg);
-            g = svg.append("g");
+  g.append("g").attr("fill","none").attr("stroke","#cbd5e1").attr("stroke-opacity",0.65).attr("stroke-width",1.2)
+    .selectAll("path").data(root.links()).join("path")
+    .attr("d", isVertical ? d3.linkVertical().x(d=>d.x).y(d=>d.y) : d3.linkHorizontal().x(d=>d.y).y(d=>-d.x));
 
-            if (preserveZoom && zoomTransformOverride) {
-                currentZoomTransform = zoomTransformOverride;
-            } else {
-                const centerX = width / 2;
-                const centerY = height / 2;
-                currentZoomTransform = isVertical ?
-                    d3.zoomIdentity.translate(centerX, 50) :
-                    d3.zoomIdentity.translate(50, centerY);
-            }
+  const node = g.append("g").selectAll("g").data(root.descendants()).join("g")
+    .attr("transform", d => isVertical ? `translate(${d.x},${d.y})` : `translate(${d.y},${-d.x})`)
+    .on("mouseover", showTooltip).on("mouseout", hideTooltip);
 
-            svg.call(zoomBehavior).call(zoomBehavior.transform, currentZoomTransform);
+  node.append("rect")
+    .attr("x",-NODE_W/2).attr("y",-NODE_H/2)
+    .attr("width",NODE_W).attr("height",NODE_H)
+    .attr("rx",RADIUS).attr("fill", d => getNodeColor(d.data));
 
-            g.append("g")
-                .attr("fill", "none")
-                .attr("stroke", "#ccc")
-                .attr("stroke-opacity", 0.6)
-                .attr("stroke-width", 1.5)
-                .selectAll("path")
-                .data(root.links())
-                .join("path")
-                .attr("d", isVertical ?
-                    d3.linkVertical().x(d => d.x).y(d => d.y) :
-                    d3.linkHorizontal().x(d => d.y).y(d => -d.x));
+  const AVA = Math.floor(NODE_W * 0.38);
+  node.filter(d=>!d.data.isAddButton).append("image")
+    .attr("xlink:href","/assets/img/profile.jpg")
+    .attr("x",-AVA/2).attr("y",-NODE_H/2 + 6)
+    .attr("width",AVA).attr("height",AVA)
+    .attr("clip-path", `circle(${AVA/2}px at ${AVA/2}px ${AVA/2}px)`);
 
-            const node = g.append("g")
-                .selectAll("g")
-                .data(root.descendants())
-                .join("g")
-                .attr("transform", d => isVertical ? `translate(${d.x},${d.y})` : `translate(${d.y},${-d.x})`)
-                .on("mouseover", showTooltip)
-                .on("mouseout", hideTooltip);
+  node.filter(d=>!d.data.isAddButton).append("text")
+    .attr("y", 4).attr("text-anchor","middle")
+    .text(d=>{
+      const c = [d.data.is_active_bagan_1,d.data.is_active_bagan_2,d.data.is_active_bagan_3,d.data.is_active_bagan_4,d.data.is_active_bagan_5].filter(v=>v==1).length;
+      return '⭐️'.repeat(c);
+    })
+    .style("font-size", Math.max(9, Math.floor(NODE_W*0.11)) + "px")
+    .attr("fill","gold");
 
-            node.append("rect")
-                .attr("x", -30).attr("y", -40)
-                .attr("width", 60).attr("height", 80)
-                .attr("rx", 8)
-                .attr("fill", d => getNodeColor(d.data));
+  function shortName(s){ if(!s) return ''; const maxChars = NODE_W <= 80 ? 7 : 9; return s.length>maxChars ? s.slice(0,maxChars)+'…' : s; }
+  node.filter(d=>!d.data.isAddButton).append("text")
+    .attr("y", NODE_H/2 - 8).attr("text-anchor","middle")
+    .text(d=> shortName(d.data.name || d.data.username || ''))
+    .attr("fill","#fff").style("font-size", Math.max(10, Math.floor(NODE_W*0.12)) + "px");
 
-            node.filter(d => !d.data.isAddButton).append("image")
-                .attr("xlink:href", "/assets/img/profile.jpg")
-                .attr("x", -16).attr("y", -35)
-                .attr("width", 32).attr("height", 32)
-                .attr("clip-path", "circle(16px at center)");
-            node.filter(d => !d.data.isAddButton).append("text")
-                .attr("y", 10) // bawah nama
-                .attr("text-anchor", "middle")
-                .text(d => {
-                    const count = [
-                        d.data.is_active_bagan_1,
-                        d.data.is_active_bagan_2,
-                        d.data.is_active_bagan_3,
-                        d.data.is_active_bagan_4,
-                        d.data.is_active_bagan_5
-                    ].filter(v => v == 1).length;
+  const addNodes = node.filter(d=>d.data.isAddButton);
+  addNodes.style("cursor","pointer").on("click",(e,d)=>{ hideTooltip(); 
+    window.openAddModal(AUTH_USER_ID, d.data.position, d.data.parent_id); });
+  addNodes.append("text").attr("y",2).attr("text-anchor","middle")
+    .text("+ Tambah").style("font-size", Math.max(10, Math.floor(NODE_W*0.12)) + "px").attr("fill","#fff");
+}
 
-                    return '⭐️'.repeat(count);
-                })
-                .style("font-size", "10px")
-                .attr("fill", "gold")
-                .attr("class", "star-glow");
-            node.filter(d => !d.data.isAddButton).append("text")
-                .attr("y", 25).attr("text-anchor", "middle")
-                .text(d => d.data.name || '')
-                .attr("fill", "#fff").style("font-size", "12px");
-            // ⭐️ Tambahkan di sini
+/* ====== TOOLTIP ====== */
+function showTooltip(event, d){
+  const el = document.getElementById('tree-tooltip'); if (!el || d.data.isAddButton) return;
+  el.innerHTML = `<strong>${d.data.name}</strong><br>Status: ${d.data.status}<br>Posisi: ${d.data.position}<br>Pairing: ${d.data.pairing_count ?? '-'}<br>Anak Kiri: ${d.data.left_count ?? 0}<br>Anak Kanan: ${d.data.right_count ?? 0}`;
+  const box = document.getElementById('tree-scroll').getBoundingClientRect();
+  el.style.left = `${event.clientX - box.left + 10}px`; el.style.top = `${event.clientY - box.top + 10}px`;
+  el.classList.remove('hidden');
+}
+function hideTooltip(){ document.getElementById('tree-tooltip')?.classList.add('hidden'); }
 
+/* ====== NAVIGASI (hindari +Tambah) ====== */
+function realChild(side){
+  return (lastLoadedData?.children || [])
+    .find(c => c.position === side && !c.isAddButton && Number.isFinite(c.id));
+}
+window.navUp = async function(){
+  let pid = lastLoadedData?.parent_id ?? null;
+  if (pid == null) pid = await getParentIdFromAPI(window.currentRootId);
+  if (!pid){ toastr?.info?.('Tidak ada upline.'); return; }
+  window.currentRootId = pid; loadTree();
+};
+window.navLeft  = function(){ const L = realChild('left');  if(!L){toastr?.info?.('Tidak ada anak kiri.');return;}  window.currentRootId=L.id; loadTree(); };
+window.navRight = function(){ const R = realChild('right'); if(!R){toastr?.info?.('Tidak ada anak kanan.');return;} window.currentRootId=R.id; loadTree(); };
+window.navDown  = function(){
+  const L = realChild('left'); const R = realChild('right');
+  const kids = [ ...(L?.children||[]).filter(n=>!n.isAddButton && Number.isFinite(n.id)),
+                 ...(R?.children||[]).filter(n=>!n.isAddButton && Number.isFinite(n.id)) ];
+  if(!kids.length){ toastr?.info?.('Tidak ada cucu.'); return; }
+  const mid = kids[Math.floor(kids.length/2)] || kids[0];
+  window.currentRootId = mid.id; loadTree();
+};
+// tombol lama
+window.prevLevel = () => window.navLeft();
+window.nextLevel = () => window.navRight();
 
-            // drawProgressBar(node);
-            // Filter hanya node yang merupakan tombol tambah
-            const addNodes = node.filter(d => d.data.isAddButton);
-
-            // Jadikan seluruh node klikable
-            addNodes
-                .style("cursor", "pointer")
-                .on("click", (e, d) => {
-                    hideTooltip();
-                    window.openAddModal(AUTH_USER_ID, d.data.position, d.data.parent_id);
-                });
-
-            // Tambahkan teks "+ Tambah" di tengah node
-            addNodes.append("text")
-                .attr("y", 0)
-                .attr("text-anchor", "middle")
-                .text("+ Tambah")
-                .style("font-size", "10px")
-                .attr("fill", "#fff");
-
-
-            document.getElementById("tree-container").append(svg.node());
-        }
-
-        function showTooltip(event, d) {
-            const tooltip = document.getElementById('tree-tooltip');
-            if (!tooltip || d.data.isAddButton) return;
-            tooltip.innerHTML = `
-              <strong>${d.data.name}</strong><br>
-              Status: ${d.data.status}<br>
-              Posisi: ${d.data.position}<br>
-              Pairing: ${d.data.pairing_count ?? '-'}<br>
-              Anak Kiri: ${d.data.left_count ?? 0}<br>
-              Anak Kanan: ${d.data.right_count ?? 0}
-            `;
-
-            const container = document.getElementById('tree-scroll');
-            const rect = container.getBoundingClientRect();
-            tooltip.style.left = `${event.clientX - rect.left + 10}px`;
-            tooltip.style.top = `${event.clientY - rect.top + 10}px`;
-            tooltip.classList.remove('hidden');
-        }
-
-
-        function hideTooltip() {
-            document.getElementById('tree-tooltip')?.classList.add('hidden');
-        }
-
-        window.openAddModal = function(sponsorId, position, uplineId) {
-            console.log('open modal : ', sponsorId, position, uplineId)
-            const modalEl = document.getElementById('addUserModal');
-            const userList = document.getElementById('userList');
-            if (!modalEl || !userList) return;
-
-            userList.innerHTML = 'Memuat...';
-
-            fetch(`/tree/available-users/${sponsorId}`)
-                .then(res => {
-                    if (!res.ok) throw new Error('Gagal mengambil data.');
-                    return res.json();
-                })
-                .then(users => {
-                    userList.innerHTML = '';
-
-                    if (!Array.isArray(users) || users.length === 0) {
-                        userList.innerHTML = '<div class="text-center text-muted">Tidak ada user tersedia.</div>';
-                        return;
-                    }
-
-                    users.forEach(user => {
-                        const div = document.createElement('div');
-                        div.className = 'list-group-item d-flex justify-content-between align-items-center';
-                        div.innerHTML = `
-                          <div><strong>${user.username}</strong><br><small>${user.name}</small></div>
-                          <button class="btn btn-sm btn-primary">Pasang</button>
-                        `;
-                        div.querySelector('button').onclick = () => window.submitAddUser(user.id, position,
-                            uplineId);
-                        userList.appendChild(div);
-                    });
-                })
-                .catch(err => {
-                    console.error('❌ Gagal memuat data:', err);
-                    userList.innerHTML = '<div class="text-center text-danger">Gagal memuat data user.</div>';
-                })
-                .finally(() => {
-                    const modal = new bootstrap.Modal(modalEl);
-                    modal.show();
-                });
-        }
-
-
-        window.submitAddUser = function(userId, position, uplineId) {
-            fetch(`/tree/${userId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                    },
-                    body: JSON.stringify({
-                        user_id: userId,
-                        position,
-                        upline_id: uplineId
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
-                    updateNode(uplineId, position, data.id, data.name);
-                    bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
-                })
-                .catch(err => console.error('❌ Gagal memasang user:', err));
-        }
-        window.updateNode = function(parentId, position, id, name) {
-            const stack = [lastLoadedData];
-            while (stack.length > 0) {
-                const node = stack.pop();
-                if (node.id == parentId) {
-                    if (!node.children) node.children = [];
-
-                    // Hapus tombol "Tambah" sebelumnya
-                    node.children = node.children.filter(child => !(child.isAddButton && child.position === position));
-
-                    // Tambahkan node baru
-                    node.children.push({
-                        id,
-                        name,
-                        parent_id: parentId,
-                        position,
-                        isAddButton: false,
-                        level: (node.level ?? 0) + 1,
-                        children: []
-                    });
-                    break;
-                }
-                if (node.children) node.children.forEach(child => stack.push(child));
-            }
-
-            drawTree(lastLoadedData, true, currentZoomTransform);
-            nextLevel();
-            toastr.success(`User berhasil dipasang di posisi ${position}`);
-        }
-    </script>
+/* ====== BOOT ====== */
+document.getElementById('rotateTreeBtn')?.addEventListener('click', ()=>{ isVertical = !isVertical; loadTree(); });
+let _rszTimer;
+window.addEventListener('resize', ()=>{ clearTimeout(_rszTimer); _rszTimer = setTimeout(()=>drawTree(lastLoadedData, false, null), 120); });
+document.addEventListener('DOMContentLoaded', ()=>{ ensureNavOverlay(); loadTree(); });
+</script>
 @endpush
+
