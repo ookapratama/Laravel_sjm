@@ -45,79 +45,109 @@ class MLMController extends Controller
         return response()->json($tree);
     }
 
-    private function buildTreeRecursive($user, $level = 1, $max = 7)
-    {
-        if (!$user || $level > $max) return null;
+   private function buildTreeRecursive($user, $level = 1, $max = 7)
+{
+    if (!$user || $level > $max) return null;
 
-        $left = $user->leftChild()->first();
-        $right = $user->rightChild()->first();
-
-        $children = [];
-        $leftChild = $left;
-        $rightChild = $right;
-        $leftCount = $leftChild ? $this->countAllDownlines($leftChild) : 0;
-
-        $rightCount = $rightChild ? $this->countAllDownlines($rightChild) : 0;
-
-        if ($left) {
-            $childLeft = $this->buildTreeRecursive($left, $level + 1, $max);
-            if ($childLeft !== null) $children[] = $childLeft;
-        } else {
-            $children[] = [
-                'id' => 'add-' . $user->id . '-left',
-                'name' => 'Tambah',
-                'isAddButton' => true,
-                'position' => 'left',
-                'parent_id' => $user->id,
-                'children' => [],
-                'is_active_bagan_1' => $user->is_active_bagan_1,
-                'is_active_bagan_2' => $user->is_active_bagan_2,
-                'is_active_bagan_3' => $user->is_active_bagan_3,
-                'is_active_bagan_4' => $user->is_active_bagan_4,
-                'is_active_bagan_5' => $user->is_active_bagan_5,
-                'left_count' => $leftCount,
-                'right_count' => $rightCount,
-            ];
-        }
-
-        if ($right) {
-            $childRight = $this->buildTreeRecursive($right, $level + 1, $max);
-            if ($childRight !== null) $children[] = $childRight;
-        } else {
-            $children[] = [
-                'id' => 'add-' . $user->id . '-right',
-                'name' => 'Tambah',
-                'isAddButton' => true,
-                'position' => 'right',
-                'parent_id' => $user->id,
-                'children' => [],
-                'is_active_bagan_1' => $user->is_active_bagan_1,
-                'is_active_bagan_2' => $user->is_active_bagan_2,
-                'is_active_bagan_3' => $user->is_active_bagan_3,
-                'is_active_bagan_4' => $user->is_active_bagan_4,
-                'is_active_bagan_5' => $user->is_active_bagan_5,
-                'left_count' => $leftCount,
-                'right_count' => $rightCount,
-            ];
-        }
-
-        return [
-            'id' => $user->id,
-            'name' => $user->username,
-            'status' => $user->is_active ? 'aktif' : 'tidak aktif',
-            'pairing_count' => $user->pairing_count ?? 0,
-            'voucher' => $user->voucher ?? 0,
-            'position' => $user->position ?? 0,
-            'children' => $children,
-            'left_count' => $leftCount,
-            'right_count' => $rightCount,
-            'is_active_bagan_1' => $user->is_active_bagan_1,
-            'is_active_bagan_2' => $user->is_active_bagan_2,
-            'is_active_bagan_3' => $user->is_active_bagan_3,
-            'is_active_bagan_4' => $user->is_active_bagan_4,
-            'is_active_bagan_5' => $user->is_active_bagan_5,
-        ];
+    // eager-load bagans untuk node ini
+    if (!$user->relationLoaded('bagans')) {
+        $user->load(['bagans:id,user_id,bagan,is_active']);
     }
+
+    // ambil anak kiri/kanan + eager bagans juga
+    $left  = $user->leftChild()->with('bagans:id,user_id,bagan,is_active')->first();
+    $right = $user->rightChild()->with('bagans:id,user_id,bagan,is_active')->first();
+
+    $leftCount  = $left  ? $this->countAllDownlines($left)  : 0;
+    $rightCount = $right ? $this->countAllDownlines($right) : 0;
+
+    // ===== hitung star dari user_bagans =====
+    [$starCount, $activeBagans, $baganFlags] = $this->computeStar($user);
+
+    $children = [];
+
+    if ($left) {
+        $childLeft = $this->buildTreeRecursive($left, $level + 1, $max);
+        if ($childLeft !== null) $children[] = $childLeft;
+    } else {
+        $children[] = array_merge([
+            'id'         => 'add-' . $user->id . '-left',
+            'name'       => 'Tambah',
+            'isAddButton'=> true,
+            'position'   => 'left',
+            'parent_id'  => $user->id,
+            'children'   => [],
+            'left_count' => $leftCount,
+            'right_count'=> $rightCount,
+            // kirim juga info star untuk konsistensi UI (opsional)
+            'star_count'     => $starCount,
+            'active_bagans'  => $activeBagans,
+        ], $baganFlags);
+    }
+
+    if ($right) {
+        $childRight = $this->buildTreeRecursive($right, $level + 1, $max);
+        if ($childRight !== null) $children[] = $childRight;
+    } else {
+        $children[] = array_merge([
+            'id'         => 'add-' . $user->id . '-right',
+            'name'       => 'Tambah',
+            'isAddButton'=> true,
+            'position'   => 'right',
+            'parent_id'  => $user->id,
+            'children'   => [],
+            'left_count' => $leftCount,
+            'right_count'=> $rightCount,
+            'star_count'     => $starCount,
+            'active_bagans'  => $activeBagans,
+        ], $baganFlags);
+    }
+
+    return array_merge([
+        'id'            => $user->id,
+        'name'          => $user->username,
+        'status'        => $user->is_active ? 'aktif' : 'tidak aktif',
+        'pairing_count' => $user->pairing_count ?? 0,
+        'voucher'       => $user->voucher ?? 0,
+        'position'      => $user->position ?? 0,
+        'children'      => $children,
+        'left_count'    => $leftCount,
+        'right_count'   => $rightCount,
+
+        // ⭐️ data berbasis user_bagans
+        'star_count'    => $starCount,         // angka
+        'active_bagans' => $activeBagans,      // [1,2,3,...]
+    ], $baganFlags);                            // is_active_bagan_1..5 (kompat)
+}
+
+/**
+ * Hitung star dari relasi bagans
+ * return [starCount, activeBagans[], baganFlags[]]
+ */
+private function computeStar(\App\Models\User $user): array
+{
+    // pastikan 'bagans' sudah ada
+    if (!$user->relationLoaded('bagans')) {
+        $user->load(['bagans:id,user_id,bagan,is_active']);
+    }
+
+    $active = $user->bagans
+        ->where('is_active', true)
+        ->sortBy('bagan')
+        ->pluck('bagan')
+        ->values()
+        ->all();
+
+    $starCount = count($active); // atau min(count($active), 5) kalau mau batasi tampilan
+
+    // untuk kompat UI lama
+    $flags = [];
+    for ($i = 1; $i <= 5; $i++) {
+        $flags["is_active_bagan_{$i}"] = in_array($i, $active) ? 1 : 0;
+    }
+
+    return [$starCount, $active, $flags];
+}
     private function countAllDownlines(User $user): int
     {
         $count = 1; // hitung diri sendiri

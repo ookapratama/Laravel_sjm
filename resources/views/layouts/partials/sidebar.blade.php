@@ -212,12 +212,13 @@
       </a>
       <div class="collapse" id="manajemen">
         <ul class="nav nav-collapse">
-          <li><a href="/tree"><span class="sub-item">Basic P1</span></a></li>
-          <li><a href="/tree-p2"><span class="sub-item">Starter P2</span></a></li>
-          <li><a href="/tree-p3"><span class="sub-item">Booster P3</span></a></li>
-          <li><a href="/tree-p4"><span class="sub-item">Growth P4</span></a></li>
-          <li><a href="/tree-p5"><span class="sub-item">Champion P5</span></a></li>
-          <li><a href="/tree-p6"><span class="sub-item">Legacy P6</span></a></li>
+          <li><a href="/tree" class="menu-bagan" data-bagan="1"><span class="sub-item">Basic P1</span></a></li>
+          <li><a href="#" class="menu-bagan" data-bagan="2"><span class="sub-item">Starter P2</span></a></li>
+        <li><a href="#"  class="menu-bagan"data-bagan="3"><span class="sub-item">Booster P3</span></a></li>
+          <li><a href="#" class="menu-bagan" data-bagan="4"> <span class="sub-item">Growth P4</span></a></li>
+            <li><a href="#" class="menu-bagan" data-bagan="5"> <span class="sub-item">Champion P5</span></a></li>
+              <li><a href="#" class="menu-bagan" data-bagan="6"> <span class="sub-item">Legacy P6</span></a></li>
+
         </ul>
       </div>
     </li>
