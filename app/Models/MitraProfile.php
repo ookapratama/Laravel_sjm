@@ -40,6 +40,14 @@ class MitraProfile extends Model
      */
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
+    /**
+     * Jika ingin akses withdrawals melalui mitra
+     */
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class, 'user_id', 'user_id');
     }
 }

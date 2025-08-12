@@ -49,6 +49,12 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [ReferralRegisterController::class, 'store'])
         ->name('referral.register.store')
         ->withoutMiddleware(['auth']);
+
+    // verifikasi username
+    Route::post('/check-username', [ReferralRegisterController::class, 'checkUsername'])->name('check.username');
+    Route::post('/check-pin', [ReferralRegisterController::class, 'checkPin'])->name('check.pin');
+    Route::post('/check-sponsor', [ReferralRegisterController::class, 'checkSponsor'])->name('check.sponsor');
+    Route::post('/check-whatsapp', [ReferralRegisterController::class, 'checkWhatsApp'])->name('check.whatsapp');
 });
 
 
@@ -182,6 +188,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/target-vs-actual', [FinanceController::class, 'targetPendaftaran'])->name('finance.target');
         Route::get('/growth-chart', [FinanceController::class, 'growthChart'])->name('finance.growth');
         Route::get('/top-bonus', [FinanceController::class, 'topBonus'])->name('finance.topbonus');
+
+        Route::get('/report', [FinanceController::class, 'withdrawalHistoryPage']);
+        Route::get('/users/search', [FinanceController::class, 'searchUsers']);
+        Route::get('/users/{id}/withdrawal-history', [FinanceController::class, 'getUserWithdrawalHistory']);
+        Route::get('/withdraws/{id}/detail', [FinanceController::class, 'getWithdrawalDetail']);
+
+        // Routes baru
+        Route::get('/all-withdrawals', [FinanceController::class, 'getAllWithdrawals']);
+        Route::get('/today-stats', [FinanceController::class, 'getTodayStats']);
+
         Route::get('/pin-requests', [FinancePinCtrl::class, 'index'])->name('finance.pin.index');
         Route::put('/pin-requests/{id}/approve', [FinancePinCtrl::class, 'approve'])->name('finance.pin.approve');
         Route::put('/pin-requests/{id}/reject', [FinancePinCtrl::class, 'reject'])->name('finance.pin.reject');

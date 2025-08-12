@@ -146,7 +146,7 @@
     </li>
 
     <li class="nav-item">
-        <a href="/report">
+        <a href="/finance/report">
             <i class="fas fa-file-invoice-dollar"></i>
             <p>Laporan Keuangan</p>
         </a>
