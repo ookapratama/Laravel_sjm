@@ -12,11 +12,13 @@ class ChangeCredentialsController extends Controller
 {
     public function edit()
     {
-        $user = auth()->user();                  // ambil user yang sedang login
-        $pre = $user->preRegistration;
+        $user = auth()->user();
+
+        // Gunakan user langsung jika preRegistration tidak ada
+        $pre = $user->preRegistration ?? $user;
+
         return view('auth.change-credentials', compact('pre', 'user'));
     }
-
 
     public function update(Request $request)
     {
@@ -49,7 +51,6 @@ class ChangeCredentialsController extends Controller
 
             'nama_ahli_waris' => 'nullable|string',
             'hubungan_ahli_waris' => 'nullable|string',
-            // 'nama_sponsor' => 'required|string', // hapus kalau memang tidak ada di form
         ];
 
         $v = Validator::make($request->all(), $rules);
@@ -60,17 +61,19 @@ class ChangeCredentialsController extends Controller
             ], 422);
         }
 
-        // Simpan user
-        $user->username = $request->username;
-        $user->password = Hash::make($request->password);
-        $user->name     = $request->name;
-        $user->email    = $request->email;
-        $user->must_change_credentials = false;
-        $user->save();
+        // Update user data
+        $user->update([
+            'username' => $request->username,
+            'password' => Hash::make($request->password),
+            'name' => $request->name,
+            'email' => $request->email,
+            'no_telp' => $request->phone, // Sesuaikan dengan nama kolom di database
+            'must_change_credentials' => false,
+        ]);
 
-        // Simpan profil mitra (hindari duplikasi)
+        // Update atau create mitra profile
         $user->mitraProfile()->updateOrCreate(
-            [], // pakai relasi 1-1 ⇒ tanpa where tambahan
+            ['user_id' => $user->id], // Pastikan user_id sesuai
             [
                 'no_ktp' => $request->no_ktp,
                 'jenis_kelamin' => $request->jenis_kelamin,
@@ -84,14 +87,11 @@ class ChangeCredentialsController extends Controller
                 'kecamatan' => $request->kecamatan,
                 'kota' => $request->kota,
                 'kode_pos' => $request->kode_pos,
-
                 'nama_rekening' => $request->nama_rekening,
                 'nama_bank' => $request->nama_bank,
                 'nomor_rekening' => $request->nomor_rekening,
-
                 'nama_ahli_waris' => $request->nama_ahli_waris,
                 'hubungan_ahli_waris' => $request->hubungan_ahli_waris,
-                // 'nama_sponsor' => $request->nama_sponsor,
             ]
         );
 
@@ -104,7 +104,7 @@ class ChangeCredentialsController extends Controller
         };
 
         return response()->json([
-            'success'  => 'Username dan password berhasil diperbarui.',
+            'success' => 'Username dan password berhasil diperbarui.',
             'redirect' => $redirect,
         ]);
     }
