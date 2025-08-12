@@ -50,7 +50,15 @@
 
         <div class="row">
             <div class="col-md-4">
+            <div class="col-md-4">
                 <div class="card card-secondary">
+                    <div class="card-body skew-shadow">
+                        <h1> Rp. {{ number_format($totalBonusnett, 0, ',', '.') }}</h1>
+                        <h5 class="op-8">Bonus Net</h5>
+                        <div class="pull-right">
+                            <h3 class="fw-bold op-8"></h3>
+                        </div>
+                    </div>
                     <div class="card-body skew-shadow">
                         <h1> Rp. {{ number_format($totalBonusnett, 0, ',', '.') }}</h1>
                         <h5 class="op-8">Bonus Net</h5>
@@ -199,23 +207,36 @@
         </div>
         <div class="col-md-12">
             <div class="card card-secondary bg-secondary-gradient">
-                <div class="card-body text-center">
-                    <h5 class="mb-2">Kode Referral Anda</h5>
-                    <div class="justify-content-center align-items-center">
-                        <span id="referralCode" class="badge bg-info text-white px-3 py-2" style="cursor: pointer;"
-                            onclick="copyReferral()">
-                            <h2>{{ auth()->user()->referral_code ?? 'Tidak ada kode' }}</h2>
-                        </span>
-
->>>>>>> 228b02298e2407bd5e9efdd7d25884371e906b25
-                    </div>
-                    <small class="text-white mt-2 d-block">Klik untuk menyalin ke clipboard</small>
+              <div class="card-body text-center">
+                <h5 class="mb-2">Kode Referral Anda</h5>
+                <div class="justify-content-center align-items-center">
+                  <span id="referralCode" class="badge bg-info text-white px-3 py-2" style="cursor: pointer;" onclick="copyReferral()"> 
+                    <h2>{{ auth()->user()->referral_code ?? 'Tidak ada kode' }}</h2>
+                  </span>
+                  
                 </div>
+                <small class="text-white mt-2 d-block">Klik untuk menyalin ke clipboard</small>
+              </div>
             </div>
         </div>
         @php
             $refCode = auth()->user()->referral_code;
+        </div>
+        @php
+            $refCode = auth()->user()->referral_code;
 
+            $refUrl = Route::has('register')
+                ? route('register', ['ref' => $refCode])
+                : url('/register') . '?ref=' . urlencode($refCode);
+        @endphp
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Referral QR</h5>
+            </div>
+            <div class="card-body text-center">
+                {{-- Preview QR (inline) --}}
+                <img src="{{ route('member.ref.qr.png') }}" alt="QR Referral" class="img-fluid mb-3"
+                    style="max-width: 260px;">
             $refUrl = Route::has('register')
                 ? route('register', ['ref' => $refCode])
                 : url('/register') . '?ref=' . urlencode($refCode);
