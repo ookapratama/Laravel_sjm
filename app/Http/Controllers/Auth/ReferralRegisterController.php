@@ -44,7 +44,7 @@ class ReferralRegisterController extends Controller
 
                 'name'             => ['required', 'string', 'max:255'],
                 'username'         => ['required', 'alpha_dash', 'min:4', 'max:30', 'unique:users,username'],
-                'email'            => ['nullable', 'email', 'max:255', 'unique:users,email'],
+                'email'            => ['nullable', 'email', 'max:255'],
                 'no_telp'            => ['required', 'string', 'max:30'],
                 'password'         => ['required', 'string', 'min:6', 'confirmed'],
 
@@ -269,14 +269,14 @@ class ReferralRegisterController extends Controller
 
         $no_telp = $request->no_telp;
 
-        // Clean and format no_telp number
-        $cleanno_telp = preg_replace('/\D/', '', $no_telp);
+        // Clean and format phone number
+        $cleanPhone = preg_replace('/\D/', '', $no_telp);
 
         // Convert to international format
-        if (substr($cleanno_telp, 0, 2) === '62') {
-            $no_telpNumber = $cleanno_telp;
-        } elseif (substr($cleanno_telp, 0, 1) === '0') {
-            $no_telpNumber = '62' . substr($cleanno_telp, 1);
+        if (substr($cleanPhone, 0, 2) === '62') {
+            $phoneNumber = $cleanPhone;
+        } elseif (substr($cleanPhone, 0, 1) === '0') {
+            $phoneNumber = '62' . substr($cleanPhone, 1);
         } else {
             return response()->json([
                 'valid' => false,
@@ -284,18 +284,18 @@ class ReferralRegisterController extends Controller
             ]);
         }
 
-        // Validate length (Indonesian mobile numbers)
-        if (strlen($no_telpNumber) < 10 || strlen($no_telpNumber) > 15) {
+        // Validate length (Indonesian mobile numbers: 62 + 9-12 digits)
+        if (strlen($phoneNumber) < 11 || strlen($phoneNumber) > 14) {
             return response()->json([
                 'valid' => false,
-                'message' => 'Panjang nomor tidak valid (harus 10-13 digit)'
+                'message' => 'Panjang nomor tidak valid (harus 9-12 digit setelah +62)'
             ]);
         }
 
-        // Check if no_telp already exists in database
-        // $existingUser = User::where('no_telp', $no_telpNumber)
+        // Check if phone already exists in database (uncomment if needed)
+        // $existingUser = User::where('no_telp', $phoneNumber)
         //     ->orWhere('no_telp', $no_telp)
-        //     ->orWhere('no_telp', '0' . substr($no_telpNumber, 2))
+        //     ->orWhere('no_telp', '0' . substr($phoneNumber, 2))
         //     ->first();
 
         // if ($existingUser) {
@@ -306,181 +306,11 @@ class ReferralRegisterController extends Controller
         //     ]);
         // }
 
-        // Check if it's a valid Indonesian mobile number
-        $validPrefixes = [
-            '628111',
-            '628112',
-            '628113',
-            '628114',
-            '628115',
-            '628116',
-            '628117',
-            '628118',
-            '628119', // Telkomsel
-            '628181',
-            '628182',
-            '628183',
-            '628184',
-            '628185',
-            '628186',
-            '628187',
-            '628188',
-            '628189',
-            '628211',
-            '628212',
-            '628213',
-            '628214',
-            '628215',
-            '628216',
-            '628217',
-            '628218',
-            '628219',
-            '628121',
-            '628122',
-            '628123',
-            '628124',
-            '628125',
-            '628126',
-            '628127',
-            '628128',
-            '628129',
-            '628131',
-            '628132',
-            '628133',
-            '628134',
-            '628135',
-            '628136',
-            '628137',
-            '628138',
-            '628139',
-            '628141',
-            '628142',
-            '628143',
-            '628144',
-            '628145',
-            '628146',
-            '628147',
-            '628148',
-            '628149',
-            '628151',
-            '628152',
-            '628153',
-            '628154',
-            '628155',
-            '628156',
-            '628157',
-            '628158',
-            '628159',
-            '628161',
-            '628162',
-            '628163',
-            '628164',
-            '628165',
-            '628166',
-            '628167',
-            '628168',
-            '628169',
-            '628171',
-            '628172',
-            '628173',
-            '628174',
-            '628175',
-            '628176',
-            '628177',
-            '628178',
-            '628179',
-            '628561',
-            '628562',
-            '628563',
-            '628564',
-            '628565',
-            '628566',
-            '628567',
-            '628568',
-            '628569', // Indosat
-            '628571',
-            '628572',
-            '628573',
-            '628574',
-            '628575',
-            '628576',
-            '628577',
-            '628578',
-            '628579',
-            '628581',
-            '628582',
-            '628583',
-            '628584',
-            '628585',
-            '628586',
-            '628587',
-            '628588',
-            '628589',
-            '628591',
-            '628592',
-            '628593',
-            '628594',
-            '628595',
-            '628596',
-            '628597',
-            '628598',
-            '628599',
-            '628381',
-            '628382',
-            '628383',
-            '628384',
-            '628385',
-            '628386',
-            '628387',
-            '628388',
-            '628389', // Three
-            '628961',
-            '628962',
-            '628963',
-            '628964',
-            '628965',
-            '628966',
-            '628967',
-            '628968',
-            '628969',
-            '628971',
-            '628972',
-            '628973',
-            '628974',
-            '628975',
-            '628976',
-            '628977',
-            '628978',
-            '628979',
-            '628981',
-            '628982',
-            '628983',
-            '628984',
-            '628985',
-            '628986',
-            '628987',
-            '628988',
-            '628989',
-            '628991',
-            '628992',
-            '628993',
-            '628994',
-            '628995',
-            '628996',
-            '628997',
-            '628998',
-            '628999'
-        ];
+        // Get first 3-4 digits after 62 for provider validation
+        $mobileNumber = substr($phoneNumber, 2); // Remove '62'
+        $provider = $this->getIndonesianProvider($mobileNumber);
 
-        $prefix4 = substr($no_telpNumber, 0, 6);
-        $isValidPrefix = in_array($prefix4, $validPrefixes);
-
-        
-        // dump($prefix4);
-        // dump($isValidPrefix);
-        // dump($validPrefixes);
-        // dd('stop');
-        if (!$isValidPrefix) {
+        if (!$provider) {
             return response()->json([
                 'valid' => false,
                 'message' => 'Nomor bukan provider seluler Indonesia yang valid',
@@ -488,23 +318,307 @@ class ReferralRegisterController extends Controller
             ]);
         }
 
-        // Basic WhatsApp format validation (always valid if reach here)
+        // All validations passed
         return response()->json([
             'valid' => true,
             'message' => 'Nomor WhatsApp valid',
-            'info' => 'Format: +' . $no_telpNumber . ' | Provider: ' . $this->getProvider($prefix4)
+            'info' => 'Format: +' . $phoneNumber . ' | Provider: ' . $provider
         ]);
     }
 
-    private function getProvider($prefix)
+    /**
+     * Get Indonesian mobile provider based on number prefix
+     */
+    private function getIndonesianProvider($mobileNumber)
     {
-        if (in_array($prefix, ['8111', '8112', '8113', '8121', '8122', '8151', '8152', '8153'])) {
+        // Telkomsel prefixes
+        $telkomselPrefixes = [
+            // Kartu Halo, simPATI, Kartu As
+            '811',
+            '812',
+            '813',
+            '814',
+            '815',
+            '816',
+            '817',
+            '818',
+            '819',
+            '821',
+            '822',
+            '823',
+            '824',
+            '825',
+            '826',
+            '827',
+            '828',
+            '829',
+            '851',
+            '852',
+            '853'
+        ];
+
+        // Indosat Ooredoo prefixes
+        $indosatPrefixes = [
+            // IM3, Mentari, Matrix
+            '814',
+            '815',
+            '816',
+            '855',
+            '856',
+            '857',
+            '858',
+            '838' // Matrix Ooredoo
+        ];
+
+        // XL Axiata prefixes
+        $xlPrefixes = [
+            '817',
+            '818',
+            '819',
+            '859',
+            '877',
+            '878'
+        ];
+
+        // Tri (3) prefixes
+        $triPrefixes = [
+            '895',
+            '896',
+            '897',
+            '898',
+            '899'
+        ];
+
+        // Smartfren prefixes
+        $smartfrenPrefixes = [
+            '881',
+            '882',
+            '883',
+            '884',
+            '885',
+            '886',
+            '887',
+            '888'
+        ];
+
+        // Get first 3 digits
+        $prefix3 = substr($mobileNumber, 0, 3);
+
+        // Check each provider
+        if (in_array($prefix3, $telkomselPrefixes)) {
             return 'Telkomsel';
-        } elseif (in_array($prefix, ['8561', '8562', '8571', '8572', '8581', '8582'])) {
-            return 'Indosat';
-        } elseif (in_array($prefix, ['8381', '8382', '8383', '8961', '8962', '8971', '8972'])) {
-            return 'Three';
         }
-        return 'Lainnya';
+
+        if (in_array($prefix3, $indosatPrefixes)) {
+            return 'Indosat Ooredoo';
+        }
+
+        if (in_array($prefix3, $xlPrefixes)) {
+            return 'XL Axiata';
+        }
+
+        if (in_array($prefix3, $triPrefixes)) {
+            return 'Tri (3)';
+        }
+
+        if (in_array($prefix3, $smartfrenPrefixes)) {
+            return 'Smartfren';
+        }
+
+        // Extended validation for more comprehensive coverage
+        return $this->getExtendedProviderValidation($mobileNumber);
+    }
+
+    /**
+     * Extended provider validation for comprehensive coverage
+     */
+    private function getExtendedProviderValidation($mobileNumber)
+    {
+        $first2 = substr($mobileNumber, 0, 2);
+        $first3 = substr($mobileNumber, 0, 3);
+
+        // More comprehensive provider patterns
+        $providerPatterns = [
+            // Telkomsel (most comprehensive)
+            'Telkomsel' => [
+                // Kartu Halo
+                '811',
+                '812',
+                '813',
+                '821',
+                '822',
+                '823',
+                '851',
+                '852',
+                '853',
+                // simPATI
+                '812',
+                '813',
+                '821',
+                '822',
+                '823',
+                // Kartu As
+                '823',
+                '853'
+            ],
+
+            // Indosat Ooredoo
+            'Indosat Ooredoo' => [
+                '814',
+                '815',
+                '816',
+                '855',
+                '856',
+                '857',
+                '858',
+                '838' // Matrix
+            ],
+
+            // XL Axiata
+            'XL Axiata' => [
+                '817',
+                '818',
+                '819',
+                '859',
+                '877',
+                '878'
+            ],
+
+            // Tri (3)
+            'Tri (3)' => [
+                '895',
+                '896',
+                '897',
+                '898',
+                '899'
+            ],
+
+            // Smartfren
+            'Smartfren' => [
+                '881',
+                '882',
+                '883',
+                '884',
+                '885',
+                '886',
+                '887',
+                '888'
+            ],
+
+            // By.U (Telkomsel sub-brand)
+            'By.U' => [
+                '851',
+                '852',
+                '853'
+            ]
+        ];
+
+        foreach ($providerPatterns as $provider => $prefixes) {
+            if (in_array($first3, $prefixes)) {
+                return $provider;
+            }
+        }
+
+        // Fallback: Check if it's a valid Indonesian mobile pattern
+        if ($this->isValidIndonesianMobile($mobileNumber)) {
+            return 'Provider Indonesia Lainnya';
+        }
+
+        return null; // Invalid
+    }
+
+    /**
+     * Check if number follows Indonesian mobile pattern
+     */
+    private function isValidIndonesianMobile($mobileNumber)
+    {
+        // Indonesian mobile numbers typically start with 8
+        if (!str_starts_with($mobileNumber, '8')) {
+            return false;
+        }
+
+        // Length should be 9-12 digits
+        if (strlen($mobileNumber) < 9 || strlen($mobileNumber) > 12) {
+            return false;
+        }
+
+        // Should not start with patterns that are not mobile
+        $invalidStarts = ['80', '804']; // These are typically landline or special numbers
+
+        foreach ($invalidStarts as $invalid) {
+            if (str_starts_with($mobileNumber, $invalid)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Alternative: Simple validation (if you want to allow all Indonesian mobile numbers)
+     */
+    public function checkWhatsAppSimple(Request $request)
+    {
+        $request->validate([
+            'no_telp' => 'required|string'
+        ]);
+
+        $no_telp = $request->no_telp;
+        $cleanPhone = preg_replace('/\D/', '', $no_telp);
+
+        // Convert to international format
+        if (substr($cleanPhone, 0, 2) === '62') {
+            $phoneNumber = $cleanPhone;
+        } elseif (substr($cleanPhone, 0, 1) === '0') {
+            $phoneNumber = '62' . substr($cleanPhone, 1);
+        } else {
+            return response()->json([
+                'valid' => false,
+                'message' => 'Format nomor tidak valid untuk Indonesia'
+            ]);
+        }
+
+        // Simple validation: Check length and starts with 628
+        if (strlen($phoneNumber) >= 11 && strlen($phoneNumber) <= 14 && str_starts_with($phoneNumber, '628')) {
+            return response()->json([
+                'valid' => true,
+                'message' => 'Nomor WhatsApp valid',
+                'info' => 'Format: +' . $phoneNumber
+            ]);
+        }
+
+        return response()->json([
+            'valid' => false,
+            'message' => 'Format nomor tidak valid untuk WhatsApp Indonesia'
+        ]);
+    }
+
+    /**
+     * Test method to validate various Indonesian numbers
+     */
+    public function testIndonesianNumbers()
+    {
+        $testNumbers = [
+            '08123456789',    // Telkomsel
+            '081234567890',   // Telkomsel
+            '085612345678',   // Indosat
+            '087712345678',   // XL
+            '089612345678',   // Tri
+            '088812345678',   // Smartfren
+            '628123456789',   // International format
+            '+628123456789',  // With plus
+            '021234567',      // Invalid (landline)
+            '08012345678',    // Invalid pattern
+        ];
+
+        $results = [];
+
+        foreach ($testNumbers as $number) {
+            $request = new \Illuminate\Http\Request(['no_telp' => $number]);
+            $response = $this->checkWhatsApp($request);
+            $results[$number] = $response->getData(true);
+        }
+
+        return response()->json($results);
     }
 }
