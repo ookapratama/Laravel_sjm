@@ -258,7 +258,10 @@ function drawTree(data, preserveZoom=false, zoomOverride=null){
     }
     if (d.depth >= 2) d.children = null; // tampilkan 3 level saja
   });
-
+const getStarCount = () => {
+  const n = parseInt(String(window.currentBagan).trim(), 10);
+  return Math.max(0, Math.min(5, Number.isFinite(n) ? (n - 1) : 0));
+};
   const layout = d3.tree().nodeSize([hGap+NODE_W, vGap+NODE_H]);
   layout(root);
 
@@ -283,8 +286,8 @@ function drawTree(data, preserveZoom=false, zoomOverride=null){
 
   // ⭐ sesuai bagan terpilih
   node.filter(d=>!d.data.isAddButton).append('text')
-    .attr('y', 4).attr('text-anchor','middle')
-    .text(()=> '⭐️'.repeat(Math.min(Number(window.currentBagan)||1,5)))
+    .attr('y', 10).attr('text-anchor','middle')
+    .text(()=> '⭐️'.repeat(getStarCount()))
     .style('font-size', Math.max(9, Math.floor(NODE_W*0.11)) + 'px')
     .attr('fill','gold');
 
