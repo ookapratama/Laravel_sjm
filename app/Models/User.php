@@ -18,6 +18,17 @@ class User extends Authenticatable
     {
         return $this->hasOne(MitraProfile::class);
     }
+
+    public function mitra()
+    {
+        return $this->hasOne(MitraProfile::class, 'user_id', 'id');
+    }
+
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class, 'user_id', 'id');
+    }
+    
     public function preRegistration()
     {
         return $this->hasOne(PreRegistration::class);

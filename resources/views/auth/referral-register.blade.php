@@ -91,6 +91,228 @@
                 display: none;
             }
         }
+
+        /* Style untuk input-group button */
+        .input-group .btn-outline-secondary {
+            border-color: #ced4da;
+            color: #6c757d;
+        }
+
+        .input-group .btn-outline-secondary:hover {
+            background-color: #e9ecef;
+            border-color: #ced4da;
+            color: #495057;
+        }
+
+        .input-group .btn-outline-secondary:focus {
+            box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+            border-color: #ced4da;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 576px) {
+            .input-group .btn {
+                padding: 0.375rem 0.5rem;
+            }
+
+            .input-group .btn i {
+                font-size: 14px;
+            }
+        }
+
+        .username-status {
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+
+        .username-available {
+            color: #198754;
+        }
+
+        .username-taken {
+            color: #dc3545;
+        }
+
+        .username-checking {
+            color: #0d6efd;
+        }
+
+        .valid-feedback {
+            display: block !important;
+            color: #198754;
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+
+        .valid-feedback.d-none {
+            display: none !important;
+        }
+
+        /* Button states */
+        .btn-checking {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        /* Input group button adjustments */
+        .input-group .btn-outline-primary {
+            border-color: #0d6efd;
+            color: #0d6efd;
+            white-space: nowrap;
+        }
+
+        .input-group .btn-outline-primary:hover:not(.btn-checking) {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+            color: #fff;
+        }
+
+        .input-group .btn-outline-primary:focus {
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+
+        /* Responsive button text */
+        @media (max-width: 576px) {
+            #checkUsernameText {
+                display: none;
+            }
+
+            .btn-outline-primary::after {
+                content: 'Cek';
+            }
+
+            .btn-outline-primary.btn-checking::after {
+                content: '';
+            }
+        }
+
+        .verification-status {
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+
+        .status-valid {
+            color: #198754;
+        }
+
+        .status-invalid {
+            color: #dc3545;
+        }
+
+        .status-checking {
+            color: #0d6efd;
+        }
+
+        .status-warning {
+            color: #ffc107;
+        }
+
+        .btn-checking {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .input-group .btn-outline-success {
+            border-color: #198754;
+            color: #198754;
+            white-space: nowrap;
+        }
+
+        .input-group .btn-outline-success:hover:not(.btn-checking) {
+            background-color: #198754;
+            border-color: #198754;
+            color: #fff;
+        }
+
+        .input-group .btn-outline-info {
+            border-color: #0dcaf0;
+            color: #0dcaf0;
+            white-space: nowrap;
+        }
+
+        .input-group .btn-outline-info:hover:not(.btn-checking) {
+            background-color: #0dcaf0;
+            border-color: #0dcaf0;
+            color: #000;
+        }
+
+        /* Responsive button text */
+        @media (max-width: 576px) {
+
+            .btn-outline-success .btn-text,
+            .btn-outline-info .btn-text {
+                display: none;
+            }
+
+            .btn-outline-success::after {
+                content: 'Cek';
+            }
+
+            .btn-outline-info::after {
+                content: 'Cek';
+            }
+
+            .btn-checking::after {
+                content: '';
+            }
+        }
+
+        /* Sponsor info styling */
+        #sponsorInfoBanner {
+            border-left: 4px solid #0dcaf0;
+        }
+
+        #sponsorInfo {
+            font-size: 0.9em;
+            margin-top: 0.25rem;
+        }
+
+        .whatsapp-status {
+            font-size: 0.875em;
+            margin-top: 0.25rem;
+        }
+
+        .whatsapp-valid {
+            color: #25d366;
+        }
+
+        .whatsapp-invalid {
+            color: #dc3545;
+        }
+
+        .whatsapp-checking {
+            color: #0d6efd;
+        }
+
+        .input-group .btn-outline-success {
+            border-color: #25d366;
+            color: #25d366;
+            white-space: nowrap;
+        }
+
+        .input-group .btn-outline-success:hover:not(.btn-checking) {
+            background-color: #25d366;
+            border-color: #25d366;
+            color: white;
+        }
+
+        @keyframes whatsapp-pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .whatsapp-valid i {
+            animation: whatsapp-pulse 1s ease-in-out;
+        }
     </style>
 @endpush
 
@@ -121,14 +343,10 @@
                                 <div class="step-number">3</div>
                                 <div class="step-text">Akun Login</div>
                             </div>
+
                             <div class="step-line"></div>
                             <div class="step-item" data-step="4">
                                 <div class="step-number">4</div>
-                                <div class="step-text">Alamat</div>
-                            </div>
-                            <div class="step-line"></div>
-                            <div class="step-item" data-step="5">
-                                <div class="step-number">5</div>
                                 <div class="step-text">Rekening</div>
                             </div>
                         </div>
@@ -153,18 +371,59 @@
                             <div class="js-step active" data-step="1">
                                 <h4 class="mb-3">Step 1: PIN Aktivasi & Kode Sponsor</h4>
                                 <div class="row g-3">
+                                    <!-- PIN Aktivasi dengan Verification -->
                                     <div class="col-md-6">
                                         <label for="pin_aktivasi" class="form-label">PIN Aktivasi</label>
-                                        <input type="text" name="pin_aktivasi" id="pin_aktivasi" class="form-control"
-                                            required>
-                                        <small class="text-muted">Diperoleh dari upline/admin saat membeli PIN.</small>
-                                        <div class="invalid-feedback"></div>
+                                        <div class="input-group">
+                                            <input type="text" name="pin_aktivasi" id="pin_aktivasi" class="form-control"
+                                                required placeholder="Masukkan PIN aktivasi">
+                                            <button class="btn btn-outline-success" type="button" id="checkPin">
+                                                <span id="checkPinText">Verifikasi</span>
+                                                <i class="fas fa-spinner fa-spin d-none" id="checkPinSpinner"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">
+                                            Diperoleh dari upline/admin saat membeli PIN.
+                                            <span id="pinStatus" class="d-block"></span>
+                                        </small>
+                                        <div class="invalid-feedback" id="pinFeedback"></div>
+                                        <div class="valid-feedback d-none" id="pinValidFeedback">
+                                            <i class="fas fa-check-circle"></i> PIN valid dan belum digunakan!
+                                        </div>
                                     </div>
+
+                                    <!-- Kode Sponsor dengan Verification -->
                                     <div class="col-md-6">
                                         <label for="sponsor_code_display" class="form-label">Kode Sponsor</label>
-                                        <input type="text" id="sponsor_code_display" name="sponsor_code"
-                                            class="form-control" required>
-                                        <div class="invalid-feedback"></div>
+                                        <div class="input-group">
+                                            <input type="text" id="sponsor_code_display" name="sponsor_code"
+                                                class="form-control" required placeholder="Masukkan kode sponsor">
+                                            <button class="btn btn-outline-info" type="button" id="checkSponsor">
+                                                <span id="checkSponsorText">Verifikasi</span>
+                                                <i class="fas fa-spinner fa-spin d-none" id="checkSponsorSpinner"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">
+                                            Kode referral dari sponsor/upline Anda.
+                                            <span id="sponsorStatus" class="d-block"></span>
+                                        </small>
+                                        <div class="invalid-feedback" id="sponsorFeedback"></div>
+                                        <div class="valid-feedback d-none" id="sponsorValidFeedback">
+                                            <i class="fas fa-check-circle"></i> Sponsor ditemukan!
+                                        </div>
+                                    </div>
+
+                                    <!-- Sponsor Info Banner (muncul setelah sponsor terverifikasi) -->
+                                    <div class="col-12">
+                                        <div id="sponsorInfoBanner" class="alert alert-info d-none">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user-tie me-2"></i>
+                                                <div>
+                                                    <strong>Sponsor Anda:</strong>
+                                                    <div id="sponsorInfo"></div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -175,18 +434,32 @@
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label for="name" class="form-label">Nama Lengkap</label>
-                                        <input type="text" name="name" id="name" class="form-control" required
-                                            autocomplete="name">
+                                        <input type="text" name="name" id="name" class="form-control"
+                                            required autocomplete="name">
                                         <div class="invalid-feedback"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="phone" class="form-label">No. HP / WA</label>
-                                        <input type="tel" name="phone" id="phone" class="form-control" required
-                                            autocomplete="tel">
-                                        <div class="invalid-feedback"></div>
+                                        <label for="no_telp" class="form-label">No. HP / WA</label>
+                                        <div class="input-group">
+                                            <input type="text" name="no_telp" id="no_telp" pattern="[0-9]*"
+                                                inputmode="numeric" class="form-control" required autocomplete="tel"
+                                                placeholder="08xx atau +62xxx">
+                                            <button class="btn btn-outline-success" type="button" id="checkWhatsApp">
+                                                <span id="checkWhatsAppText">Cek WA</span>
+                                                <i class="fas fa-spinner fa-spin d-none" id="checkWhatsAppSpinner"></i>
+                                            </button>
+                                        </div>
+                                        <small class="text-muted">
+                                            Nomor akan digunakan untuk notifikasi dan komunikasi.
+                                            <span id="whatsappStatus" class="d-block"></span>
+                                        </small>
+                                        <div class="invalid-feedback" id="phoneFeedback"></div>
+                                        <div class="valid-feedback d-none" id="phoneValidFeedback">
+                                            <i class="fab fa-whatsapp"></i> Nomor WhatsApp valid!
+                                        </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="email" class="form-label">Email (opsional)</label>
+                                        <label for="email" class="form-label">Email</label>
                                         <input type="email" name="email" id="email" class="form-control"
                                             autocomplete="email">
                                         <div class="invalid-feedback"></div>
@@ -256,38 +529,9 @@
                                         </div>
                                         <div class="invalid-feedback"></div>
                                     </div>
-                                </div>
-                            </div>
 
-                            <!-- Step 3: Akun Login -->
-                            <div class="js-step" data-step="3">
-                                <h4 class="mb-3">Step 3: Data Akun Login</h4>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="username" class="form-label">Username</label>
-                                        <input type="text" name="username" id="username" class="form-control"
-                                            required autocomplete="username">
-                                        <div class="invalid-feedback"></div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="password" class="form-label">Password</label>
-                                        <input type="password" name="password" id="password" class="form-control"
-                                            required minlength="6" autocomplete="new-password">
-                                        <div class="invalid-feedback"></div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label for="password_confirmation" class="form-label">Konfirmasi Password</label>
-                                        <input type="password" name="password_confirmation" id="password_confirmation"
-                                            class="form-control" required minlength="6" autocomplete="new-password">
-                                        <div class="invalid-feedback"></div>
-                                    </div>
                                 </div>
-                            </div>
-
-                            <!-- Step 4: Alamat -->
-                            <div class="js-step" data-step="4">
-                                <h4 class="mb-3">Step 4: Data Alamat</h4>
-                                <div class="row g-3">
+                                <div class="row g-3 mt-4">
                                     <div class="col-md-12">
                                         <label for="alamat" class="form-label">Alamat Lengkap</label>
                                         <textarea name="alamat" id="alamat" class="form-control" rows="2" required></textarea>
@@ -329,9 +573,106 @@
                                 </div>
                             </div>
 
+                            <!-- Step 3: Akun Login -->
+                            <div class="js-step" data-step="3">
+                                <h4 class="mb-3">Step 3: Data Akun Login</h4>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label for="username" class="form-label">Username</label>
+                                        <div class="input-group">
+                                            <input type="text" name="username" id="username" class="form-control"
+                                                required autocomplete="username" placeholder="Masukkan username unik">
+                                            <button class="btn btn-outline-primary" type="button" id="checkUsername">
+                                                <span id="checkUsernameText">Cek Ketersediaan</span>
+                                                <i class="fas fa-spinner fa-spin d-none" id="checkUsernameSpinner"></i>
+                                            </button>
+                                        </div>
+                                        <div class="invalid-feedback" id="usernameFeedback"></div>
+                                        <div class="valid-feedback d-none" id="usernameValidFeedback">
+                                            <i class="fas fa-check-circle"></i> Username tersedia!
+                                        </div>
+                                        <small class="form-text text-muted">
+                                            Username harus 4-20 karakter, hanya huruf, angka, dan underscore. <span
+                                                id="usernameStatus"></span>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="password" class="form-label">Password</label>
+                                        <div class="input-group">
+                                            <input type="password" name="password" id="password" class="form-control"
+                                                required minlength="6" autocomplete="new-password">
+                                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                                <i class="fas fa-eye" id="togglePasswordIcon"></i>
+                                            </button>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="password_confirmation" class="form-label">Konfirmasi Password</label>
+                                        <div class="input-group">
+                                            <input type="password" name="password_confirmation"
+                                                id="password_confirmation" class="form-control" required minlength="6"
+                                                autocomplete="new-password">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                id="togglePasswordConfirmation">
+                                                <i class="fas fa-eye" id="togglePasswordConfirmationIcon"></i>
+                                            </button>
+                                        </div>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 4: Alamat -->
+                            {{-- <div class="js-step" data-step="4">
+                                <h4 class="mb-3">Step 4: Data Alamat</h4>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label for="alamat" class="form-label">Alamat Lengkap</label>
+                                        <textarea name="alamat" id="alamat" class="form-control" rows="2" required></textarea>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="rt" class="form-label">RT</label>
+                                        <input type="text" name="rt" id="rt" class="form-control">
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="rw" class="form-label">RW</label>
+                                        <input type="text" name="rw" id="rw" class="form-control">
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label for="desa" class="form-label">Desa/Kelurahan</label>
+                                        <input type="text" name="desa" id="desa" class="form-control"
+                                            required>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="kecamatan" class="form-label">Kecamatan</label>
+                                        <input type="text" name="kecamatan" id="kecamatan" class="form-control"
+                                            required>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="kota" class="form-label">Kota/Kabupaten</label>
+                                        <input type="text" name="kota" id="kota" class="form-control"
+                                            required>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="kode_pos" class="form-label">Kode Pos</label>
+                                        <input type="text" name="kode_pos" id="kode_pos" class="form-control">
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+                            </div> --}}
+
                             <!-- Step 5: Rekening & Ahli Waris -->
-                            <div class="js-step" data-step="5">
-                                <h4 class="mb-3">Step 5: Data Rekening & Ahli Waris</h4>
+                            <div class="js-step" data-step="4">
+                                <h4 class="mb-3">Step 4: Data Rekening & Ahli Waris</h4>
                                 <div class="row g-3">
                                     <div class="col-md-6">
                                         <label for="nama_rekening" class="form-label">Nama di Rekening</label>
@@ -399,7 +740,6 @@
 @endsection
 
 @push('scripts')
-
     <script>
         (function() {
             // script wizard step nya
@@ -407,7 +747,7 @@
 
             // Wizard variables
             let currentStep = 1;
-            const totalSteps = 5;
+            const totalSteps = 4;
             const errorContainer = document.getElementById('errorContainer');
             const errorList = document.getElementById('errorList');
 
@@ -434,13 +774,14 @@
                         pattern: /^[a-zA-Z\s.,']+$/,
                         message: 'Nama lengkap harus diisi minimal 3 karakter (hanya huruf dan tanda baca umum)'
                     },
-                    phone: {
+                    no_telp: {
                         required: true,
                         pattern: /^(\+?62|0)[0-9]{8,13}$/,
                         message: 'Nomor HP harus valid format Indonesia (08xx atau +62xxx)'
                     },
                     email: {
-                        required: false,
+                        required: true,
+                        minLength: 6,
                         pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                         message: 'Format email tidak valid'
                     },
@@ -474,35 +815,7 @@
                         required: true,
                         type: 'radio',
                         message: 'Pilih agama'
-                    }
-                },
-                3: { // Step 3: Akun Login
-                    username: {
-                        required: true,
-                        minLength: 4,
-                        maxLength: 20,
-                        pattern: /^[a-zA-Z0-9_]+$/,
-                        message: 'Username 4-20 karakter, hanya huruf, angka, dan underscore'
                     },
-                    password: {
-                        required: true,
-                        minLength: 6,
-                        customValidator: (value) => {
-                            // Password harus mengandung minimal 1 huruf dan 1 angka
-                            return /[a-zA-Z]/.test(value) && /[0-9]/.test(value);
-                        },
-                        message: 'Password minimal 6 karakter dengan kombinasi huruf dan angka'
-                    },
-                    password_confirmation: {
-                        required: true,
-                        customValidator: (value) => {
-                            const password = document.getElementById('password').value;
-                            return value === password;
-                        },
-                        message: 'Konfirmasi password tidak cocok'
-                    }
-                },
-                4: { // Step 4: Alamat
                     alamat: {
                         required: true,
                         minLength: 10,
@@ -542,7 +855,33 @@
                         message: 'Kode pos harus 5 digit angka'
                     }
                 },
-                5: { // Step 5: Rekening
+                3: { // Step 3: Akun Login
+                    username: {
+                        required: true,
+                        minLength: 4,
+                        maxLength: 20,
+                        pattern: /^[a-zA-Z0-9_]+$/,
+                        message: 'Username 4-20 karakter, hanya huruf, angka, dan underscore'
+                    },
+                    password: {
+                        required: true,
+                        minLength: 6,
+                        customValidator: (value) => {
+                            // Password harus mengandung minimal 1 huruf dan 1 angka
+                            return /[a-zA-Z]/.test(value) && /[0-9]/.test(value);
+                        },
+                        message: 'Password minimal 6 karakter dengan kombinasi huruf dan angka'
+                    },
+                    password_confirmation: {
+                        required: true,
+                        customValidator: (value) => {
+                            const password = document.getElementById('password').value;
+                            return value === password;
+                        },
+                        message: 'Konfirmasi password tidak cocok'
+                    }
+                },
+                4: { // Step 5: Rekening
                     nama_rekening: {
                         required: true,
                         minLength: 3,
@@ -1119,5 +1458,909 @@
                 }
             });
         })();
+
+
+        // Tambahkan setelah script validasi wizard
+        document.addEventListener('DOMContentLoaded', function() {
+
+
+
+            // Function untuk input hanya angka
+            function makeNumericOnly(input) {
+                input.addEventListener('input', function(e) {
+                    this.value = this.value.replace(/\D/g, '');
+                });
+
+                input.addEventListener('keypress', function(e) {
+                    if (!/[0-9]/.test(String.fromCharCode(e.which))) {
+                        e.preventDefault();
+                    }
+                });
+            }
+
+            // Apply ke field-field numerik
+            const numericFields = [
+                'no_telp', // Nomor HP
+                'no_ktp', // Nomor KTP  
+                'nomor_rekening', // Nomor Rekening
+                'rt', // RT
+                'rw', // RW
+                'kode_pos' // Kode Pos
+            ];
+
+            numericFields.forEach(fieldId => {
+                const input = document.getElementById(fieldId);
+                if (input) {
+                    makeNumericOnly(input);
+                }
+            });
+
+            // Password Toggle Function
+            function setupPasswordToggle(inputId, buttonId, iconId) {
+                const passwordInput = document.getElementById(inputId);
+                const toggleButton = document.getElementById(buttonId);
+                const toggleIcon = document.getElementById(iconId);
+
+                if (!passwordInput || !toggleButton || !toggleIcon) return;
+
+                toggleButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    // Toggle password visibility
+                    const isPassword = passwordInput.type === 'password';
+                    passwordInput.type = isPassword ? 'text' : 'password';
+
+                    // Toggle icon
+                    if (isPassword) {
+                        toggleIcon.classList.remove('fa-eye');
+                        toggleIcon.classList.add('fa-eye-slash');
+                        toggleButton.setAttribute('title', 'Sembunyikan password');
+                    } else {
+                        toggleIcon.classList.remove('fa-eye-slash');
+                        toggleIcon.classList.add('fa-eye');
+                        toggleButton.setAttribute('title', 'Tampilkan password');
+                    }
+                });
+
+                // Set initial attributes
+                toggleButton.setAttribute('title', 'Tampilkan password');
+            }
+
+            // Setup untuk kedua password field
+            setupPasswordToggle('password', 'togglePassword', 'togglePasswordIcon');
+            setupPasswordToggle('password_confirmation', 'togglePasswordConfirmation',
+                'togglePasswordConfirmationIcon');
+        });
+
+        //  verifikasi username
+        const usernameInput = document.getElementById('username');
+        const checkButton = document.getElementById('checkUsername');
+        const checkText = document.getElementById('checkUsernameText');
+        const checkSpinner = document.getElementById('checkUsernameSpinner');
+        const usernameFeedback = document.getElementById('usernameFeedback');
+        const usernameValidFeedback = document.getElementById('usernameValidFeedback');
+        const usernameStatus = document.getElementById('usernameStatus');
+
+        let checkTimeout;
+        let lastCheckedUsername = '';
+        let isUsernameAvailable = false;
+
+        // Function to validate username format
+        function validateUsernameFormat(username) {
+            const regex = /^[a-zA-Z0-9_]+$/;
+            return username.length >= 4 && username.length <= 20 && regex.test(username);
+        }
+
+        // Function to reset username status
+        function resetUsernameStatus() {
+            usernameInput.classList.remove('is-valid', 'is-invalid');
+            usernameFeedback.textContent = '';
+            usernameValidFeedback.classList.add('d-none');
+            usernameStatus.textContent = '';
+            isUsernameAvailable = false;
+        }
+
+        // Function to show loading state
+        function showCheckingState() {
+            checkButton.classList.add('btn-checking');
+            checkText.textContent = 'Mengecek...';
+            checkSpinner.classList.remove('d-none');
+            usernameStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengecek ketersediaan...';
+            usernameStatus.className = 'username-status username-checking';
+        }
+
+        // Function to hide loading state
+        function hideCheckingState() {
+            checkButton.classList.remove('btn-checking');
+            checkText.textContent = 'Cek Ketersediaan';
+            checkSpinner.classList.add('d-none');
+        }
+
+        // Function to check username availability
+        async function checkUsernameAvailability(username) {
+            console.log('checkUsernameAvailability  : ', username)
+            console.log('usernameStatus : ', usernameStatus)
+            if (!validateUsernameFormat(username)) {
+                usernameInput.classList.add('is-invalid');
+                usernameFeedback.textContent = 'Username harus 4-20 karakter, hanya huruf, angka, dan underscore';
+                usernameStatus.innerHTML = '<i class="fas fa-times-circle"></i> Format tidak valid';
+                usernameStatus.className = 'username-status username-taken';
+                return false;
+            }
+
+            showCheckingState();
+
+            try {
+                // Ganti URL ini dengan route Laravel Anda
+                const response = await fetch(`/check-username`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                            'content'),
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        username: username
+                    })
+                });
+
+                const data = await response.json();
+
+                hideCheckingState();
+
+                if (response.ok) {
+                    if (data.available) {
+                        // Username tersedia
+                        usernameInput.classList.remove('is-invalid');
+                        usernameInput.classList.add('is-valid');
+                        usernameValidFeedback.classList.remove('d-none');
+                        usernameStatus.innerHTML = '<i class="fas fa-check-circle"></i> Username tersedia!';
+                        usernameStatus.className = 'username-status username-available';
+                        isUsernameAvailable = true;
+                        lastCheckedUsername = username;
+                    } else {
+                        // Username sudah terpakai
+                        usernameInput.classList.remove('is-valid');
+                        usernameInput.classList.add('is-invalid');
+                        usernameFeedback.textContent = data.message || 'Username sudah terpakai';
+                        usernameStatus.innerHTML = '<i class="fas fa-times-circle"></i> Username sudah terpakai';
+                        usernameStatus.className = 'username-status username-taken';
+                        isUsernameAvailable = false;
+                    }
+                } else {
+                    throw new Error(data.message || 'Terjadi kesalahan saat mengecek username');
+                }
+
+            } catch (error) {
+                hideCheckingState();
+                console.error('Error checking username:', error);
+                usernameInput.classList.add('is-invalid');
+                usernameFeedback.textContent = 'Terjadi kesalahan saat mengecek username. Silakan coba lagi.';
+                usernameStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error checking';
+                usernameStatus.className = 'username-status username-taken';
+                isUsernameAvailable = false;
+            }
+        }
+
+        // Event listener for check button
+        checkButton.addEventListener('click', function(e) {
+            e.preventDefault();
+            const username = usernameInput.value.trim();
+
+            if (!username) {
+                usernameInput.focus();
+                return;
+            }
+
+            checkUsernameAvailability(username);
+        });
+
+        // Event listener for username input
+        usernameInput.addEventListener('input', function(e) {
+            clearTimeout(checkTimeout);
+            resetUsernameStatus();
+
+            const username = this.value.trim();
+
+            // Real-time format validation
+            if (username && !validateUsernameFormat(username)) {
+                this.classList.add('is-invalid');
+                usernameFeedback.textContent = 'Username harus 4-20 karakter, hanya huruf, angka, dan underscore';
+            } else if (username && username !== lastCheckedUsername) {
+                // Auto-check after 1 second of no typing
+                checkTimeout = setTimeout(() => {
+                    checkUsernameAvailability(username);
+                }, 1000);
+            }
+        });
+
+        // Event listener for Enter key
+        usernameInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkButton.click();
+            }
+        });
+
+        // Validate username availability before form submission
+        const form = document.getElementById('ref-register-form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const username = usernameInput.value.trim();
+
+                if (!isUsernameAvailable || username !== lastCheckedUsername) {
+                    e.preventDefault();
+                    usernameInput.classList.add('is-invalid');
+                    usernameFeedback.textContent = 'Silakan periksa ketersediaan username terlebih dahulu';
+                    usernameInput.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
+
+                    if (window.toastr) {
+                        toastr.error('Silakan periksa ketersediaan username terlebih dahulu');
+                    }
+                    return false;
+                }
+            });
+        }
+
+        // Make isUsernameAvailable accessible globally for step validation
+        window.isUsernameAvailable = function() {
+            const username = usernameInput.value.trim();
+            return isUsernameAvailable && username === lastCheckedUsername;
+        };
+
+
+        // cek referral dan pin aktivasi 
+        const pinInput = document.getElementById('pin_aktivasi');
+        const checkPinBtn = document.getElementById('checkPin');
+        const checkPinText = document.getElementById('checkPinText');
+        const checkPinSpinner = document.getElementById('checkPinSpinner');
+        const pinFeedback = document.getElementById('pinFeedback');
+        const pinValidFeedback = document.getElementById('pinValidFeedback');
+        const pinStatus = document.getElementById('pinStatus');
+
+        // Sponsor Elements
+        const sponsorInput = document.getElementById('sponsor_code_display');
+        const checkSponsorBtn = document.getElementById('checkSponsor');
+        const checkSponsorText = document.getElementById('checkSponsorText');
+        const checkSponsorSpinner = document.getElementById('checkSponsorSpinner');
+        const sponsorFeedback = document.getElementById('sponsorFeedback');
+        const sponsorValidFeedback = document.getElementById('sponsorValidFeedback');
+        const sponsorStatus = document.getElementById('sponsorStatus');
+        const sponsorInfoBanner = document.getElementById('sponsorInfoBanner');
+        const sponsorInfo = document.getElementById('sponsorInfo');
+
+        // Global variables
+        let isPinValid = false;
+        let isSponsorValid = false;
+        let lastCheckedPin = '';
+        let lastCheckedSponsor = '';
+
+        // PIN Activation Functions
+        function validatePinFormat(pin) {
+            // PIN harus 8-16 karakter, huruf kapital dan angka
+            const regex = /^[A-Z0-9]+$/;
+            return pin.length >= 8 && pin.length <= 16 && regex.test(pin);
+        }
+
+        function showPinCheckingState() {
+            checkPinBtn.classList.add('btn-checking');
+            checkPinText.textContent = 'Mengecek...';
+            checkPinSpinner.classList.remove('d-none');
+            pinStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi PIN...';
+            pinStatus.className = 'verification-status status-checking';
+        }
+
+        function hidePinCheckingState() {
+            checkPinBtn.classList.remove('btn-checking');
+            checkPinText.textContent = 'Verifikasi';
+            checkPinSpinner.classList.add('d-none');
+        }
+
+        function resetPinStatus() {
+            pinInput.classList.remove('is-valid', 'is-invalid');
+            pinFeedback.textContent = '';
+            pinValidFeedback.classList.add('d-none');
+            pinStatus.textContent = '';
+            isPinValid = false;
+        }
+
+        async function checkPinActivation(pin) {
+            if (!validatePinFormat(pin)) {
+                pinInput.classList.add('is-invalid');
+                pinFeedback.textContent = 'PIN harus 8-16 karakter, hanya huruf kapital dan angka';
+                pinStatus.innerHTML = '<i class="fas fa-times-circle"></i> Format PIN tidak valid';
+                pinStatus.className = 'verification-status status-invalid';
+                return false;
+            }
+
+            showPinCheckingState();
+
+            try {
+                const formData = new FormData();
+                formData.append('pin_aktivasi', pin);
+
+                // Ambil CSRF dari form
+                const form = document.getElementById('ref-register-form');
+                const csrfInput = form.querySelector('input[name="_token"]');
+                if (csrfInput) {
+                    formData.append('_token', csrfInput.value);
+                }
+
+                const response = await fetch('/check-pin', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                hidePinCheckingState();
+
+                if (response.ok) {
+                    if (data.valid) {
+                        // PIN valid
+                        pinInput.classList.remove('is-invalid');
+                        pinInput.classList.add('is-valid');
+                        pinValidFeedback.classList.remove('d-none');
+                        pinStatus.innerHTML =
+                            `<i class="fas fa-check-circle"></i> ${data.message || 'PIN valid dan tersedia!'}`;
+                        pinStatus.className = 'verification-status status-valid';
+                        isPinValid = true;
+                        lastCheckedPin = pin;
+
+                        // Show additional info if available
+                        if (data.info) {
+                            pinStatus.innerHTML += `<br><small>${data.info}</small>`;
+                        }
+                    } else {
+                        // PIN tidak valid/sudah digunakan
+                        pinInput.classList.remove('is-valid');
+                        pinInput.classList.add('is-invalid');
+                        pinFeedback.textContent = data.message || 'PIN tidak valid atau sudah digunakan';
+                        pinStatus.innerHTML = '<i class="fas fa-times-circle"></i> PIN tidak valid';
+                        pinStatus.className = 'verification-status status-invalid';
+                        isPinValid = false;
+                    }
+                } else {
+                    throw new Error(data.message || 'Terjadi kesalahan saat memverifikasi PIN');
+                }
+
+            } catch (error) {
+                hidePinCheckingState();
+                console.error('Error checking PIN:', error);
+                pinInput.classList.add('is-invalid');
+                pinFeedback.textContent = 'Terjadi kesalahan saat memverifikasi PIN. Silakan coba lagi.';
+                pinStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error verifikasi';
+                pinStatus.className = 'verification-status status-invalid';
+                isPinValid = false;
+            }
+        }
+
+        // Sponsor Code Functions
+        function validateSponsorFormat(sponsor) {
+            // Sponsor code 3-20 karakter, alfanumerik
+            const regex = /^[A-Za-z0-9]+$/;
+            return sponsor.length >= 3 && sponsor.length <= 20 && regex.test(sponsor);
+        }
+
+        function showSponsorCheckingState() {
+            checkSponsorBtn.classList.add('btn-checking');
+            checkSponsorText.textContent = 'Mengecek...';
+            checkSponsorSpinner.classList.remove('d-none');
+            sponsorStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi sponsor...';
+            sponsorStatus.className = 'verification-status status-checking';
+        }
+
+        function hideSponsorCheckingState() {
+            checkSponsorBtn.classList.remove('btn-checking');
+            checkSponsorText.textContent = 'Verifikasi';
+            checkSponsorSpinner.classList.add('d-none');
+        }
+
+        function resetSponsorStatus() {
+            sponsorInput.classList.remove('is-valid', 'is-invalid');
+            sponsorFeedback.textContent = '';
+            sponsorValidFeedback.classList.add('d-none');
+            sponsorStatus.textContent = '';
+            sponsorInfoBanner.classList.add('d-none');
+            isSponsorValid = false;
+        }
+
+        async function checkSponsorCode(sponsor) {
+            if (!validateSponsorFormat(sponsor)) {
+                sponsorInput.classList.add('is-invalid');
+                sponsorFeedback.textContent = 'Kode sponsor harus 3-20 karakter alfanumerik';
+                sponsorStatus.innerHTML = '<i class="fas fa-times-circle"></i> Format sponsor tidak valid';
+                sponsorStatus.className = 'verification-status status-invalid';
+                return false;
+            }
+
+            showSponsorCheckingState();
+
+            try {
+                const formData = new FormData();
+                formData.append('sponsor_code', sponsor);
+
+                // Ambil CSRF dari form
+                const form = document.getElementById('ref-register-form');
+                const csrfInput = form.querySelector('input[name="_token"]');
+                if (csrfInput) {
+                    formData.append('_token', csrfInput.value);
+                }
+
+                const response = await fetch('/check-sponsor', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                hideSponsorCheckingState();
+
+                if (response.ok) {
+                    if (data.valid) {
+                        // Sponsor valid
+                        sponsorInput.classList.remove('is-invalid');
+                        sponsorInput.classList.add('is-valid');
+                        sponsorValidFeedback.classList.remove('d-none');
+                        sponsorStatus.innerHTML = '<i class="fas fa-check-circle"></i> Sponsor ditemukan!';
+                        sponsorStatus.className = 'verification-status status-valid';
+                        isSponsorValid = true;
+                        lastCheckedSponsor = sponsor;
+
+                        // Show sponsor info
+                        if (data.sponsor_info) {
+                            sponsorInfo.innerHTML = `
+                            <strong>${data.sponsor_info.name}</strong><br>
+                            <small>ID: ${data.sponsor_info.member_id || sponsor} | Level: ${data.sponsor_info.level || 'Member'}</small>
+                        `;
+                            sponsorInfoBanner.classList.remove('d-none');
+                        }
+
+                        // Update hidden ref field
+                        const refInput = document.getElementById('ref');
+                        if (refInput) {
+                            refInput.value = sponsor;
+                        }
+                    } else {
+                        // Sponsor tidak ditemukan
+                        sponsorInput.classList.remove('is-valid');
+                        sponsorInput.classList.add('is-invalid');
+                        sponsorFeedback.textContent = data.message || 'Kode sponsor tidak ditemukan';
+                        sponsorStatus.innerHTML = '<i class="fas fa-times-circle"></i> Sponsor tidak ditemukan';
+                        sponsorStatus.className = 'verification-status status-invalid';
+                        isSponsorValid = false;
+                        sponsorInfoBanner.classList.add('d-none');
+                    }
+                } else {
+                    throw new Error(data.message || 'Terjadi kesalahan saat memverifikasi sponsor');
+                }
+
+            } catch (error) {
+                hideSponsorCheckingState();
+                console.error('Error checking sponsor:', error);
+                sponsorInput.classList.add('is-invalid');
+                sponsorFeedback.textContent = 'Terjadi kesalahan saat memverifikasi sponsor. Silakan coba lagi.';
+                sponsorStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error verifikasi';
+                sponsorStatus.className = 'verification-status status-invalid';
+                isSponsorValid = false;
+                sponsorInfoBanner.classList.add('d-none');
+            }
+        }
+
+        // Event Listeners
+        // PIN Verification
+        checkPinBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const pin = pinInput.value.trim();
+            if (!pin) {
+                pinInput.focus();
+                return;
+            }
+            checkPinActivation(pin);
+        });
+
+        pinInput.addEventListener('input', function(e) {
+            resetPinStatus();
+            // Format input - hanya huruf kapital dan angka
+            this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        });
+
+        pinInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkPinBtn.click();
+            }
+        });
+
+        // Sponsor Verification
+        checkSponsorBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const sponsor = sponsorInput.value.trim();
+            if (!sponsor) {
+                sponsorInput.focus();
+                return;
+            }
+            checkSponsorCode(sponsor);
+        });
+
+        sponsorInput.addEventListener('input', function(e) {
+            resetSponsorStatus();
+            // Format input - hanya alfanumerik
+            this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
+
+            // Update hidden ref field
+            const refInput = document.getElementById('ref');
+            if (refInput) {
+                refInput.value = this.value;
+            }
+        });
+
+        sponsorInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkSponsorBtn.click();
+            }
+        });
+
+        // Auto-load sponsor from URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const ref = urlParams.get('ref');
+        if (ref) {
+            sponsorInput.value = ref;
+            const refInput = document.getElementById('ref');
+            if (refInput) refInput.value = ref;
+            // Auto-check sponsor setelah delay
+            setTimeout(() => {
+                checkSponsorCode(ref);
+            }, 500);
+        }
+
+        // Make validation functions available globally
+        window.isPinValid = function() {
+            const pin = pinInput.value.trim();
+            return isPinValid && pin === lastCheckedPin;
+        };
+
+        window.isSponsorValid = function() {
+            const sponsor = sponsorInput.value.trim();
+            return isSponsorValid && sponsor === lastCheckedSponsor;
+        };
+
+        // Update step validation
+        if (window.validateStep) {
+            const originalValidateStep = window.validateStep;
+            window.validateStep = function(step) {
+                if (step === 1) {
+                    let isValid = true;
+
+                    // Check PIN validation
+                    if (!window.isPinValid()) {
+                        pinInput.classList.add('is-invalid');
+                        pinFeedback.textContent = 'PIN aktivasi harus diverifikasi terlebih dahulu';
+                        isValid = false;
+                    }
+
+                    // Check Sponsor validation
+                    if (!window.isSponsorValid()) {
+                        sponsorInput.classList.add('is-invalid');
+                        sponsorFeedback.textContent = 'Kode sponsor harus diverifikasi terlebih dahulu';
+                        isValid = false;
+                    }
+
+                    if (!isValid) {
+                        if (window.toastr) {
+                            toastr.error('Silakan verifikasi PIN aktivasi dan kode sponsor terlebih dahulu');
+                        }
+                    }
+
+                    return isValid;
+                }
+
+                return originalValidateStep(step);
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const phoneInput = document.getElementById('no_telp');
+            const checkWhatsAppBtn = document.getElementById('checkWhatsApp');
+            const checkWhatsAppText = document.getElementById('checkWhatsAppText');
+            const checkWhatsAppSpinner = document.getElementById('checkWhatsAppSpinner');
+            const phoneFeedback = document.getElementById('phoneFeedback');
+            const phoneValidFeedback = document.getElementById('phoneValidFeedback');
+            const whatsappStatus = document.getElementById('whatsappStatus');
+
+            let isPhoneValid = false;
+            let lastCheckedPhone = '';
+            let checkTimeout;
+
+            // Format no_telp number for Indonesia
+            function formatPhoneNumber(no_telp) {
+                // Remove all non-numeric characters
+                let cleaned = no_telp.replace(/\D/g, '');
+
+                // Handle different formats
+                if (cleaned.startsWith('62')) {
+                    // Already in international format
+                    return '+' + cleaned;
+                } else if (cleaned.startsWith('0')) {
+                    // Indonesian format starting with 0
+                    return '+62' + cleaned.substring(1);
+                } else if (cleaned.startsWith('8')) {
+                    // Missing leading 0
+                    return '+628' + cleaned.substring(1);
+                } else if (cleaned.length > 0) {
+                    // Assume Indonesian number
+                    return '+62' + cleaned;
+                }
+
+                return cleaned;
+            }
+
+            // Validate Indonesian no_telp number format
+            function validatePhoneFormat(no_telp) {
+                const cleaned = no_telp.replace(/\D/g, '');
+
+                // Indonesian no_telp number validation
+                // Should be 10-13 digits after country code
+                if (cleaned.startsWith('62')) {
+                    // +62 format
+                    return cleaned.length >= 12 && cleaned.length <= 15;
+                } else if (cleaned.startsWith('0')) {
+                    // 0xxx format
+                    return cleaned.length >= 10 && cleaned.length <= 13;
+                } else if (cleaned.startsWith('8')) {
+                    // 8xxx format (missing 0)
+                    return cleaned.length >= 9 && cleaned.length <= 12;
+                }
+
+                return false;
+            }
+
+            // Show checking state
+            function showWhatsAppCheckingState() {
+                checkWhatsAppBtn.classList.add('btn-checking');
+                checkWhatsAppText.textContent = 'Mengecek...';
+                checkWhatsAppSpinner.classList.remove('d-none');
+                whatsappStatus.innerHTML = '<i class="fab fa-whatsapp fa-spin"></i> Memverifikasi WhatsApp...';
+                whatsappStatus.className = 'whatsapp-status whatsapp-checking';
+            }
+
+            // Hide checking state
+            function hideWhatsAppCheckingState() {
+                checkWhatsAppBtn.classList.remove('btn-checking');
+                checkWhatsAppText.textContent = 'Cek WA';
+                checkWhatsAppSpinner.classList.add('d-none');
+            }
+
+            // Reset no_telp status
+            function resetPhoneStatus() {
+                phoneInput.classList.remove('is-valid', 'is-invalid');
+                phoneFeedback.textContent = '';
+                phoneValidFeedback.classList.add('d-none');
+                whatsappStatus.textContent = '';
+                isPhoneValid = false;
+            }
+
+            // Check WhatsApp availability
+            async function checkWhatsAppAvailability(no_telp) {
+                const formattedPhone = formatPhoneNumber(no_telp);
+
+                if (!validatePhoneFormat(no_telp)) {
+                    phoneInput.classList.add('is-invalid');
+                    phoneFeedback.textContent = 'Format nomor HP tidak valid untuk Indonesia';
+                    whatsappStatus.innerHTML = '<i class="fas fa-times-circle"></i> Format tidak valid';
+                    whatsappStatus.className = 'whatsapp-status whatsapp-invalid';
+                    return false;
+                }
+
+                showWhatsAppCheckingState();
+
+                try {
+                    const formData = new FormData();
+                    formData.append('no_telp', formattedPhone);
+
+                    // Ambil CSRF dari form
+                    const form = document.getElementById('ref-register-form');
+                    const csrfInput = form.querySelector('input[name="_token"]');
+                    if (csrfInput) {
+                        formData.append('_token', csrfInput.value);
+                    }
+
+                    const response = await fetch('/check-whatsapp', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    hideWhatsAppCheckingState();
+
+                    if (response.ok) {
+                        if (data.valid) {
+                            // WhatsApp valid
+                            phoneInput.classList.remove('is-invalid');
+                            phoneInput.classList.add('is-valid');
+                            phoneValidFeedback.classList.remove('d-none');
+
+                            let statusText = '<i class="fab fa-whatsapp"></i> WhatsApp aktif!';
+                            if (data.info) {
+                                statusText += `<br><small>${data.info}</small>`;
+                            }
+
+                            whatsappStatus.innerHTML = statusText;
+                            whatsappStatus.className = 'whatsapp-status whatsapp-valid';
+                            isPhoneValid = true;
+                            lastCheckedPhone = formattedPhone;
+
+                            // Update input with formatted number
+                            phoneInput.value = formattedPhone;
+
+                        } else {
+                            // WhatsApp tidak ditemukan atau tidak aktif
+                            phoneInput.classList.remove('is-valid');
+                            phoneInput.classList.add('is-invalid');
+                            phoneFeedback.textContent = data.message ||
+                                'Nomor WhatsApp tidak ditemukan atau tidak aktif';
+
+                            let statusIcon = '<i class="fas fa-times-circle"></i>';
+                            if (data.reason === 'not_whatsapp') {
+                                statusIcon = '<i class="fas fa-exclamation-triangle"></i>';
+                                whatsappStatus.className = 'whatsapp-status whatsapp-warning';
+                            } else {
+                                whatsappStatus.className = 'whatsapp-status whatsapp-invalid';
+                            }
+
+                            whatsappStatus.innerHTML =
+                                `${statusIcon} ${data.message || 'WhatsApp tidak ditemukan'}`;
+                            isPhoneValid = false;
+                        }
+                    } else {
+                        throw new Error(data.message || 'Terjadi kesalahan saat memverifikasi WhatsApp');
+                    }
+
+                } catch (error) {
+                    hideWhatsAppCheckingState();
+                    console.error('Error checking WhatsApp:', error);
+
+                    phoneInput.classList.add('is-invalid');
+                    phoneFeedback.textContent =
+                        'Terjadi kesalahan saat memverifikasi WhatsApp. Silakan coba lagi.';
+                    whatsappStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error verifikasi';
+                    whatsappStatus.className = 'whatsapp-status whatsapp-invalid';
+                    isPhoneValid = false;
+
+                    if (window.toastr) {
+                        toastr.error('Gagal memverifikasi WhatsApp. Silakan coba lagi.');
+                    }
+                }
+            }
+
+            // Event listeners
+            checkWhatsAppBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const no_telp = phoneInput.value.trim();
+
+                if (!no_telp) {
+                    phoneInput.focus();
+                    return;
+                }
+
+                checkWhatsAppAvailability(no_telp);
+            });
+
+            phoneInput.addEventListener('input', function(e) {
+                clearTimeout(checkTimeout);
+                resetPhoneStatus();
+
+                // Format input - hanya angka dan + di awal
+                let value = this.value;
+                if (value.startsWith('+')) {
+                    value = '+' + value.substring(1).replace(/\D/g, '');
+                } else {
+                    value = value.replace(/\D/g, '');
+                }
+                this.value = value;
+
+                // Real-time format validation
+                if (value && !validatePhoneFormat(value)) {
+                    this.classList.add('is-invalid');
+                    phoneFeedback.textContent = 'Format: 08xxx atau +62xxx (10-13 digit)';
+                }
+
+                // Auto-check after 2 seconds of no typing (only if format is valid)
+                if (value && validatePhoneFormat(value)) {
+                    checkTimeout = setTimeout(() => {
+                        checkWhatsAppAvailability(value);
+                    }, 2000);
+                }
+            });
+
+            phoneInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    checkWhatsAppBtn.click();
+                }
+
+                // Allow numbers, +, and control keys
+                const char = String.fromCharCode(e.which);
+                if (!/[0-9+]/.test(char) && !['Backspace', 'Delete', 'Tab', 'Enter'].includes(e.key)) {
+                    e.preventDefault();
+                }
+            });
+
+            phoneInput.addEventListener('blur', function(e) {
+                const no_telp = this.value.trim();
+                if (no_telp && validatePhoneFormat(no_telp)) {
+                    // Auto-format on blur
+                    this.value = formatPhoneNumber(no_telp);
+                }
+            });
+
+            // Make validation function available globally
+            window.isPhoneValid = function() {
+                const no_telp = formatPhoneNumber(phoneInput.value.trim());
+                return isPhoneValid && no_telp === lastCheckedPhone;
+            };
+
+            // Integration with existing validation
+            if (window.validateStep) {
+                const originalValidateStep = window.validateStep;
+                window.validateStep = function(step) {
+                    if (step === 2) {
+                        // Check if no_telp validation is required
+                        const no_telp = phoneInput.value.trim();
+                        if (no_telp && !window.isPhoneValid()) {
+                            phoneInput.classList.add('is-invalid');
+                            phoneFeedback.textContent = 'Nomor WhatsApp harus diverifikasi terlebih dahulu';
+
+                            if (window.toastr) {
+                                toastr.error('Silakan verifikasi nomor WhatsApp terlebih dahulu');
+                            }
+
+                            phoneInput.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'center'
+                            });
+                            return false;
+                        }
+                    }
+
+                    return originalValidateStep(step);
+                };
+            }
+        });
+
+        // Utility function untuk WhatsApp link
+        function generateWhatsAppLink(no_telp, message = '') {
+            const cleanPhone = no_telp.replace(/\D/g, '');
+            const formattedPhone = cleanPhone.startsWith('62') ? cleanPhone : '62' + cleanPhone.substring(1);
+            const encodedMessage = encodeURIComponent(message);
+
+            console.log(formattedPhone)
+            console.log(encodedMessage)
+            return `https://wa.me/${formattedPhone}${message ? '?text=' + encodedMessage : ''}`;
+        }
+
+        // Function untuk test WhatsApp (opsional)
+        function testWhatsApp(no_telp) {
+            const link = generateWhatsAppLink(no_telp, 'Test pesan dari sistem registrasi');
+            window.open(link, '_blank');
+        }
+
+        
     </script>
 @endpush
