@@ -206,7 +206,7 @@ class FinanceController extends Controller
             LEFT JOIN users finance ON w.processed_by = finance.id
             WHERE w.user_id = ?
             ORDER BY w.created_at DESC
-            LIMIT 20
+          
         ", [$userId]);
 
             $summary = DB::select("
@@ -311,7 +311,7 @@ class FinanceController extends Controller
     {
         try {
             //code...
-            $limit = $request->get('limit', 20);
+            $limit = $request->get('limit', 100);
             // $status = $request->get('status') ?? '';
             // $date = $request->get('date') ?? '';
 

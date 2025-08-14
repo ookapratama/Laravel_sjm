@@ -39,9 +39,7 @@ public function store(Request $request)
         $user = Auth::user();
 
         // Cek wajib ganti username dan password
-        if ($user->must_change_credentials) {
-            return redirect()->route('change.credentials');
-        }
+        
 
         // Redirect berdasarkan role
         switch ($user->role) {

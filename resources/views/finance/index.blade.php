@@ -21,7 +21,7 @@
                         <td>
                             <strong>{{ $w->user->name }}</strong><br>
                             <small class="text-muted">{{ $w->user->email }}</small><br>
-                            <small class="text-info">Member ID: {{ $w->user->member_id ?? '-' }}</small>
+                            <small class="text-info">Member ID: {{ $w->user->id ?? '-' }}</small>
                         </td>
                         <td>
                             <strong>{{ $w->user->mitra->nomor_rekening ?? 'Tidak ada rekening' }}</strong><br>
@@ -30,9 +30,9 @@
                         </td>
                         <td>
                             <strong class="text-primary">Rp {{ number_format($w->amount, 0, ',', '.') }}</strong><br>
-                            <small class="text-muted">Pajak: Rp {{ number_format($w->tax ?? 0, 0, ',', '.') }}</small><br>
+                            <small class="text-muted">Admin: Rp {{ number_format($w->tax ?? 0, 0, ',', '.') }}</small><br>
                             <small class="text-success">Net: Rp
-                                {{ number_format($w->net_amount ?? $w->amount, 0, ',', '.') }}</small>
+                                {{ number_format($w->amount - $w->tax, 0, ',', '.') }}</small>
                         </td>
                         <td>{{ $w->type ?? 'Bonus' }}</td>
                         <td>{{ $w->transfer_reference ?? '-' }}</td>
@@ -41,12 +41,12 @@
                             <div class="btn-group-vertical" role="group">
                                 <button class="btn btn-success btn-sm approve-btn" data-id="{{ $w->id }}"
                                     data-user="{{ $w->user->name }}"
-                                    data-amount="{{ number_format($w->amount, 0, ',', '.') }}">
+                                    data-amount="{{ number_format($w->amount-$w->tax, 0, ',', '.') }}">
                                     <i class="fas fa-check"></i> Approve
                                 </button>
                                 <button class="btn btn-danger btn-sm reject-btn" data-id="{{ $w->id }}"
                                     data-user="{{ $w->user->name }}"
-                                    data-amount="{{ number_format($w->amount, 0, ',', '.') }}">
+                                    data-amount="{{ number_format($w->amount-$w->tax, 0, ',', '.') }}">
                                     <i class="fas fa-times"></i> Reject
                                 </button>
                                 {{-- <button class="btn btn-info btn-sm detail-btn" data-id="{{ $w->id }}">
@@ -106,7 +106,7 @@
                                 <p><strong>Jumlah:</strong> Rp ${amount}</p>
                                 <hr>
                                 <label for="transfer_reference" class="form-label">Nomor Referensi Transfer:</label>
-                                <input type="text" id="transfer_reference" class="swal2-input" placeholder="Misal: TRF12345678" required>
+                                <input type="text" id="transfer_reference" class="swal2-input" placeholder="Misal: TRF12345678">
                                 
                                 <label for="admin_notes" class="form-label">Catatan Admin (opsional):</label>
                                 <textarea id="admin_notes" class="swal2-textarea" placeholder="Catatan untuk member..."></textarea>
@@ -123,11 +123,7 @@
                             const adminNotes = document.getElementById('admin_notes')
                                 .value;
 
-                            if (!transferRef) {
-                                Swal.showValidationMessage(
-                                    'Nomor referensi transfer wajib diisi!');
-                                return false;
-                            }
+
 
                             return {
                                 transfer_reference: transferRef,

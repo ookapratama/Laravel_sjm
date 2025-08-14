@@ -18,7 +18,7 @@ class PinCtrl extends Controller
             ->get();
 
         $pins = ActivationPin::where('purchased_by', auth()->id())
-            ->orderByDesc('id')
+            ->oldest('status')
             ->get();
 
         $hasOpen = $requests->contains(fn($r) => in_array($r->status, ['requested', 'finance_approved']));
@@ -34,7 +34,7 @@ class PinCtrl extends Controller
     public function store(Request $r){
         abort_unless(auth()->user()->is_active, 403);
         $qty = (int) $r->validate(['qty'=>'required|integer|min:1|max:100'])['qty'];
-        $unit = 1500000;
+        $unit = 750000;
 
         if (PinRequest::where('requester_id',auth()->id())->open()->exists()) {
             return back()->with('error','Masih ada request berjalan.');

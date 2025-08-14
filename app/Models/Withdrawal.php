@@ -13,7 +13,9 @@ class Withdrawal extends Model
         'status',
         'admin_notes',
         'transfer_reference',
-        'type'
+        'type',
+        'processed_at',
+        'approveed_at'
     ];
 
     public function user()

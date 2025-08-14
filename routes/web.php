@@ -21,6 +21,7 @@ use App\Http\Controllers\Auth\ChangeCredentialsController;
 use App\Http\Controllers\Admin\WithdrawController as AdminWithdrawController;
 use App\Http\Controllers\Member\WithdrawController as MemberWithdrawController;
 use App\Http\Controllers\Finance\WithdrawController as FinanceWithdrawController;
+use App\Http\Controllers\Super\SuperWithdrawController as SuperWithdrawController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\AccessController;
 use App\Events\MemberCountUpdated;
@@ -155,6 +156,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // ✅ Super Admin
     Route::prefix('super-admin')->middleware('role:super-admin')->group(function () {
         Route::get('/', [DashboardController::class, 'superAdmin'])->name('super-admin');
+        Route::get('/withdraw', [SuperWithdrawController::class, 'index'])->name('super.withdraw');
+        Route::post('/withdraw', [SuperWithdrawController::class, 'store'])->name('super.withdraw.store');
+        Route::get('/withdraw/bonus', [SuperWithdrawController::class, 'getBonusAvailable'])->name('super.withdraw.bonus');
+        Route::get('/withdraw/history', [SuperWithdrawController::class, 'history'])->name('super.withdraw.history');
+         Route::post('/super/withdraw/drain/{group}', [SuperWithdrawController::class, 'drainGroup'])
+            ->name('super.withdraw.drain');
     });
     Route::prefix('bonus-settings')->middleware('role:super-admin')->group(function () {
         Route::get('/json', [BonusSettingController::class, 'json']);
@@ -203,7 +210,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // ✅ Member
-    Route::prefix('member')->middleware('role:member')->group(function () {
+    Route::prefix('member')->middleware('role:member,super-admin')->group(function () {
+        Route::get('/downline', [UserController::class, 'index'])->name('users.index');
         Route::get('/pins', [MemberPinCtrl::class, 'index'])->name('member.pin.index');
         Route::post('/pins/request', [MemberPinCtrl::class, 'store'])->name('member.pin.request');
         Route::get('/', [DashboardController::class, 'member'])->name('member');
@@ -217,7 +225,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/bagan/upgrade/{bagan}', [MemberController::class, 'upgradeBagan'])->name('member.bagan.upgrade');
     });
     Route::middleware(['auth', 'role:member'])->get('/member/pins/status', function () {
-        $open = \App\Models\PinRequest::where('requester_id', auth()->id())
+        $open = PinRequest::where('requester_id', auth()->id())
             ->whereIn('status', ['requested', 'finance_approved'])->exists();
         return response()->json(['hasOpen' => $open]);
     })->name('member.pin.status');
@@ -226,7 +234,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/bonus', [BonusController::class, 'index'])->name('bonus.index');
 
     // ✅ Users (Data Member)
-    Route::prefix('data-member')->middleware('role:super-admin,member,admin')->group(function () {
+    Route::prefix('data-member')->middleware('role:super-admin,admin')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('users.index');
         Route::post('/', [UserController::class, 'store'])->name('users.store');
         Route::get('/{id}/edit', [UserController::class, 'edit'])->name('users.edit');

@@ -17,13 +17,42 @@ class DashboardController extends Controller
     public function superAdmin()
     {
         $user = Auth::user();
-        $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('amount');
+        $bonus_sjm = BonusTransaction::whereIn('user_id', range(1, 15))->sum('amount');
+        $bonus_manajemen = BonusTransaction::whereIn('user_id', range(16, 31))->sum('amount');
         $totalMembers = User::count(); // atau where('role', 'member')
+        $totalBonusnet = BonusTransaction::where('user_id', $user->id)
+            ->where('status', 'paid')
+            ->sum('amount');
+        $userBagans = $user->bagans()->orderBy('bagan')->get();
+        $userBaganAktif = $userBagans->pluck('bagan')->toArray(); // array angka: [1, 2]
+        $leftDownline = TreeHelper::countDownlines($user, 'left');
+        $rightDownline = TreeHelper::countDownlines($user, 'right');
+        $totalBonusSJMPaid = BonusTransaction::whereIn('user_id', range(1, 15))
+            ->where('status', 'paid')
+            ->sum('amount');
+        $totalBonusManajemenPaid = BonusTransaction::whereIn('user_id', range(16, 31))
+            ->where('status', 'paid')
+            ->sum('amount');
+        $totalWithdrawn_sjm = Withdrawal::whereIn('user_id', range(1, 15))
+            ->where('status', 'approved')
+            ->sum('amount');
+        $totalWithdrawn_manajemen = Withdrawal::whereIn('user_id', range(16, 31))
+            ->where('status', 'approved')
+            ->sum('amount');
 
+        $saldoBonusSJMTersedia = $totalBonusSJMPaid  - $totalWithdrawn_sjm;
+        $saldoBonusManajemenTersedia = $totalBonusManajemenPaid  - $totalWithdrawn_manajemen;
         return view('dashboards.super_admin', [
             'user' => $user,
-            'totalBonus' => $totalBonus,
+            'bonus_sjm' => $bonus_sjm,
+            'bonus_manajemen' => $bonus_manajemen,
             'totalMembers' => $totalMembers,
+            'userBagans' => $userBagans,
+            'userBaganAktif' => $userBaganAktif,
+            'leftDownline' => $leftDownline,
+            'rightDownline' => $rightDownline,
+            'saldoBonusSJMTersedia' => $saldoBonusSJMTersedia,
+            'saldoBonusManajemenTersedia' => $saldoBonusManajemenTersedia,
         ]);
     }
 
@@ -74,15 +103,13 @@ class DashboardController extends Controller
         $bulanIni = $data->filter(fn($i) => $i->date->format('Y-m') === $currentMonth);
 
         $incomePie = [
-            'pendaftaran_member' => $bulanIni->sum('pendaftaran_member'),
+            'penjualan_pin' => $bulanIni->sum('penjualan_pin'),
             'produk' => $bulanIni->sum('produk'),
             'manajemen' => $bulanIni->sum('manajemen'),
         ];
 
         $expensePie = [
             'pairing_bonus' => $bulanIni->sum('pairing_bonus'),
-            'ro_bonus' => $bulanIni->sum('ro_bonus'),
-            'reward_poin' => $bulanIni->sum('reward_poin'),
             'withdraw' => $bulanIni->sum('withdraw'),
         ];
 
@@ -102,7 +129,7 @@ class DashboardController extends Controller
         $rightDownline = TreeHelper::countDownlines($user, 'right');
         $totalBonusPaid = BonusTransaction::where('user_id', $user->id)
             ->where('status', 'paid')
-            ->sum('net_amount');
+            ->sum('amount');
 
         $totalWithdrawn = Withdrawal::where('user_id', $user->id)
             ->where('status', 'approved')
@@ -116,8 +143,7 @@ class DashboardController extends Controller
             'userBagans' => $userBagans,
             'userBaganAktif' => $userBaganAktif,
             'totalBonus' => $totalBonus,
-            // 'totalBonusnett' => $totalBonusnet,
-            'totalBonusnett' => $saldoBonusTersedia - $pajakSaldo,
+            'totalBonusnett' => $saldoBonusTersedia,
             'leftDownline' => $leftDownline,
             'rightDownline' => $rightDownline,
             'saldoBonusTersedia' => $saldoBonusTersedia,

@@ -16,7 +16,22 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::with(['sponsor', 'upline'])->latest()->get();
+       $userId = auth()->id();
+
+$users = collect(DB::select("
+    WITH RECURSIVE downlines AS (
+        SELECT id, username,name, upline_id, sponsor_id,email,position
+        FROM users
+        WHERE upline_id = ?
+
+        UNION ALL
+
+        SELECT u.id, u.username,u.name, u.upline_id, u.sponsor_id,u.email,u.position
+        FROM users u
+        INNER JOIN downlines d ON u.upline_id = d.id
+    )
+    SELECT * FROM downlines
+", [$userId]));
         return view('users.index', compact('users'));
         
     }

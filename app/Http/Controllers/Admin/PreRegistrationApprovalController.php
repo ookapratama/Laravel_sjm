@@ -39,7 +39,7 @@ public function approve($id)
         'password' => Hash::make($password),
         'sponsor_id' => $sponsor->id ?? null,
         'pre_registration_id' => $pre->id, // 👉 penting
-        'must_change_credentials' => true,
+        
     ]);
 
     // ✅ Update pre_registrasi

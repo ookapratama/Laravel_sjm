@@ -39,10 +39,22 @@
 
     {{-- Jaringan --}}
     <li class="nav-item">
-      <a href="tree">
+      <a data-bs-toggle="collapse" href="#jaringan">
         <i class="fas fa-sitemap"></i>
-        <p>Jaringan</p>
+        <p>Jaringan Saya</p>
+        <span class="caret"></span>
       </a>
+      <div class="collapse" id="jaringan">
+        <ul class="nav nav-collapse">
+          <li><a href="/tree" class="menu-bagan" data-bagan="1"><span class="sub-item">Basic</span></a></li>
+          <li><a href="#" class="menu-bagan" data-bagan="2"><span class="sub-item">Starter P1</span></a></li>
+        <li><a href="#"  class="menu-bagan"data-bagan="3"><span class="sub-item">Booster P2</span></a></li>
+          <li><a href="#" class="menu-bagan" data-bagan="4"> <span class="sub-item">Growth P3</span></a></li>
+            <li><a href="#" class="menu-bagan" data-bagan="5"> <span class="sub-item">Champion P4</span></a></li>
+              <li><a href="#" class="menu-bagan" data-bagan="6"> <span class="sub-item">Legacy P5</span></a></li>
+
+        </ul>
+      </div>
     </li>
 
     {{-- Bonus --}}
@@ -59,16 +71,11 @@
       </div>
     </li>
     {{-- Pre-register --}}
-    <li class="nav-item">
-      <a href="pre-register">
-        <i class="fas fa-user-check"></i>
-        <p>Pre-register</p>
-      </a>
-    </li>
+    <li class="nav-item"><a href="/member/pins"><i class="fas fa-cart-plus"></i><p>Pin Aktivasi</p></a></li>
 
     {{-- Penarikan --}}
     <li class="nav-item">
-      <a href="super-admin/withdraws">
+      <a href="super-admin/withdraw">
         <i class="fas fa-wallet"></i>
         <p>Penarikan</p>
       </a>
@@ -137,6 +144,24 @@
           <li><a href="/finance/pin-requests"><span class="sub-item">Pin Aktivasi</span></a></li>
         </ul>
       </div>
+          <li class="nav-item">
+      <a data-bs-toggle="collapse" href="#jaringan">
+        <i class="fas fa-sitemap"></i>
+        <p>Jaringan Saya</p>
+        <span class="caret"></span>
+      </a>
+      <div class="collapse" id="jaringan">
+        <ul class="nav nav-collapse">
+          <li><a href="/tree" class="menu-bagan" data-bagan="1"><span class="sub-item">Basic</span></a></li>
+          <li><a href="#" class="menu-bagan" data-bagan="2"><span class="sub-item">Starter P1</span></a></li>
+        <li><a href="#"  class="menu-bagan"data-bagan="3"><span class="sub-item">Booster P2</span></a></li>
+          <li><a href="#" class="menu-bagan" data-bagan="4"> <span class="sub-item">Growth P3</span></a></li>
+            <li><a href="#" class="menu-bagan" data-bagan="5"> <span class="sub-item">Champion P4</span></a></li>
+              <li><a href="#" class="menu-bagan" data-bagan="6"> <span class="sub-item">Legacy P5</span></a></li>
+
+        </ul>
+      </div>
+    </li>
     </li>
     <li class="nav-item">
         <a href="/finance/withdraws">
@@ -148,7 +173,7 @@
     <li class="nav-item">
         <a href="/finance/report">
             <i class="fas fa-file-invoice-dollar"></i>
-            <p>Laporan Keuangan</p>
+            <p>Histori Pencairan</p>
         </a>
     </li>
 
@@ -204,7 +229,7 @@
 
       {{-- MEMBER --}}
       @case('member')
-             <li class="nav-item">
+    <li class="nav-item">
       <a data-bs-toggle="collapse" href="#manajemen">
         <i class="fas fa-sitemap"></i>
         <p>Jaringan Saya</p>
@@ -222,10 +247,10 @@
         </ul>
       </div>
     </li>
-       
+       <li class="nav-item"><a href="/member/downline"><i class="fas  fa-users-cog"></i><p>Data Downline</p></a></li>
         <li class="nav-item"><a href="/bonus"><i class="fas fa-money-check-alt"></i><p>Bonus Saya</p></a></li>
         <li class="nav-item"><a href="/member/withdraw"><i class="fas fa-credit-card"></i><p>Penarikan Bonus</p></a></li>
-        <li class="nav-item"><a href="member/pins"><i class="fas fa-cart-plus"></i><p>Pin Aktivasi</p></a></li>
+        <li class="nav-item"><a href="/member/pins"><i class="fas fa-cart-plus"></i><p>Pin Aktivasi</p></a></li>
         <li class="nav-item"><a href="/notifications"><i class="fas fa-bell"></i><p>Notifikasi</p></a></li>
         <li class="nav-item"><a href="/help"><i class="fas fa-headset"></i><p>Bantuan</p></a></li>
         @break

@@ -78,37 +78,35 @@ class BonusManager
     {
         DB::transaction(function () use ($user, $upline, $position) {
 
-            if ($upline) {
-                // Pasang ke upline
-                $user->upline_id = $upline->id;
-                $user->position  = $position;
-                $user->save();
+        if ($upline) {
+            // Pasang ke upline
+            $user->upline_id = $upline->id;
+            $user->position  = $position;
+            $user->save();
 
-                $level = $this->getUserLevel($upline) + 1;
+            // Level relatif di jaringan
+            $uplineLevel = $this->getUserLevel($upline);
+            $userLevel   = $uplineLevel + 1;
 
-                // Pastikan upline punya bagan 1 aktif (create-or-update)
-                $this->ensureBaganRow($upline, 1, $upline, $this->getUserLevel($upline), true);
+            // ✅ Pastikan UPLINE punya 10 bagan (Bagan-1 aktif, sisanya non-aktif)
+            $this->ensureAllBagans($upline, $upline->upline, $uplineLevel, $this->maxBagan(), [1 => true]);
 
-                // Bootstrap semua bagan user (1 aktif, sisanya non-aktif) tanpa duplikasi
-                $this->ensureAllBagans($user, $upline, $level);
+            // ✅ Bootstrap 10 bagan untuk USER (Bagan-1 aktif, sisanya non-aktif)
+            $this->ensureAllBagans($user, $upline, $userLevel, $this->maxBagan(), [1 => true]);
 
-               
-
-                // Proses pairing ke atas
-                $current = $upline;
-                while ($current) {
-                   
-                    $this->process($current);
-                    $current->refreshChildCounts(); // asumsi ada method ini
-                    $current = $current->upline;
-                }
-            } else {
-                // Root user (tanpa upline)
-                $user->save();
-                $this->ensureAllBagans($user, null, 1); // bagan 1 aktif, lainnya non-aktif
-               
+            // Proses pairing ke atas
+            $current = $upline;
+            while ($current) {
+                $this->process($current);
+                $current->refreshChildCounts(); // jika ada
+                $current = $current->upline;
             }
-        });
+        } else {
+            // ✅ Root user (tanpa upline) → langsung 10 bagan
+            $user->save();
+            $this->ensureAllBagans($user, null, 1, $this->maxBagan(), [1 => true]);
+        }
+    });
     }
 
     /* =========================
@@ -225,46 +223,50 @@ class BonusManager
         }
     }
 
-    protected function activateNextBagan(User $user, int $nextBagan): void
-    {
-        if ($nextBagan > $this->maxBagan()) return;
+   protected function activateNextBagan(User $user, int $nextBagan): void
+{
+    if ($nextBagan > $this->maxBagan()) return;
 
-        $existing = UserBagan::where('user_id', $user->id)->where('bagan', $nextBagan)->first();
+    $existing = UserBagan::where('user_id', $user->id)
+        ->where('bagan', $nextBagan)
+        ->first();
 
-        if ($existing) {
-            if (! $existing->is_active) {
-                $existing->is_active = true;
-                $existing->save();
-               
-            }
-            return;
+    if ($existing) {
+        if (! $existing->is_active) {
+            $existing->is_active = true;
+            $existing->save();
         }
-
-        UserBagan::create([
-            'user_id'              => $user->id,
-            'bagan'                => $nextBagan,
-            'pairing_level_count'  => 0,
-            'is_active'            => true,
-            'upgrade_cost'         => $this->baganCost($nextBagan),
-            'allocated_from_bonus' => 0,
-            'upgrade_paid_manually'=> false,
-        ]);
-
-        
+        return;
     }
 
+    // Jika belum ada barisnya, buat 1 baris untuk bagan berikutnya dan aktifkan
+    $this->ensureBaganRow(
+        $user,
+        $nextBagan,
+        $user->upline,
+        $this->getUserLevel($user),
+        true
+    );
+}
 
 
-    protected function ensureAllBagans(User $user, ?User $upline, int $level): void
+
+
+    protected function ensureAllBagans(User $user,?User $upline,int $level,?int $maxBagan = null,array $activeBagans = [1 => true] ): void 
     {
-        // Bagan 1 aktif
-        $this->ensureBaganRow($user, 1, $upline, $level, true);
+    $max = $maxBagan ?: $this->maxBagan();
 
-        // Bagan 2..N non-aktif
-        for ($b = 2; $b <= $this->maxBagan(); $b++) {
-            $this->ensureBaganRow($user, $b, $upline, $level, false);
-        }
+    for ($b = 1; $b <= $max; $b++) {
+        $this->ensureBaganRow(
+            $user,
+            $b,
+            $upline,
+            $level,
+            (bool) ($activeBagans[$b] ?? false)
+        );
     }
+}
+
 
     /**
      * Create-or-update aman (update hanya jika perlu).

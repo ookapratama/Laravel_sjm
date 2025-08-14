@@ -28,7 +28,7 @@ class WithdrawController extends Controller
             ];
 
             if ($request->action === 'approve') {
-                $rules['transfer_reference'] = 'required|string|max:100';
+                $rules['transfer_reference'] = 'nullable|string|max:100';
                 $rules['admin_notes'] = 'nullable|string|max:500';
             } else {
                 $rules['admin_notes'] = 'required|string|min:10|max:500';
@@ -56,7 +56,7 @@ class WithdrawController extends Controller
             }
 
             $finance = auth()->user();
-            $amount = number_format($withdraw->amount, 0, ',', '.');
+            $amount = number_format($withdraw->amount-$withdraw->tax, 0, ',', '.');
 
             if ($request->action === 'approve') {
                 // ==========================================
@@ -67,7 +67,7 @@ class WithdrawController extends Controller
                 $withdraw->status = 'approved';
                 $withdraw->transfer_reference = $request->transfer_reference;
                 $withdraw->admin_notes = $request->admin_notes;
-                // $withdraw->processed_at = now();
+                 $withdraw->processed_at = now();
                 // $withdraw->processed_by = auth()->id();
                 $withdraw->save();
 
@@ -76,7 +76,7 @@ class WithdrawController extends Controller
                     'user_id'           => $user->id,
                     'type'              => 'out',
                     'source'            => 'withdraw',
-                    'amount'            => $withdraw->amount,
+                    'amount'            => $withdraw->amount-$withdraw->tax,
                     'notes'             => 'Withdraw user ' . $user->name . ' - Approved by ' . $finance->name,
                     'payment_channel'   => 'Transfer',
                     'payment_reference' => 'WD-' . $withdraw->id,

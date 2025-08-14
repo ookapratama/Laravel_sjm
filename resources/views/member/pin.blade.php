@@ -13,7 +13,7 @@
 {{-- Tombol beli / muted --}}
 @if(!$hasOpen)
   <button class="btn btn-warning mb-3" data-bs-toggle="modal" data-bs-target="#requestPinModal">
-    Beli PIN (Rp1.500.000/pcs)
+    Beli PIN (Rp750.000/pcs)
   </button>
 @else
   <button class="btn btn-secondary mb-3" disabled
@@ -38,7 +38,7 @@
             <div class="col-md-3">
               <label class="form-label">Jumlah PIN</label>
               <input type="number" name="qty" class="form-control" min="1" max="100" value="1" required>
-              <div class="form-text">1 PIN = Rp1.500.000</div>
+              <div class="form-text">1 PIN = Rp750.000</div>
             </div>
 
             <div class="col-md-9">

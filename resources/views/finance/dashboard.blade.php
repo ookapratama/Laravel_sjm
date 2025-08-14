@@ -43,86 +43,101 @@ const daily = @json($daily);
 const incomePie = @json($incomePie);
 const expensePie = @json($expensePie);
 
+const rupiah = (v) => new Intl.NumberFormat('id-ID', {
+  style: 'currency',
+  currency: 'IDR',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0
+}).format(Number(v) || 0);
+
 // LINE CHART
 new Chart(document.getElementById('lineChart'), {
-    type: 'line',
-    data: {
-        labels: daily.map(d => d.date),
-        datasets: [
-            {
-                label: 'Pendaftaran Member',
-                data: daily.map(d => d.pendaftaran_member),
-                borderColor: '#4CAF50',
-                fill: false
-            },
-            {
-                label: 'Produk',
-                data: daily.map(d => d.produk),
-                borderColor: '#2196F3',
-                fill: false
-            },
-            {
-                label: 'Manajemen',
-                data: daily.map(d => d.manajemen),
-                borderColor: '#FFC107',
-                fill: false
-            },
-            {
-                label: 'Pairing Bonus',
-                data: daily.map(d => d.pairing_bonus),
-                borderColor: '#F44336',
-                fill: false
-            },
-            {
-                label: 'RO Bonus',
-                data: daily.map(d => d.ro_bonus),
-                borderColor: '#9C27B0',
-                fill: false
-            },
-            {
-                label: 'Reward Poin',
-                data: daily.map(d => d.reward_poin),
-                borderColor: '#3F51B5',
-                fill: false
-            },
-            {
-                label: 'Withdraw',
-                data: daily.map(d => d.withdraw),
-                borderColor: '#795548',
-                fill: false
-            },
-        ]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: { beginAtZero: true }
+  type: 'line',
+  data: {
+    labels: daily.map(d => d.date),
+    datasets: [
+      { label: 'Penjualan Pin', data: daily.map(d => d.penjualan_pin), borderColor: '#4CAF50', fill: false },
+      { label: 'Produk',        data: daily.map(d => d.produk),        borderColor: '#2196F3', fill: false },
+      { label: 'Manajemen',     data: daily.map(d => d.manajemen),     borderColor: '#FFC107', fill: false },
+      { label: 'Pairing Bonus', data: daily.map(d => d.pairing_bonus), borderColor: '#F44336', fill: false },
+      { label: 'Withdraw',      data: daily.map(d => d.withdraw),      borderColor: '#795548', fill: false },
+    ]
+  },
+  options: {
+    responsive: true,
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: (value) => rupiah(value) // ✅ Axis Y ke Rp
         }
+      }
+    },
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const label = ctx.dataset.label || '';
+            const val = (typeof ctx.parsed?.y === 'number') ? ctx.parsed.y :
+                        (typeof ctx.raw === 'number') ? ctx.raw : 0;
+            return `${label}: ${rupiah(val)}`; // ✅ Tooltip ke Rp
+          }
+        }
+      }
     }
+  }
 });
 
 // PIE CHART PEMASUKAN
 new Chart(document.getElementById('incomePieChart'), {
-    type: 'pie',
-    data: {
-        labels: ['Pendaftaran', 'Produk', 'Manajemen'],
-        datasets: [{
-            data: [incomePie.pendaftaran_member, incomePie.produk, incomePie.manajemen],
-            backgroundColor: ['#4CAF50', '#2196F3', '#FFC107']
-        }]
+  type: 'pie',
+  data: {
+    labels: ['Penjualan Pin', 'Produk', 'Manajemen'],
+    datasets: [{
+      data: [incomePie.penjualan_pin, incomePie.produk, incomePie.manajemen],
+      backgroundColor: ['#4CAF50', '#2196F3', '#FFC107']
+    }]
+  },
+  options: {
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const lbl = ctx.label || '';
+            const val = (typeof ctx.parsed === 'number') ? ctx.parsed :
+                        (typeof ctx.raw === 'number') ? ctx.raw : 0;
+            return `${lbl}: ${rupiah(val)}`; // ✅ Tooltip ke Rp
+          }
+        }
+      }
     }
+  }
 });
 
 // PIE CHART PENGELUARAN
 new Chart(document.getElementById('expensePieChart'), {
-    type: 'pie',
-    data: {
-        labels: ['Pairing Bonus', 'RO Bonus', 'Reward Poin', 'Withdraw'],
-        datasets: [{
-            data: [expensePie.pairing_bonus, expensePie.ro_bonus, expensePie.reward_poin, expensePie.withdraw],
-            backgroundColor: ['#F44336', '#9C27B0', '#3F51B5', '#795548']
-        }]
+  type: 'pie',
+  data: {
+    labels: ['Pairing Bonus', 'Withdraw'],
+    datasets: [{
+      data: [expensePie.pairing_bonus, expensePie.withdraw],
+      backgroundColor: ['#F44336', '#9C27B0']
+    }]
+  },
+  options: {
+    plugins: {
+      tooltip: {
+        callbacks: {
+          label: (ctx) => {
+            const lbl = ctx.label || '';
+            const val = (typeof ctx.parsed === 'number') ? ctx.parsed :
+                        (typeof ctx.raw === 'number') ? ctx.raw : 0;
+            return `${lbl}: ${rupiah(val)}`; // ✅ Tooltip ke Rp
+          }
+        }
+      }
     }
+  }
 });
 </script>
 @endpush

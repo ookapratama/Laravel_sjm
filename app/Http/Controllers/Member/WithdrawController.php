@@ -16,7 +16,7 @@ class WithdrawController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $totalBonus = BonusTransaction::where('user_id', Auth::id())->sum('net_amount');
+        $totalBonus = BonusTransaction::where('user_id', Auth::id())->sum('amount');
         $totalWithdrawn = Withdrawal::where('user_id', $user->id)->where('status', 'approved')->sum('amount');
         $withdrawals = Withdrawal::where('user_id', $user->id)->latest()->get();
         $mitraProfile = MitraProfile::where('user_id', $user->id)->first();
@@ -59,7 +59,7 @@ class WithdrawController extends Controller
         }
 
         // Hitung bonus tersedia = total bonus - total yang sudah dicairkan (bukan yang masih menunggu)
-        $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('net_amount');
+        $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('amount');
         $totalWithdrawn = Withdrawal::where('user_id', $user->id)
             ->where('status', 'processed') // hanya yang sudah ditransfer
             ->sum('amount');
@@ -134,7 +134,7 @@ class WithdrawController extends Controller
         $user = auth()->user();
 
         // Total bonus dari transaksi (netto)
-        $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('net_amount');
+        $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('amount');
 
         // Semua withdraw yang sudah dan sedang diajukan (approved + pending)
         $totalWithdrawn = Withdrawal::where('user_id', $user->id)
