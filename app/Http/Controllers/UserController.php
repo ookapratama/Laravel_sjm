@@ -295,7 +295,6 @@ class UserController extends Controller
                 // if ($pin->status === 'reserved' && $pin->purchased_by && (int)$pin->purchased_by !== (int)$sponsor->id) {
                 //     throw ValidationException::withMessages(['pin_aktivasi' => 'PIN ini sedang di-reserve untuk pengguna lain.']);
                 // }
-
                 // 3b) Buat user (referral_code diisi otomatis oleh model User::booted())
                 $user = User::create([
                     'name'       => $validated['name'],
