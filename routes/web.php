@@ -160,7 +160,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/withdraw', [SuperWithdrawController::class, 'store'])->name('super.withdraw.store');
         Route::get('/withdraw/bonus', [SuperWithdrawController::class, 'getBonusAvailable'])->name('super.withdraw.bonus');
         Route::get('/withdraw/history', [SuperWithdrawController::class, 'history'])->name('super.withdraw.history');
-         Route::post('/super/withdraw/drain/{group}', [SuperWithdrawController::class, 'drainGroup'])
+        Route::post('/super/withdraw/drain/{group}', [SuperWithdrawController::class, 'drainGroup'])
             ->name('super.withdraw.drain');
     });
     Route::prefix('bonus-settings')->middleware('role:super-admin')->group(function () {
@@ -211,7 +211,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ✅ Member
     Route::prefix('member')->middleware('role:member,super-admin')->group(function () {
-        Route::get('/downline', [UserController::class, 'index'])->name('users.index');
+        Route::get('/downline', [UserController::class, 'index'])->name('users.downline');
+        Route::post('/register', [UserController::class, 'store_member'])->name('users.downline.store');
         Route::get('/pins', [MemberPinCtrl::class, 'index'])->name('member.pin.index');
         Route::post('/pins/request', [MemberPinCtrl::class, 'store'])->name('member.pin.request');
         Route::get('/', [DashboardController::class, 'member'])->name('member');
@@ -223,6 +224,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::post('/bagan/cek-saldo/{bagan}', [MemberController::class, 'cekSaldo']);
         Route::post('/bagan/upgrade/{bagan}', [MemberController::class, 'upgradeBagan'])->name('member.bagan.upgrade');
+
+        Route::post('/check-username', [ReferralRegisterController::class, 'checkUsername'])->name('check.username');
+        Route::post('/check-pin', [ReferralRegisterController::class, 'checkPin'])->name('check.pin');
+        Route::post('/check-sponsor', [ReferralRegisterController::class, 'checkSponsor'])->name('check.sponsor');
+        Route::post('/check-whatsapp', [ReferralRegisterController::class, 'checkWhatsApp'])->name('check.whatsapp');
     });
     Route::middleware(['auth', 'role:member'])->get('/member/pins/status', function () {
         $open = PinRequest::where('requester_id', auth()->id())
