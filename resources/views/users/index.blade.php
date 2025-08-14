@@ -1,360 +1,440 @@
 @extends('layouts.app')
 @section('content')
-<div class="page-inner">
-    <div class="card-header">
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex align-items-center">
-                        <h4 class="card-title">Data Member</h4>
-                        <button
-                        class="btn btn-primary btn-round ms-auto"
-                        data-bs-toggle="modal"
-                        data-bs-target="#userModal"
-                        >
-                        <i class="fa fa-plus"></i>
-                        Member Baru
-                    </button>
+    <div class="page-inner">
+        <div class="card-header">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center">
+                            <h4 class="card-title">Data Member</h4>
+                            <button class="btn btn-primary btn-round ms-auto" data-bs-toggle="modal"
+                                data-bs-target="#userModal">
+                                <i class="fa fa-plus"></i>
+                                Member Baru
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="multi-filter-select" class="display table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nama</th>
+                                        <th>Username</th>
+                                        <th>Email</th>
+                                        <th>Posisi</th>
+
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($users as $user)
+                                        <tr data-id="{{ $user->id }}">
+                                            <td>{{ $user->name }}</td>
+                                            <td>{{ $user->username }}</td>
+                                            <td>{{ $user->email }}</td>
+                                            <td>{{ ucfirst($user->position ?? 'Belum ada') }}</td>
+
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table id="multi-filter-select"
-                    class="display table table-striped table-hover">
-                    <thead>
-                        <tr>
-                            <th>Nama</th>
-                            <th>Username</th>
-                            <th>Email</th>
-                            <th>Posisi</th>
-                            
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($users as $user)
-                        <tr data-id="{{ $user->id }}">
-                            <td>{{ $user->name }}</td>
-                            <td>{{ $user->username }}</td>
-                            <td>{{ $user->email }}</td>
-                            <td>{{ ucfirst($user->position) }}</td>
-                           
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
-</div>
-</div>
-</div>
 
-{{-- Modal --}}
-{{-- MODAL REGISTRASI (lebar + backdrop hitam + wizard 4 langkah) --}}
-<div class="modal fade" id="userModal" tabindex="-1"
-     data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
-    <div class="modal-content">
-      <div class="modal-header bg-dark text-white">
-        <h5 class="modal-title">Form Registrasi Member</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
+    {{-- Modal --}}
+    {{-- MODAL REGISTRASI (lebar + backdrop hitam + wizard 4 langkah) --}}
+    <div class="modal fade" id="userModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Form Registrasi Member</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
 
-      {{-- HANYA SATU FORM di modal ini --}}
-      <form id="ref-register-form" action="{{ route('referral.register.store') }}" method="POST" novalidate>
-        @csrf
-        <div class="modal-body">
+                {{-- HANYA SATU FORM di modal ini --}}
+                <form id="ref-register-form" action="{{ route('users.downline.store') }}" method="POST" novalidate>
+                    @csrf
+                    <div class="modal-body">data-
 
-          {{-- Step Indicator --}}
-          <div class="step-indicator mb-3">
-            <div class="step-item active" data-step="1">
-              <div class="step-number">1</div><div class="step-text">PIN & Sponsor</div>
+                        {{-- Step Indicator --}}
+                        <div class="step-indicator mb-3">
+                            <div class="step-item active" data-step="1">
+                                <div class="step-number">1</div>
+                                <div class="step-text">PIN & Sponsor</div>
+                            </div>
+                            <div class="step-line"></div>
+                            <div class="step-item" data-step="2">
+                                <div class="step-number">2</div>
+                                <div class="step-text">Data Diri</div>
+                            </div>
+                            <div class="step-line"></div>
+                            <div class="step-item" data-step="3">
+                                <div class="step-number">3</div>
+                                <div class="step-text">Akun Login</div>
+                            </div>
+                            <div class="step-line"></div>
+                            <div class="step-item" data-step="4">
+                                <div class="step-number">4</div>
+                                <div class="step-text">Rekening</div>
+                            </div>
+                        </div>
+
+                        {{-- Error global --}}
+                        <div id="errorContainer" class="alert alert-danger d-none">
+                            <ul class="mb-0" id="errorList"></ul>
+                        </div>
+
+                        {{-- Banner sponsor dari ?ref --}}
+                        <div id="sponsorBanner" class="alert alert-info d-none">
+                            <strong>Sponsor:</strong> <span id="sponsorText"></span>
+                        </div>
+
+                        <input type="hidden" name="ref" id="ref" value="{{ auth()->user()->referral_code }}">
+
+                        {{-- ===== STEP 1: PIN & Sponsor ===== --}}
+                        <div class="js-step active" data-step="1">
+                            <h4 class="mb-3">Step 1: PIN Aktivasi & Kode Sponsor</h4>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">PIN Aktivasi</label>
+                                    <div class="input-group">
+                                        <input type="text" name="pin_aktivasi" id="pin_aktivasi" class="form-control"
+                                            required placeholder="Masukkan PIN aktivasi">
+                                        <button class="btn btn-outline-success" type="button" id="checkPin">
+                                            <span id="checkPinText">Verifikasi</span>
+                                            <i class="fas fa-spinner fa-spin d-none" id="checkPinSpinner"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Didapat dari upline/admin saat membeli PIN. <span
+                                            id="pinStatus" class="d-block"></span></small>
+                                    <div class="invalid-feedback" id="pinFeedback"></div>
+                                    <div class="valid-feedback d-none" id="pinValidFeedback"><i
+                                            class="fas fa-check-circle"></i> PIN valid!</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Kode Sponsor</label>
+                                    <div class="input-group">
+                                        <input type="text" id="sponsor_code_display" name="sponsor_code"
+                                            class="form-control" required placeholder="Masukkan kode sponsor"
+                                            value="{{ auth()->user()->referral_code }}">
+                                        <button class="btn btn-outline-info" type="button" id="checkSponsor">
+                                            <span id="checkSponsorText">Verifikasi</span>
+                                            <i class="fas fa-spinner fa-spin d-none" id="checkSponsorSpinner"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Kode referral dari sponsor/upline Anda. <span
+                                            id="sponsorStatus" class="d-block"></span></small>
+                                    <div class="invalid-feedback" id="sponsorFeedback"></div>
+                                    <div class="valid-feedback d-none" id="sponsorValidFeedback"><i
+                                            class="fas fa-check-circle"></i> Sponsor ditemukan!</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <div id="sponsorInfoBanner" class="alert alert-info d-none">
+                                        <div class="d-flex align-items-center">
+                                            <i class="fas fa-user-tie me-2"></i>
+                                            <div><strong>Sponsor Anda:</strong>
+                                                <div id="sponsorInfo"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ===== STEP 2: Data Diri ===== --}}
+                        <div class="js-step" data-step="2">
+                            <h4 class="mb-3">Step 2: Data Diri</h4>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nama Lengkap</label>
+                                    <input type="text" name="name" id="name" class="form-control" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">No. HP / WA</label>
+                                    <div class="input-group">
+                                        <input type="text" name="no_telp" id="no_telp" class="form-control"
+                                            required placeholder="08xx atau +62xxx" inputmode="numeric">
+                                        <button class="btn btn-outline-success" type="button" id="checkWhatsApp">
+                                            <span id="checkWhatsAppText">Cek WA</span>
+                                            <i class="fas fa-spinner fa-spin d-none" id="checkWhatsAppSpinner"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Nomor digunakan untuk notifikasi. <span id="whatsappStatus"
+                                            class="d-block"></span></small>
+                                    <div class="invalid-feedback" id="phoneFeedback"></div>
+                                    <div class="valid-feedback d-none" id="phoneValidFeedback"><i
+                                            class="fab fa-whatsapp"></i> Nomor WhatsApp valid!</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" name="email" id="email" class="form-control">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label d-block">Jenis Kelamin</label>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="jenis_kelamin"
+                                            id="jk_pria" value="pria" required>
+                                        <label class="form-check-label" for="jk_pria">Pria</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="jenis_kelamin"
+                                            id="jk_wanita" value="wanita" required>
+                                        <label class="form-check-label" for="jk_wanita">Wanita</label>
+                                    </div>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label class="form-label">No. KTP (opsional)</label>
+                                    <input type="text" name="no_ktp" id="no_ktp" class="form-control">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tempat Lahir</label>
+                                    <input type="text" name="tempat_lahir" id="tempat_lahir" class="form-control"
+                                        required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Tanggal Lahir</label>
+                                    <input type="date" name="tanggal_lahir" id="tanggal_lahir" class="form-control"
+                                        required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label class="form-label d-block">Agama</label>
+                                    @foreach (['islam', 'kristen', 'katolik', 'budha', 'hindu', 'lainnya'] as $ag)
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio" name="agama"
+                                                id="agama_{{ $ag }}" value="{{ $ag }}" required>
+                                            <label class="form-check-label"
+                                                for="agama_{{ $ag }}">{{ ucfirst($ag) }}</label>
+                                        </div>
+                                    @endforeach
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="col-md-12">
+                                    <label class="form-label">Alamat Lengkap</label>
+                                    <textarea name="alamat" id="alamat" class="form-control" rows="2" required></textarea>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+
+                                <div class="col-md-2">
+                                    <label class="form-label">RT</label>
+                                    <input type="text" name="rt" id="rt" class="form-control">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">RW</label>
+                                    <input type="text" name="rw" id="rw" class="form-control">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label">Desa/Kelurahan</label>
+                                    <input type="text" name="desa" id="desa" class="form-control" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Kecamatan</label>
+                                    <input type="text" name="kecamatan" id="kecamatan" class="form-control" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Kota/Kabupaten</label>
+                                    <input type="text" name="kota" id="kota" class="form-control" required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Kode Pos</label>
+                                    <input type="text" name="kode_pos" id="kode_pos" class="form-control">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ===== STEP 3: Akun Login ===== --}}
+                        <div class="js-step" data-step="3">
+                            <h4 class="mb-3">Step 3: Data Akun Login</h4>
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label">Username</label>
+                                    <div class="input-group">
+                                        <input type="text" name="username" id="username" class="form-control"
+                                            required placeholder="Masukkan username unik">
+                                        <button class="btn btn-outline-primary" type="button" id="checkUsername">
+                                            <span id="checkUsernameText">Cek Ketersediaan</span>
+                                            <i class="fas fa-spinner fa-spin d-none" id="checkUsernameSpinner"></i>
+                                        </button>
+                                    </div>
+                                    <div class="invalid-feedback" id="usernameFeedback"></div>
+                                    <div class="valid-feedback d-none" id="usernameValidFeedback"><i
+                                            class="fas fa-check-circle"></i> Username tersedia!</div>
+                                    <small class="form-text text-muted">4–20 karakter, huruf/angka/underscore. <span
+                                            id="usernameStatus"></span></small>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Password</label>
+                                    <div class="input-group">
+                                        <input type="password" name="password" id="password" class="form-control"
+                                            required minlength="6" autocomplete="new-password">
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePassword"><i
+                                                class="fas fa-eye" id="togglePasswordIcon"></i></button>
+                                    </div>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Konfirmasi Password</label>
+                                    <div class="input-group">
+                                        <input type="password" name="password_confirmation" id="password_confirmation"
+                                            class="form-control" required minlength="6" autocomplete="new-password">
+                                        <button class="btn btn-outline-secondary" type="button"
+                                            id="togglePasswordConfirmation"><i class="fas fa-eye"
+                                                id="togglePasswordConfirmationIcon"></i></button>
+                                    </div>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- ===== STEP 4: Rekening & Ahli Waris ===== --}}
+                        <div class="js-step" data-step="4">
+                            <h4 class="mb-3">Step 4: Data Rekening & Ahli Waris</h4>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nama di Rekening</label>
+                                    <input type="text" name="nama_rekening" id="nama_rekening" class="form-control"
+                                        required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Nomor Rekening</label>
+                                    <input type="text" name="nomor_rekening" id="nomor_rekening" class="form-control"
+                                        required>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label">Nama Bank</label>
+                                    <input type="text" name="nama_bank" id="nama_bank" list="bankList"
+                                        class="form-control" required placeholder="Pilih / ketik nama bank">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Nama Ahli Waris (opsional)</label>
+                                    <input type="text" name="nama_ahli_waris" id="nama_ahli_waris"
+                                        class="form-control">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Hubungan Ahli Waris (opsional)</label>
+                                    <input type="text" name="hubungan_ahli_waris" id="hubungan_ahli_waris"
+                                        class="form-control">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="agree" id="agree"
+                                            value="1" required>
+                                        <label class="form-check-label" for="agree">Saya menyetujui Syarat &
+                                            Ketentuan</label>
+                                    </div>
+                                    <div class="invalid-feedback">Anda harus menyetujui Syarat & Ketentuan.</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="wizard-buttons d-flex gap-2 mt-4">
+                            <button type="button" id="prevBtn" class="btn btn-secondary"
+                                style="display:none">Sebelumnya</button>
+                            <button type="button" id="nextBtn" class="btn btn-warning">Selanjutnya</button>
+                            <button type="submit" id="submitBtn" class="btn btn-success" style="display:none">Daftar
+                                Sekarang</button>
+                        </div>
+
+                        <datalist id="bankList"></datalist>
+                    </div>
+                </form>
             </div>
-            <div class="step-line"></div>
-            <div class="step-item" data-step="2">
-              <div class="step-number">2</div><div class="step-text">Data Diri</div>
-            </div>
-            <div class="step-line"></div>
-            <div class="step-item" data-step="3">
-              <div class="step-number">3</div><div class="step-text">Akun Login</div>
-            </div>
-            <div class="step-line"></div>
-            <div class="step-item" data-step="4">
-              <div class="step-number">4</div><div class="step-text">Rekening</div>
-            </div>
-          </div>
-
-          {{-- Error global --}}
-          <div id="errorContainer" class="alert alert-danger d-none">
-            <ul class="mb-0" id="errorList"></ul>
-          </div>
-
-          {{-- Banner sponsor dari ?ref --}}
-          <div id="sponsorBanner" class="alert alert-info d-none">
-            <strong>Sponsor:</strong> <span id="sponsorText"></span>
-          </div>
-
-          <input type="hidden" name="ref" id="ref" value="{{auth()->user()->referral_code}}">
-
-          {{-- ===== STEP 1: PIN & Sponsor ===== --}}
-          <div class="js-step active" data-step="1">
-            <h4 class="mb-3">Step 1: PIN Aktivasi & Kode Sponsor</h4>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">PIN Aktivasi</label>
-                <div class="input-group">
-                  <input type="text" name="pin_aktivasi" id="pin_aktivasi" class="form-control" required placeholder="Masukkan PIN aktivasi">
-                  <button class="btn btn-outline-success" type="button" id="checkPin">
-                    <span id="checkPinText">Verifikasi</span>
-                    <i class="fas fa-spinner fa-spin d-none" id="checkPinSpinner"></i>
-                  </button>
-                </div>
-                <small class="text-muted">Didapat dari upline/admin saat membeli PIN. <span id="pinStatus" class="d-block"></span></small>
-                <div class="invalid-feedback" id="pinFeedback"></div>
-                <div class="valid-feedback d-none" id="pinValidFeedback"><i class="fas fa-check-circle"></i> PIN valid!</div>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Kode Sponsor</label>
-                <div class="input-group">
-                  <input type="text" id="sponsor_code_display" name="sponsor_code" class="form-control" required placeholder="Masukkan kode sponsor" value="{{auth()->user()->referral_code}}">
-                  <button class="btn btn-outline-info" type="button" id="checkSponsor">
-                    <span id="checkSponsorText">Verifikasi</span>
-                    <i class="fas fa-spinner fa-spin d-none" id="checkSponsorSpinner"></i>
-                  </button>
-                </div>
-                <small class="text-muted">Kode referral dari sponsor/upline Anda. <span id="sponsorStatus" class="d-block"></span></small>
-                <div class="invalid-feedback" id="sponsorFeedback"></div>
-                <div class="valid-feedback d-none" id="sponsorValidFeedback"><i class="fas fa-check-circle"></i> Sponsor ditemukan!</div>
-              </div>
-
-              <div class="col-12">
-                <div id="sponsorInfoBanner" class="alert alert-info d-none">
-                  <div class="d-flex align-items-center">
-                    <i class="fas fa-user-tie me-2"></i>
-                    <div><strong>Sponsor Anda:</strong> <div id="sponsorInfo"></div></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {{-- ===== STEP 2: Data Diri ===== --}}
-          <div class="js-step" data-step="2">
-            <h4 class="mb-3">Step 2: Data Diri</h4>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Nama Lengkap</label>
-                <input type="text" name="name" id="name" class="form-control" required>
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">No. HP / WA</label>
-                <div class="input-group">
-                  <input type="text" name="no_telp" id="no_telp" class="form-control" required placeholder="08xx atau +62xxx" inputmode="numeric">
-                  <button class="btn btn-outline-success" type="button" id="checkWhatsApp">
-                    <span id="checkWhatsAppText">Cek WA</span>
-                    <i class="fas fa-spinner fa-spin d-none" id="checkWhatsAppSpinner"></i>
-                  </button>
-                </div>
-                <small class="text-muted">Nomor digunakan untuk notifikasi. <span id="whatsappStatus" class="d-block"></span></small>
-                <div class="invalid-feedback" id="phoneFeedback"></div>
-                <div class="valid-feedback d-none" id="phoneValidFeedback"><i class="fab fa-whatsapp"></i> Nomor WhatsApp valid!</div>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Email</label>
-                <input type="email" name="email" id="email" class="form-control">
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label d-block">Jenis Kelamin</label>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="jenis_kelamin" id="jk_pria" value="pria" required>
-                  <label class="form-check-label" for="jk_pria">Pria</label>
-                </div>
-                <div class="form-check form-check-inline">
-                  <input class="form-check-input" type="radio" name="jenis_kelamin" id="jk_wanita" value="wanita" required>
-                  <label class="form-check-label" for="jk_wanita">Wanita</label>
-                </div>
-                <div class="invalid-feedback"></div>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">No. KTP (opsional)</label>
-                <input type="text" name="no_ktp" id="no_ktp" class="form-control">
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Tempat Lahir</label>
-                <input type="text" name="tempat_lahir" id="tempat_lahir" class="form-control" required>
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Tanggal Lahir</label>
-                <input type="date" name="tanggal_lahir" id="tanggal_lahir" class="form-control" required>
-                <div class="invalid-feedback"></div>
-              </div>
-
-              <div class="col-md-12">
-                <label class="form-label d-block">Agama</label>
-                @foreach (['islam','kristen','katolik','budha','hindu','lainnya'] as $ag)
-                  <div class="form-check form-check-inline">
-                    <input class="form-check-input" type="radio" name="agama" id="agama_{{ $ag }}" value="{{ $ag }}" required>
-                    <label class="form-check-label" for="agama_{{ $ag }}">{{ ucfirst($ag) }}</label>
-                  </div>
-                @endforeach
-                <div class="invalid-feedback"></div>
-              </div>
-
-              <div class="col-md-12">
-                <label class="form-label">Alamat Lengkap</label>
-                <textarea name="alamat" id="alamat" class="form-control" rows="2" required></textarea>
-                <div class="invalid-feedback"></div>
-              </div>
-
-              <div class="col-md-2">
-                <label class="form-label">RT</label>
-                <input type="text" name="rt" id="rt" class="form-control">
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label">RW</label>
-                <input type="text" name="rw" id="rw" class="form-control">
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-8">
-                <label class="form-label">Desa/Kelurahan</label>
-                <input type="text" name="desa" id="desa" class="form-control" required>
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Kecamatan</label>
-                <input type="text" name="kecamatan" id="kecamatan" class="form-control" required>
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-4">
-                <label class="form-label">Kota/Kabupaten</label>
-                <input type="text" name="kota" id="kota" class="form-control" required>
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-2">
-                <label class="form-label">Kode Pos</label>
-                <input type="text" name="kode_pos" id="kode_pos" class="form-control">
-                <div class="invalid-feedback"></div>
-              </div>
-            </div>
-          </div>
-
-          {{-- ===== STEP 3: Akun Login ===== --}}
-          <div class="js-step" data-step="3">
-            <h4 class="mb-3">Step 3: Data Akun Login</h4>
-            <div class="row g-3">
-              <div class="col-md-12">
-                <label class="form-label">Username</label>
-                <div class="input-group">
-                  <input type="text" name="username" id="username" class="form-control" required placeholder="Masukkan username unik">
-                  <button class="btn btn-outline-primary" type="button" id="checkUsername">
-                    <span id="checkUsernameText">Cek Ketersediaan</span>
-                    <i class="fas fa-spinner fa-spin d-none" id="checkUsernameSpinner"></i>
-                  </button>
-                </div>
-                <div class="invalid-feedback" id="usernameFeedback"></div>
-                <div class="valid-feedback d-none" id="usernameValidFeedback"><i class="fas fa-check-circle"></i> Username tersedia!</div>
-                <small class="form-text text-muted">4–20 karakter, huruf/angka/underscore. <span id="usernameStatus"></span></small>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Password</label>
-                <div class="input-group">
-                  <input type="password" name="password" id="password" class="form-control" required minlength="6" autocomplete="new-password">
-                  <button class="btn btn-outline-secondary" type="button" id="togglePassword"><i class="fas fa-eye" id="togglePasswordIcon"></i></button>
-                </div>
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Konfirmasi Password</label>
-                <div class="input-group">
-                  <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" required minlength="6" autocomplete="new-password">
-                  <button class="btn btn-outline-secondary" type="button" id="togglePasswordConfirmation"><i class="fas fa-eye" id="togglePasswordConfirmationIcon"></i></button>
-                </div>
-                <div class="invalid-feedback"></div>
-              </div>
-            </div>
-          </div>
-
-          {{-- ===== STEP 4: Rekening & Ahli Waris ===== --}}
-          <div class="js-step" data-step="4">
-            <h4 class="mb-3">Step 4: Data Rekening & Ahli Waris</h4>
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label">Nama di Rekening</label>
-                <input type="text" name="nama_rekening" id="nama_rekening" class="form-control" required>
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Nomor Rekening</label>
-                <input type="text" name="nomor_rekening" id="nomor_rekening" class="form-control" required>
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-12">
-                <label class="form-label">Nama Bank</label>
-                <input type="text" name="nama_bank" id="nama_bank" list="bankList" class="form-control" required placeholder="Pilih / ketik nama bank">
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Nama Ahli Waris (opsional)</label>
-                <input type="text" name="nama_ahli_waris" id="nama_ahli_waris" class="form-control">
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Hubungan Ahli Waris (opsional)</label>
-                <input type="text" name="hubungan_ahli_waris" id="hubungan_ahli_waris" class="form-control">
-                <div class="invalid-feedback"></div>
-              </div>
-              <div class="col-12">
-                <div class="form-check mb-2">
-                  <input class="form-check-input" type="checkbox" name="agree" id="agree" value="1" required>
-                  <label class="form-check-label" for="agree">Saya menyetujui Syarat & Ketentuan</label>
-                </div>
-                <div class="invalid-feedback">Anda harus menyetujui Syarat & Ketentuan.</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="wizard-buttons d-flex gap-2 mt-4">
-            <button type="button" id="prevBtn" class="btn btn-secondary" style="display:none">Sebelumnya</button>
-            <button type="button" id="nextBtn" class="btn btn-warning">Selanjutnya</button>
-            <button type="submit" id="submitBtn" class="btn btn-success" style="display:none">Daftar Sekarang</button>
-          </div>
-
-          <datalist id="bankList"></datalist>
         </div>
-      </form>
     </div>
-  </div>
-</div>
-<style>
-  /* Backdrop hitam pekat */
-  .modal-backdrop.show { opacity: .9 !important; background:#000 !important; }
+    <style>
+        /* Backdrop hitam pekat */
+        .modal-backdrop.show {
+            opacity: .9 !important;
+            background: #000 !important;
+        }
 
-  /* Lebarkan modal di desktop */
-  @media (min-width: 1200px) { .modal-xl { --bs-modal-width: 1140px; } }
+        /* Lebarkan modal di desktop */
+        @media (min-width: 1200px) {
+            .modal-xl {
+                --bs-modal-width: 1140px;
+            }
+        }
 
-  /* Wizard UI ringkas */
-  .step-indicator{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
-  .step-item{display:flex;align-items:center;gap:.5rem;opacity:.5}
-  .step-item.active,.step-item.completed{opacity:1}
-  .step-number{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#ffc107;color:#000;font-weight:700}
-  .step-line{flex:1 1 40px;height:2px;background:#e5e7eb}
-  .js-step{display:none}
-  .js-step.active{display:block}
-</style>
+        /* Wizard UI ringkas */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            flex-wrap: wrap
+        }
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="assets/js/plugin/datatables/datatables.min.js"></script>
-<script>
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            opacity: .5
+        }
 
+        .step-item.active,
+        .step-item.completed {
+            opacity: 1
+        }
+
+        .step-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: #ffc107;
+            color: #000;
+            font-weight: 700
+        }
+
+        .step-line {
+            flex: 1 1 40px;
+            height: 2px;
+            background: #e5e7eb
+        }
+
+        .js-step {
+            display: none
+        }
+
+        .js-step.active {
+            display: block
+        }
+    </style>
+@endsection
+@push('scripts')
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="assets/js/plugin/datatables/datatables.min.js"></script>
+
+    <script>
         (function() {
             // script wizard step nya
             'use strict';
@@ -365,6 +445,16 @@
             const errorContainer = document.getElementById('errorContainer');
             const errorList = document.getElementById('errorList');
 
+            window.pinValidationStatus = {
+                isValid: false,
+                lastChecked: ''
+            };
+
+            window.sponsorValidationStatus = {
+                isValid: false,
+                lastChecked: ''
+            };
+
             // Validation rules for each step
             const validationRules = {
                 1: { // Step 1: PIN & Sponsor
@@ -372,13 +462,19 @@
                         required: true,
                         minLength: 8,
                         pattern: /^[A-Z0-9]+$/,
-                        message: 'PIN aktivasi harus diisi minimal 8 karakter (huruf kapital dan angka)'
+                        customValidator: () => {
+                            return window.isPinValid && window.isPinValid();
+                        },
+                        message: 'PIN aktivasi harus diverifikasi dan valid'
                     },
                     sponsor_code: {
                         required: true,
                         minLength: 3,
                         pattern: /^[A-Za-z0-9]+$/,
-                        message: 'Kode sponsor harus diisi minimal 3 karakter alfanumerik'
+                        customValidator: () => {
+                            return window.isSponsorValid && window.isSponsorValid();
+                        },
+                        message: 'Kode sponsor harus diverifikasi dan valid'
                     }
                 },
                 2: { // Step 2: Data Diri
@@ -681,35 +777,131 @@
                 let isStepValid = true;
                 const errors = [];
 
-                Object.keys(stepRules).forEach(fieldName => {
-                    const rule = stepRules[fieldName];
+                // Validasi khusus untuk Step 1
+                if (step === 1) {
+                    const pinInput = document.getElementById('pin_aktivasi');
+                    const sponsorInput = document.getElementById('sponsor_code_display');
 
-                    if (rule.type === 'radio' || rule.type === 'checkbox') {
-                        const validation = validateSpecialField(fieldName, stepRules);
-                        if (!validation.isValid) {
-                            showFieldError(fieldName, validation.message);
-                            errors.push(validation.message);
-                            isStepValid = false;
+                    // Cek PIN
+                    const pinValue = pinInput.value.trim();
+                    let pinValid = true;
+
+                    if (!pinValue) {
+                        showFieldError('pin_aktivasi', 'PIN aktivasi harus diisi');
+                        errors.push('PIN aktivasi harus diisi');
+                        pinValid = false;
+                    } else if (pinValue.length < 8) {
+                        showFieldError('pin_aktivasi', 'PIN harus minimal 8 karakter');
+                        errors.push('PIN harus minimal 8 karakter');
+                        pinValid = false;
+                    } else if (!window.pinValidationStatus.isValid || window.pinValidationStatus.lastChecked !==
+                        pinValue) {
+                        showFieldError('pin_aktivasi', 'PIN aktivasi harus diverifikasi terlebih dahulu');
+                        errors.push('PIN aktivasi harus diverifikasi terlebih dahulu');
+
+                        const pinFeedback = document.getElementById('pinFeedback');
+                        const pinStatus = document.getElementById('pinStatus');
+                        if (pinFeedback) {
+                            pinInput.classList.add('is-invalid');
+                            pinFeedback.textContent = 'Silakan klik tombol "Verifikasi" untuk memverifikasi PIN';
                         }
-                    } else {
-                        const input = document.querySelector(`[name="${fieldName}"]`);
-                        if (input) {
-                            const validation = validateField(fieldName, input.value, stepRules);
+                        if (pinStatus) {
+                            pinStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> PIN belum diverifikasi';
+                            pinStatus.className = 'verification-status status-warning';
+                        }
+                        pinValid = false;
+                    }
+
+                    // Cek Sponsor
+                    const sponsorValue = sponsorInput.value.trim();
+                    let sponsorValid = true;
+
+                    if (!sponsorValue) {
+                        showFieldError('sponsor_code', 'Kode sponsor harus diisi');
+                        errors.push('Kode sponsor harus diisi');
+                        sponsorValid = false;
+                    } else if (sponsorValue.length < 3) {
+                        showFieldError('sponsor_code', 'Kode sponsor harus minimal 3 karakter');
+                        errors.push('Kode sponsor harus minimal 3 karakter');
+                        sponsorValid = false;
+                    } else if (!window.sponsorValidationStatus.isValid || window.sponsorValidationStatus.lastChecked !==
+                        sponsorValue) {
+                        showFieldError('sponsor_code', 'Kode sponsor harus diverifikasi terlebih dahulu');
+                        errors.push('Kode sponsor harus diverifikasi terlebih dahulu');
+
+                        const sponsorFeedback = document.getElementById('sponsorFeedback');
+                        const sponsorStatus = document.getElementById('sponsorStatus');
+                        if (sponsorFeedback) {
+                            sponsorInput.classList.add('is-invalid');
+                            sponsorFeedback.textContent =
+                                'Silakan klik tombol "Verifikasi" untuk memverifikasi sponsor';
+                        }
+                        if (sponsorStatus) {
+                            sponsorStatus.innerHTML =
+                                '<i class="fas fa-exclamation-triangle"></i> Sponsor belum diverifikasi';
+                            sponsorStatus.className = 'verification-status status-warning';
+                        }
+                        sponsorValid = false;
+                    }
+
+                    isStepValid = pinValid && sponsorValid;
+
+                    // Tampilkan pesan error global jika ada
+                    // Debug log
+                    console.log('Step 1 Validation Debug:', {
+                        pinValue,
+                        pinValid,
+                        pinStatus: window.pinValidationStatus,
+                        sponsorValue,
+                        sponsorValid,
+                        sponsorStatus: window.sponsorValidationStatus,
+                        isStepValid
+                    });
+
+                    if (!isStepValid) {
+                        if (window.toastr) {
+                            if (!pinValid && !sponsorValid) {
+                                toastr.error('PIN aktivasi dan kode sponsor harus diverifikasi terlebih dahulu');
+                            } else if (!pinValid) {
+                                toastr.error('PIN aktivasi harus diverifikasi terlebih dahulu');
+                            } else if (!sponsorValid) {
+                                toastr.error('Kode sponsor harus diverifikasi terlebih dahulu');
+                            }
+                        }
+                    }
+                }
+                // Validasi untuk step lainnya
+                else {
+                    // Validasi untuk step lainnya (tetap sama)
+                    Object.keys(stepRules).forEach(fieldName => {
+                        const rule = stepRules[fieldName];
+
+                        if (rule.type === 'radio' || rule.type === 'checkbox') {
+                            const validation = validateSpecialField(fieldName, stepRules);
                             if (!validation.isValid) {
                                 showFieldError(fieldName, validation.message);
                                 errors.push(validation.message);
                                 isStepValid = false;
                             }
+                        } else {
+                            const input = document.querySelector(`[name="${fieldName}"]`);
+                            if (input) {
+                                const validation = validateField(fieldName, input.value, stepRules);
+                                if (!validation.isValid) {
+                                    showFieldError(fieldName, validation.message);
+                                    errors.push(validation.message);
+                                    isStepValid = false;
+                                }
+                            }
                         }
-                    }
-                });
+                    });
+                }
 
                 // Show global errors if any
                 if (errors.length > 0) {
                     errorList.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
                     errorContainer.classList.remove('d-none');
 
-                    // Scroll to first invalid field
                     const firstInvalidField = document.querySelector('.is-invalid');
                     if (firstInvalidField) {
                         firstInvalidField.scrollIntoView({
@@ -945,6 +1137,7 @@
                     const res = await fetch(this.action, {
                         method: 'POST',
                         body: formData,
+                        credentials: "include",
                         headers: {
                             // 'X-CSRF-TOKEN' otomatis diambil oleh Blade @csrf directive di sini
                             'Accept': 'application/json',
@@ -956,10 +1149,10 @@
                     const ct = res.headers.get('content-type') || '';
                     const data = ct.includes('application/json') ? await res.json() :
                     {}; // Dapatkan JSON jika ada, jika tidak, objek kosong
-
+                    console.log(res)
                     if (res.ok) { // Status 2xx
                         if (window.toastr) toastr.success(data.message ||
-                            'Registrasi berhasil! Anda akan dialihkan.');
+                            'User berhasil disimpan');
                         if (data.redirect) {
                             setTimeout(() => { // Beri waktu toastr tampil
                                 window.location.href = data.redirect;
@@ -967,7 +1160,7 @@
                         } else {
                             // Default redirect jika tidak ada dari server
                             setTimeout(() => {
-                                window.location.href = "{{ route('member') }}";
+                                window.location.href = "{{ route('users.downline') }}";
                             }, 1000);
                         }
                         return;
@@ -1144,6 +1337,77 @@
             setupPasswordToggle('password', 'togglePassword', 'togglePasswordIcon');
             setupPasswordToggle('password_confirmation', 'togglePasswordConfirmation',
                 'togglePasswordConfirmationIcon');
+
+            // Update event listener untuk PIN
+            const pinInput = document.getElementById('pin_aktivasi');
+            const checkPinBtn = document.getElementById('checkPin');
+
+            // Reset status saat input berubah
+            pinInput.addEventListener('input', function(e) {
+                // Reset status validasi
+                window.pinValidationStatus.isValid = false;
+                window.pinValidationStatus.lastChecked = '';
+
+                // Reset visual feedback
+                this.classList.remove('is-valid', 'is-invalid');
+                const pinFeedback = document.getElementById('pinFeedback');
+                const pinValidFeedback = document.getElementById('pinValidFeedback');
+                const pinStatus = document.getElementById('pinStatus');
+
+                if (pinFeedback) pinFeedback.textContent = '';
+                if (pinValidFeedback) pinValidFeedback.classList.add('d-none');
+                if (pinStatus) pinStatus.textContent = '';
+
+                // Format input - hanya huruf kapital dan angka
+                this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            });
+
+            // Update event listener untuk Sponsor
+            const sponsorInput = document.getElementById('sponsor_code_display');
+            const checkSponsorBtn = document.getElementById('checkSponsor');
+
+            // Reset status saat input berubah
+            sponsorInput.addEventListener('input', function(e) {
+                // Reset status validasi
+                window.sponsorValidationStatus.isValid = false;
+                window.sponsorValidationStatus.lastChecked = '';
+
+                // Reset visual feedback
+                this.classList.remove('is-valid', 'is-invalid');
+                const sponsorFeedback = document.getElementById('sponsorFeedback');
+                const sponsorValidFeedback = document.getElementById('sponsorValidFeedback');
+                const sponsorStatus = document.getElementById('sponsorStatus');
+                const sponsorInfoBanner = document.getElementById('sponsorInfoBanner');
+
+                if (sponsorFeedback) sponsorFeedback.textContent = '';
+                if (sponsorValidFeedback) sponsorValidFeedback.classList.add('d-none');
+                if (sponsorStatus) sponsorStatus.textContent = '';
+                if (sponsorInfoBanner) sponsorInfoBanner.classList.add('d-none');
+
+                // Format input - hanya alfanumerik
+                this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
+
+                // Update hidden ref field
+                const refInput = document.getElementById('ref');
+                if (refInput) {
+                    refInput.value = this.value;
+                }
+            });
+
+
+            // Pastikan fungsi global tersedia
+            window.isPinValid = function() {
+                const pin = pinInput.value.trim();
+                return window.pinValidationStatus.isValid &&
+                    window.pinValidationStatus.lastChecked === pin;
+            };
+
+            window.isSponsorValid = function() {
+                const sponsor = sponsorInput.value.trim();
+                return window.sponsorValidationStatus.isValid &&
+                    window.sponsorValidationStatus.lastChecked === sponsor;
+            };
+
         });
 
         //  verifikasi username
@@ -1206,7 +1470,7 @@
 
             try {
                 // Ganti URL ini dengan route Laravel Anda
-                const response = await fetch(`/check-username`, {
+                const response = await fetch(`/member/check-username`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1356,7 +1620,6 @@
 
         // PIN Activation Functions
         function validatePinFormat(pin) {
-            // PIN harus 8-16 karakter, huruf kapital dan angka
             const regex = /^[A-Z0-9]+$/;
             return pin.length >= 8 && pin.length <= 16 && regex.test(pin);
         }
@@ -1380,7 +1643,9 @@
             pinFeedback.textContent = '';
             pinValidFeedback.classList.add('d-none');
             pinStatus.textContent = '';
-            isPinValid = false;
+            // Reset global status
+            window.pinValidationStatus.isValid = false;
+            window.pinValidationStatus.lastChecked = '';
         }
 
         async function checkPinActivation(pin) {
@@ -1389,6 +1654,7 @@
                 pinFeedback.textContent = 'PIN harus 8-16 karakter, hanya huruf kapital dan angka';
                 pinStatus.innerHTML = '<i class="fas fa-times-circle"></i> Format PIN tidak valid';
                 pinStatus.className = 'verification-status status-invalid';
+                window.pinValidationStatus.isValid = false;
                 return false;
             }
 
@@ -1398,14 +1664,13 @@
                 const formData = new FormData();
                 formData.append('pin_aktivasi', pin);
 
-                // Ambil CSRF dari form
                 const form = document.getElementById('ref-register-form');
                 const csrfInput = form.querySelector('input[name="_token"]');
                 if (csrfInput) {
                     formData.append('_token', csrfInput.value);
                 }
 
-                const response = await fetch('/check-pin', {
+                const response = await fetch('/member/check-pin', {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -1426,21 +1691,25 @@
                         pinStatus.innerHTML =
                             `<i class="fas fa-check-circle"></i> ${data.message || 'PIN valid dan tersedia!'}`;
                         pinStatus.className = 'verification-status status-valid';
-                        isPinValid = true;
-                        lastCheckedPin = pin;
 
-                        // Show additional info if available
+                        // Set status global dengan benar
+                        window.pinValidationStatus.isValid = true;
+                        window.pinValidationStatus.lastChecked = pin;
+
                         if (data.info) {
                             pinStatus.innerHTML += `<br><small>${data.info}</small>`;
                         }
                     } else {
-                        // PIN tidak valid/sudah digunakan
+                        // PIN tidak valid
                         pinInput.classList.remove('is-valid');
                         pinInput.classList.add('is-invalid');
                         pinFeedback.textContent = data.message || 'PIN tidak valid atau sudah digunakan';
                         pinStatus.innerHTML = '<i class="fas fa-times-circle"></i> PIN tidak valid';
                         pinStatus.className = 'verification-status status-invalid';
-                        isPinValid = false;
+
+                        // Reset status global
+                        window.pinValidationStatus.isValid = false;
+                        window.pinValidationStatus.lastChecked = '';
                     }
                 } else {
                     throw new Error(data.message || 'Terjadi kesalahan saat memverifikasi PIN');
@@ -1453,13 +1722,15 @@
                 pinFeedback.textContent = 'Terjadi kesalahan saat memverifikasi PIN. Silakan coba lagi.';
                 pinStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error verifikasi';
                 pinStatus.className = 'verification-status status-invalid';
-                isPinValid = false;
+
+                // Reset status global
+                window.pinValidationStatus.isValid = false;
+                window.pinValidationStatus.lastChecked = '';
             }
         }
 
         // Sponsor Code Functions
         function validateSponsorFormat(sponsor) {
-            // Sponsor code 3-20 karakter, alfanumerik
             const regex = /^[A-Za-z0-9]+$/;
             return sponsor.length >= 3 && sponsor.length <= 20 && regex.test(sponsor);
         }
@@ -1484,7 +1755,9 @@
             sponsorValidFeedback.classList.add('d-none');
             sponsorStatus.textContent = '';
             sponsorInfoBanner.classList.add('d-none');
-            isSponsorValid = false;
+            // Reset global status
+            window.sponsorValidationStatus.isValid = false;
+            window.sponsorValidationStatus.lastChecked = '';
         }
 
         async function checkSponsorCode(sponsor) {
@@ -1493,6 +1766,7 @@
                 sponsorFeedback.textContent = 'Kode sponsor harus 3-20 karakter alfanumerik';
                 sponsorStatus.innerHTML = '<i class="fas fa-times-circle"></i> Format sponsor tidak valid';
                 sponsorStatus.className = 'verification-status status-invalid';
+                window.sponsorValidationStatus.isValid = false;
                 return false;
             }
 
@@ -1502,14 +1776,13 @@
                 const formData = new FormData();
                 formData.append('sponsor_code', sponsor);
 
-                // Ambil CSRF dari form
                 const form = document.getElementById('ref-register-form');
                 const csrfInput = form.querySelector('input[name="_token"]');
                 if (csrfInput) {
                     formData.append('_token', csrfInput.value);
                 }
 
-                const response = await fetch('/check-sponsor', {
+                const response = await fetch('/member/check-sponsor', {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
@@ -1529,15 +1802,17 @@
                         sponsorValidFeedback.classList.remove('d-none');
                         sponsorStatus.innerHTML = '<i class="fas fa-check-circle"></i> Sponsor ditemukan!';
                         sponsorStatus.className = 'verification-status status-valid';
-                        isSponsorValid = true;
-                        lastCheckedSponsor = sponsor;
+
+                        // Set status global dengan benar
+                        window.sponsorValidationStatus.isValid = true;
+                        window.sponsorValidationStatus.lastChecked = sponsor;
 
                         // Show sponsor info
                         if (data.sponsor_info) {
                             sponsorInfo.innerHTML = `
-                            <strong>${data.sponsor_info.name}</strong><br>
-                            <small>ID: ${data.sponsor_info.member_id || sponsor} | Level: ${data.sponsor_info.level || 'Member'}</small>
-                        `;
+                        <strong>${data.sponsor_info.name}</strong><br>
+                        <small>ID: ${data.sponsor_info.member_id || sponsor} | Level: ${data.sponsor_info.level || 'Member'}</small>
+                    `;
                             sponsorInfoBanner.classList.remove('d-none');
                         }
 
@@ -1553,7 +1828,10 @@
                         sponsorFeedback.textContent = data.message || 'Kode sponsor tidak ditemukan';
                         sponsorStatus.innerHTML = '<i class="fas fa-times-circle"></i> Sponsor tidak ditemukan';
                         sponsorStatus.className = 'verification-status status-invalid';
-                        isSponsorValid = false;
+
+                        // Reset status global
+                        window.sponsorValidationStatus.isValid = false;
+                        window.sponsorValidationStatus.lastChecked = '';
                         sponsorInfoBanner.classList.add('d-none');
                     }
                 } else {
@@ -1567,10 +1845,14 @@
                 sponsorFeedback.textContent = 'Terjadi kesalahan saat memverifikasi sponsor. Silakan coba lagi.';
                 sponsorStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error verifikasi';
                 sponsorStatus.className = 'verification-status status-invalid';
-                isSponsorValid = false;
+
+                // Reset status global
+                window.sponsorValidationStatus.isValid = false;
+                window.sponsorValidationStatus.lastChecked = '';
                 sponsorInfoBanner.classList.add('d-none');
             }
         }
+
 
         // Event Listeners
         // PIN Verification
@@ -1791,7 +2073,7 @@
                         formData.append('_token', csrfInput.value);
                     }
 
-                    const response = await fetch('/check-whatsapp', {
+                    const response = await fetch('/member/check-whatsapp', {
                         method: 'POST',
                         headers: {
                             'Accept': 'application/json',
@@ -1958,6 +2240,16 @@
             }
         });
 
+        document.addEventListener('DOMContentLoaded', function() {
+            const sponsorValue = sponsorInput.value.trim();
+            if (sponsorValue) {
+                // Auto-check sponsor setelah delay
+                setTimeout(() => {
+                    checkSponsorCode(sponsorValue);
+                }, 500);
+            }
+        });
+
         // Utility function untuk WhatsApp link
         function generateWhatsAppLink(no_telp, message = '') {
             const cleanPhone = no_telp.replace(/\D/g, '');
@@ -1974,8 +2266,5 @@
             const link = generateWhatsAppLink(no_telp, 'Test pesan dari sistem registrasi');
             window.open(link, '_blank');
         }
-        </script
-
-@endsection
-@push('scripts')
+    </script>
 @endpush
