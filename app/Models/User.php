@@ -93,6 +93,7 @@ class User extends Authenticatable
         'joined_at',
         'tax_id',
         'address',
+        'no_telp',
         'bank_account',
         'kiri_count',
         'kanan_count',
