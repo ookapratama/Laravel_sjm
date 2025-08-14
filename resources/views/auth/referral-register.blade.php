@@ -751,6 +751,16 @@
             const errorContainer = document.getElementById('errorContainer');
             const errorList = document.getElementById('errorList');
 
+            window.pinValidationStatus = {
+                isValid: false,
+                lastChecked: ''
+            };
+
+            window.sponsorValidationStatus = {
+                isValid: false,
+                lastChecked: ''
+            };
+
             // Validation rules for each step
             const validationRules = {
                 1: { // Step 1: PIN & Sponsor
@@ -758,13 +768,19 @@
                         required: true,
                         minLength: 8,
                         pattern: /^[A-Z0-9]+$/,
-                        message: 'PIN aktivasi harus diisi minimal 8 karakter (huruf kapital dan angka)'
+                        customValidator: () => {
+                            return window.isPinValid && window.isPinValid();
+                        },
+                        message: 'PIN aktivasi harus diverifikasi dan valid'
                     },
                     sponsor_code: {
                         required: true,
                         minLength: 3,
                         pattern: /^[A-Za-z0-9]+$/,
-                        message: 'Kode sponsor harus diisi minimal 3 karakter alfanumerik'
+                        customValidator: () => {
+                            return window.isSponsorValid && window.isSponsorValid();
+                        },
+                        message: 'Kode sponsor harus diverifikasi dan valid'
                     }
                 },
                 2: { // Step 2: Data Diri
@@ -1067,35 +1083,131 @@
                 let isStepValid = true;
                 const errors = [];
 
-                Object.keys(stepRules).forEach(fieldName => {
-                    const rule = stepRules[fieldName];
+                // Validasi khusus untuk Step 1
+                if (step === 1) {
+                    const pinInput = document.getElementById('pin_aktivasi');
+                    const sponsorInput = document.getElementById('sponsor_code_display');
 
-                    if (rule.type === 'radio' || rule.type === 'checkbox') {
-                        const validation = validateSpecialField(fieldName, stepRules);
-                        if (!validation.isValid) {
-                            showFieldError(fieldName, validation.message);
-                            errors.push(validation.message);
-                            isStepValid = false;
+                    // Cek PIN
+                    const pinValue = pinInput.value.trim();
+                    let pinValid = true;
+
+                    if (!pinValue) {
+                        showFieldError('pin_aktivasi', 'PIN aktivasi harus diisi');
+                        errors.push('PIN aktivasi harus diisi');
+                        pinValid = false;
+                    } else if (pinValue.length < 8) {
+                        showFieldError('pin_aktivasi', 'PIN harus minimal 8 karakter');
+                        errors.push('PIN harus minimal 8 karakter');
+                        pinValid = false;
+                    } else if (!window.pinValidationStatus.isValid || window.pinValidationStatus.lastChecked !==
+                        pinValue) {
+                        showFieldError('pin_aktivasi', 'PIN aktivasi harus diverifikasi terlebih dahulu');
+                        errors.push('PIN aktivasi harus diverifikasi terlebih dahulu');
+
+                        const pinFeedback = document.getElementById('pinFeedback');
+                        const pinStatus = document.getElementById('pinStatus');
+                        if (pinFeedback) {
+                            pinInput.classList.add('is-invalid');
+                            pinFeedback.textContent = 'Silakan klik tombol "Verifikasi" untuk memverifikasi PIN';
                         }
-                    } else {
-                        const input = document.querySelector(`[name="${fieldName}"]`);
-                        if (input) {
-                            const validation = validateField(fieldName, input.value, stepRules);
+                        if (pinStatus) {
+                            pinStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> PIN belum diverifikasi';
+                            pinStatus.className = 'verification-status status-warning';
+                        }
+                        pinValid = false;
+                    }
+
+                    // Cek Sponsor
+                    const sponsorValue = sponsorInput.value.trim();
+                    let sponsorValid = true;
+
+                    if (!sponsorValue) {
+                        showFieldError('sponsor_code', 'Kode sponsor harus diisi');
+                        errors.push('Kode sponsor harus diisi');
+                        sponsorValid = false;
+                    } else if (sponsorValue.length < 3) {
+                        showFieldError('sponsor_code', 'Kode sponsor harus minimal 3 karakter');
+                        errors.push('Kode sponsor harus minimal 3 karakter');
+                        sponsorValid = false;
+                    } else if (!window.sponsorValidationStatus.isValid || window.sponsorValidationStatus.lastChecked !==
+                        sponsorValue) {
+                        showFieldError('sponsor_code', 'Kode sponsor harus diverifikasi terlebih dahulu');
+                        errors.push('Kode sponsor harus diverifikasi terlebih dahulu');
+
+                        const sponsorFeedback = document.getElementById('sponsorFeedback');
+                        const sponsorStatus = document.getElementById('sponsorStatus');
+                        if (sponsorFeedback) {
+                            sponsorInput.classList.add('is-invalid');
+                            sponsorFeedback.textContent =
+                                'Silakan klik tombol "Verifikasi" untuk memverifikasi sponsor';
+                        }
+                        if (sponsorStatus) {
+                            sponsorStatus.innerHTML =
+                                '<i class="fas fa-exclamation-triangle"></i> Sponsor belum diverifikasi';
+                            sponsorStatus.className = 'verification-status status-warning';
+                        }
+                        sponsorValid = false;
+                    }
+
+                    isStepValid = pinValid && sponsorValid;
+
+                    // Tampilkan pesan error global jika ada
+                    // Debug log
+                    console.log('Step 1 Validation Debug:', {
+                        pinValue,
+                        pinValid,
+                        pinStatus: window.pinValidationStatus,
+                        sponsorValue,
+                        sponsorValid,
+                        sponsorStatus: window.sponsorValidationStatus,
+                        isStepValid
+                    });
+
+                    if (!isStepValid) {
+                        if (window.toastr) {
+                            if (!pinValid && !sponsorValid) {
+                                toastr.error('PIN aktivasi dan kode sponsor harus diverifikasi terlebih dahulu');
+                            } else if (!pinValid) {
+                                toastr.error('PIN aktivasi harus diverifikasi terlebih dahulu');
+                            } else if (!sponsorValid) {
+                                toastr.error('Kode sponsor harus diverifikasi terlebih dahulu');
+                            }
+                        }
+                    }
+                }
+                // Validasi untuk step lainnya
+                else {
+                    // Validasi untuk step lainnya (tetap sama)
+                    Object.keys(stepRules).forEach(fieldName => {
+                        const rule = stepRules[fieldName];
+
+                        if (rule.type === 'radio' || rule.type === 'checkbox') {
+                            const validation = validateSpecialField(fieldName, stepRules);
                             if (!validation.isValid) {
                                 showFieldError(fieldName, validation.message);
                                 errors.push(validation.message);
                                 isStepValid = false;
                             }
+                        } else {
+                            const input = document.querySelector(`[name="${fieldName}"]`);
+                            if (input) {
+                                const validation = validateField(fieldName, input.value, stepRules);
+                                if (!validation.isValid) {
+                                    showFieldError(fieldName, validation.message);
+                                    errors.push(validation.message);
+                                    isStepValid = false;
+                                }
+                            }
                         }
-                    }
-                });
+                    });
+                }
 
                 // Show global errors if any
                 if (errors.length > 0) {
                     errorList.innerHTML = errors.map(error => `<li>${error}</li>`).join('');
                     errorContainer.classList.remove('d-none');
 
-                    // Scroll to first invalid field
                     const firstInvalidField = document.querySelector('.is-invalid');
                     if (firstInvalidField) {
                         firstInvalidField.scrollIntoView({
@@ -1530,6 +1642,75 @@
             setupPasswordToggle('password', 'togglePassword', 'togglePasswordIcon');
             setupPasswordToggle('password_confirmation', 'togglePasswordConfirmation',
                 'togglePasswordConfirmationIcon');
+
+            // Update event listener untuk PIN
+            const pinInput = document.getElementById('pin_aktivasi');
+            const checkPinBtn = document.getElementById('checkPin');
+
+            // Reset status saat input berubah
+            pinInput.addEventListener('input', function(e) {
+                // Reset status validasi
+                window.pinValidationStatus.isValid = false;
+                window.pinValidationStatus.lastChecked = '';
+
+                // Reset visual feedback
+                this.classList.remove('is-valid', 'is-invalid');
+                const pinFeedback = document.getElementById('pinFeedback');
+                const pinValidFeedback = document.getElementById('pinValidFeedback');
+                const pinStatus = document.getElementById('pinStatus');
+
+                if (pinFeedback) pinFeedback.textContent = '';
+                if (pinValidFeedback) pinValidFeedback.classList.add('d-none');
+                if (pinStatus) pinStatus.textContent = '';
+
+                // Format input - hanya huruf kapital dan angka
+                this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            });
+
+            // Update event listener untuk Sponsor
+            const sponsorInput = document.getElementById('sponsor_code_display');
+            const checkSponsorBtn = document.getElementById('checkSponsor');
+
+            // Reset status saat input berubah
+            sponsorInput.addEventListener('input', function(e) {
+                // Reset status validasi
+                window.sponsorValidationStatus.isValid = false;
+                window.sponsorValidationStatus.lastChecked = '';
+
+                // Reset visual feedback
+                this.classList.remove('is-valid', 'is-invalid');
+                const sponsorFeedback = document.getElementById('sponsorFeedback');
+                const sponsorValidFeedback = document.getElementById('sponsorValidFeedback');
+                const sponsorStatus = document.getElementById('sponsorStatus');
+                const sponsorInfoBanner = document.getElementById('sponsorInfoBanner');
+
+                if (sponsorFeedback) sponsorFeedback.textContent = '';
+                if (sponsorValidFeedback) sponsorValidFeedback.classList.add('d-none');
+                if (sponsorStatus) sponsorStatus.textContent = '';
+                if (sponsorInfoBanner) sponsorInfoBanner.classList.add('d-none');
+
+                // Format input - hanya alfanumerik
+                this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
+
+                // Update hidden ref field
+                const refInput = document.getElementById('ref');
+                if (refInput) {
+                    refInput.value = this.value;
+                }
+            });
+
+
+            // Pastikan fungsi global tersedia
+            window.isPinValid = function() {
+                const pin = pinInput.value.trim();
+                return window.isPinValidFlag === true && pin === window.lastCheckedPin;
+            };
+
+            window.isSponsorValid = function() {
+                const sponsor = sponsorInput.value.trim();
+                return window.isSponsorValidFlag === true && sponsor === window.lastCheckedSponsor;
+            };
+
         });
 
         //  verifikasi username
@@ -1775,6 +1956,7 @@
                 pinFeedback.textContent = 'PIN harus 8-16 karakter, hanya huruf kapital dan angka';
                 pinStatus.innerHTML = '<i class="fas fa-times-circle"></i> Format PIN tidak valid';
                 pinStatus.className = 'verification-status status-invalid';
+                window.pinValidationStatus.isValid = false;
                 return false;
             }
 
@@ -1784,7 +1966,6 @@
                 const formData = new FormData();
                 formData.append('pin_aktivasi', pin);
 
-                // Ambil CSRF dari form
                 const form = document.getElementById('ref-register-form');
                 const csrfInput = form.querySelector('input[name="_token"]');
                 if (csrfInput) {
@@ -1805,28 +1986,32 @@
 
                 if (response.ok) {
                     if (data.valid) {
-                        // PIN valid
+                        // PIN valid - UPDATE STATUS GLOBAL
                         pinInput.classList.remove('is-invalid');
                         pinInput.classList.add('is-valid');
                         pinValidFeedback.classList.remove('d-none');
                         pinStatus.innerHTML =
                             `<i class="fas fa-check-circle"></i> ${data.message || 'PIN valid dan tersedia!'}`;
                         pinStatus.className = 'verification-status status-valid';
-                        isPinValid = true;
-                        lastCheckedPin = pin;
 
-                        // Show additional info if available
+                        // Set status global
+                        window.pinValidationStatus.isValid = true;
+                        window.pinValidationStatus.lastChecked = pin;
+
                         if (data.info) {
                             pinStatus.innerHTML += `<br><small>${data.info}</small>`;
                         }
                     } else {
-                        // PIN tidak valid/sudah digunakan
+                        // PIN tidak valid
                         pinInput.classList.remove('is-valid');
                         pinInput.classList.add('is-invalid');
                         pinFeedback.textContent = data.message || 'PIN tidak valid atau sudah digunakan';
                         pinStatus.innerHTML = '<i class="fas fa-times-circle"></i> PIN tidak valid';
                         pinStatus.className = 'verification-status status-invalid';
-                        isPinValid = false;
+
+                        // Reset status global
+                        window.pinValidationStatus.isValid = false;
+                        window.pinValidationStatus.lastChecked = '';
                     }
                 } else {
                     throw new Error(data.message || 'Terjadi kesalahan saat memverifikasi PIN');
@@ -1839,7 +2024,10 @@
                 pinFeedback.textContent = 'Terjadi kesalahan saat memverifikasi PIN. Silakan coba lagi.';
                 pinStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error verifikasi';
                 pinStatus.className = 'verification-status status-invalid';
-                isPinValid = false;
+
+                // Reset status global
+                window.pinValidationStatus.isValid = false;
+                window.pinValidationStatus.lastChecked = '';
             }
         }
 
@@ -1879,6 +2067,7 @@
                 sponsorFeedback.textContent = 'Kode sponsor harus 3-20 karakter alfanumerik';
                 sponsorStatus.innerHTML = '<i class="fas fa-times-circle"></i> Format sponsor tidak valid';
                 sponsorStatus.className = 'verification-status status-invalid';
+                window.sponsorValidationStatus.isValid = false;
                 return false;
             }
 
@@ -1888,7 +2077,6 @@
                 const formData = new FormData();
                 formData.append('sponsor_code', sponsor);
 
-                // Ambil CSRF dari form
                 const form = document.getElementById('ref-register-form');
                 const csrfInput = form.querySelector('input[name="_token"]');
                 if (csrfInput) {
@@ -1909,21 +2097,23 @@
 
                 if (response.ok) {
                     if (data.valid) {
-                        // Sponsor valid
+                        // Sponsor valid - UPDATE STATUS GLOBAL
                         sponsorInput.classList.remove('is-invalid');
                         sponsorInput.classList.add('is-valid');
                         sponsorValidFeedback.classList.remove('d-none');
                         sponsorStatus.innerHTML = '<i class="fas fa-check-circle"></i> Sponsor ditemukan!';
                         sponsorStatus.className = 'verification-status status-valid';
-                        isSponsorValid = true;
-                        lastCheckedSponsor = sponsor;
+
+                        // Set status global
+                        window.sponsorValidationStatus.isValid = true;
+                        window.sponsorValidationStatus.lastChecked = sponsor;
 
                         // Show sponsor info
                         if (data.sponsor_info) {
                             sponsorInfo.innerHTML = `
-                            <strong>${data.sponsor_info.name}</strong><br>
-                            <small>ID: ${data.sponsor_info.member_id || sponsor} | Level: ${data.sponsor_info.level || 'Member'}</small>
-                        `;
+                        <strong>${data.sponsor_info.name}</strong><br>
+                        <small>ID: ${data.sponsor_info.member_id || sponsor} | Level: ${data.sponsor_info.level || 'Member'}</small>
+                    `;
                             sponsorInfoBanner.classList.remove('d-none');
                         }
 
@@ -1939,7 +2129,10 @@
                         sponsorFeedback.textContent = data.message || 'Kode sponsor tidak ditemukan';
                         sponsorStatus.innerHTML = '<i class="fas fa-times-circle"></i> Sponsor tidak ditemukan';
                         sponsorStatus.className = 'verification-status status-invalid';
-                        isSponsorValid = false;
+
+                        // Reset status global
+                        window.sponsorValidationStatus.isValid = false;
+                        window.sponsorValidationStatus.lastChecked = '';
                         sponsorInfoBanner.classList.add('d-none');
                     }
                 } else {
@@ -1953,7 +2146,10 @@
                 sponsorFeedback.textContent = 'Terjadi kesalahan saat memverifikasi sponsor. Silakan coba lagi.';
                 sponsorStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error verifikasi';
                 sponsorStatus.className = 'verification-status status-invalid';
-                isSponsorValid = false;
+
+                // Reset status global
+                window.sponsorValidationStatus.isValid = false;
+                window.sponsorValidationStatus.lastChecked = '';
                 sponsorInfoBanner.classList.add('d-none');
             }
         }
@@ -2360,7 +2556,5 @@
             const link = generateWhatsAppLink(no_telp, 'Test pesan dari sistem registrasi');
             window.open(link, '_blank');
         }
-
-        
     </script>
 @endpush
