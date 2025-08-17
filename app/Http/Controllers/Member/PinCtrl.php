@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Member;
 
+use App\Events\MemberPinRequest;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ActivationPin;   // <-- tambahkan
+use App\Models\Notification;
 use App\Models\PinRequest;      // <-- tambahkan
+use App\Models\User;
 
 class PinCtrl extends Controller
 {
-   public function index() 
+    public function index()
     {
         abort_unless(auth()->user()->is_active, 403);
 
@@ -31,32 +34,51 @@ class PinCtrl extends Controller
         ]);
     }
 
-    public function store(Request $r){
+    public function store(Request $r)
+    {
         abort_unless(auth()->user()->is_active, 403);
-        $qty = (int) $r->validate(['qty'=>'required|integer|min:1|max:100'])['qty'];
+        $qty = (int) $r->validate(['qty' => 'required|integer|min:1|max:100'])['qty'];
         $unit = 750000;
 
-        if (PinRequest::where('requester_id',auth()->id())->open()->exists()) {
-            return back()->with('error','Masih ada request berjalan.');
+        if (PinRequest::where('requester_id', auth()->id())->open()->exists()) {
+            return back()->with('error', 'Masih ada request berjalan.');
         }
-$path = null;
-if ($r->hasFile('payment_proof')) {
-    $path = $r->file('payment_proof')->store('payment-proofs/pin', 'public');
-}
+        $path = null;
+        if ($r->hasFile('payment_proof')) {
+            $path = $r->file('payment_proof')->store('payment-proofs/pin', 'public');
+        }
 
 
         PinRequest::create([
-            'requester_id'=>auth()->id(),
-            'qty'=>$qty, 
-            'unit_price'=>$unit, 
-            'total_price'=>$unit*$qty, 
-            'status'=>'requested',
-            'payment_method'=>$r->payment_method,
-            'payment_reference'=>$r->payment_reference ?? null,
-            'payment_proof'=> $path,
+            'requester_id' => auth()->id(),
+            'qty' => $qty,
+            'unit_price' => $unit,
+            'total_price' => $unit * $qty,
+            'status' => 'requested',
+            'payment_method' => $r->payment_method,
+            'payment_reference' => $r->payment_reference ?? null,
+            'payment_proof' => $path,
         ]);
 
-        return back()->with('success','Request dikirim. Menunggu verifikasi Finance.');
+        $financeUsers = User::where('role', 'finance')->get();
+
+        foreach ($financeUsers as $finance) {
+            // Simpan ke database (jika perlu histori)
+            Notification::create([
+                'user_id' => $finance->id,
+                'message' => 'Member meminta aktivasi pin : ' . auth()->user()->name,
+                'url' => route('finance.pin.index'),
+            ]);
+
+            // Broadcast via Pusher
+            event(new MemberPinRequest($finance->id, [
+                'type' => 'new_referral', // atau 'preregistration_received' jika Anda ingin beda
+                'message' => 'Member meminta aktivasi pin : ' . auth()->user()->name,
+                'url' => route('finance.pin.index'),
+                'created_at' => now()->toDateTimeString()
+            ]));
+        }
+
+        return back()->with('success', 'Request dikirim. Menunggu verifikasi Finance.');
     }
 }
-

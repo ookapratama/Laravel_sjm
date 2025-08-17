@@ -8,12 +8,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use App\Events\MemberCountUpdated;
+use App\Events\PairingDownline;
 use App\Services\BonusManager;
 use DB;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\ProcessPairingJob;
 use App\Events\UserNotificationReceived;
 use App\Models\ActivationPin;
+use App\Models\Notification;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -195,11 +197,32 @@ class UserController extends Controller
 
             DB::commit();
 
-            ProcessPairingJob::dispatch($user); // Jika ingin tetap asynchronous
+            ProcessPairingJob::dispatch($user);
+
+            // Jika ingin tetap asynchronous
+            Notification::create([
+                'user_id' => auth()->id(),
+                'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
+                'url' => route('member'),
+            ]);
+
+            // Broadcast via Pusher
+            event(new PairingDownline(auth()->id(), [
+                'type' => 'pairing_downline', // atau 'preregistration_received' jika Anda ingin beda
+                'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
+                'url' => route('member'),
+                'created_at' => now()->toDateTimeString()
+            ]));
+
+            \Log::info('PIN Request Rejected and Notification Sent', [
+                'user_id' => 'User berhasil dipasang ke tree dan pairing diproses.',
+                'message' => auth()->id(),
+            ]);
+
 
             return response()->json([
                 'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
-                'id' => $user->id,
+                'id' => auth()->id(),
                 'name' => $user->username,
             ]);
         } catch (\Exception $e) {

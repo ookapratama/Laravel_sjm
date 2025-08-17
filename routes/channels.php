@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,6 +20,11 @@ Broadcast::channel('notifications.{userId}', function ($user, $userId) {
 });
 
 Broadcast::channel('private-notifications.{userId}', function ($user, $userId) {
+    Log::info('Channel auth', [
+        'channel' => "private-notifications.{$userId}",
+        'user_id' => $user ? $user->id : 'null',
+        'authorized' => $user && (int) $user->id === (int) $userId
+    ]);
     return (int) $user->id === (int) $userId;
 });
 

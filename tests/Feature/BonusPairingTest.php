@@ -37,14 +37,14 @@ class BonusPairingTest extends TestCase
         $upline->setRelation('rightChild', $right);
 
         // Simulasikan pairing level 1–10 (cycle 1)
-for ($level = 1; $level <= 10; $level++) {
-    $left->pairing_point = 1;
-    $right->pairing_point = 1;
-    $left->save();
-    $right->save();
+        for ($level = 1; $level <= 10; $level++) {
+            $left->pairing_point = 1;
+            $right->pairing_point = 1;
+            $left->save();
+            $right->save();
 
-    BonusManager::process($upline, $left, $right, 0);
-}
+            BonusManager::process($upline, $left, $right, 0);
+        }
 
 
         $upline->refresh();
