@@ -36,25 +36,26 @@ class BonusManager
         }]);
 
         $activeBagans = $user->bagans;
-    
+        Log::info("📋 Bagan aktif untuk {$user->username}: " . json_encode($activeBagans->pluck('bagan')));
 
         foreach ($activeBagans as $userBagan) {
             $bagan = (int) $userBagan->bagan;
 
             if (! $userBagan->is_active) {
+               Log::info("⏩ Lewati bagan $bagan karena belum aktif untuk {$user->username}");
+            continue;
                
-                continue;
             }
 
             $level = (int) $userBagan->pairing_level_count + 1;
-      
+       Log::info("🔁 Memproses pairing untuk {$user->username} di Bagan {$bagan} mulai dari Level {$level}");
 
             // Iter sampai mentok (tidak eligible / anak belum siap)
             while ($this->canPairAtLevel($user, $bagan, $level)) {
 
                 // Bagan >= 2 wajib anak kiri/kanan aktif di bagan & level sama
                 if ($bagan > 1 && ! $this->isEligibleForBaganBonus($user, $bagan, $level)) {
-                    
+                     Log::info("⛔ {$user->username} gagal pairing di Bagan {$bagan} Level {$level} — anak belum aktif di bagan/level yang sama");
                     break;
                 }
 
@@ -74,11 +75,53 @@ class BonusManager
         }
     }
 
-    public function assignToUpline(User $user, ?User $upline = null, string $position = 'left'): void
-    {
-        DB::transaction(function () use ($user, $upline, $position) {
+public function assignToUpline(User $user, ?User $upline = null, string $position = 'left', bool $autoSwitchIfBusy = false): void
+{
+    $position = strtolower($position) === 'right' ? 'right' : 'left';
+
+    DB::transaction(function () use ($user, $upline, $position, $autoSwitchIfBusy) {
+
+        // Idempoten: jika user sudah terpasang di slot yang sama, tidak perlu apa-apa
+        if ($upline && $user->upline_id === $upline->id && $user->position === $position) {
+            // tetap pastikan bagans ada:
+            $uplineLevel = $this->getUserLevel($upline);
+            $userLevel   = $uplineLevel + 1;
+            $this->ensureAllBagans($upline, $upline->upline, $uplineLevel, $this->maxBagan(), [1 => true]);
+            $this->ensureAllBagans($user,   $upline,        $userLevel,   $this->maxBagan(), [1 => true]);
+            return;
+        }
 
         if ($upline) {
+            // --- VALIDASI SLOT: lock & cek apakah slot sudah terisi ---
+            // Gunakan lock untuk cegah race-condition (dua proses sekaligus isi slot)
+            $slotTerisi = User::where('upline_id', $upline->id)
+                ->where('position', $position)
+                ->lockForUpdate()
+                ->exists();
+
+            if ($slotTerisi) {
+                if ($autoSwitchIfBusy) {
+                    $alt = $position === 'left' ? 'right' : 'left';
+                    $altTerisi = User::where('upline_id', $upline->id)
+                        ->where('position', $alt)
+                        ->lockForUpdate()
+                        ->exists();
+                    if ($altTerisi) {
+                        throw new \InvalidArgumentException("Kedua slot pada upline #{$upline->id} sudah terisi.");
+                    }
+                    // pakai sisi alternatif
+                    $position = $alt;
+                } else {
+                    throw new \InvalidArgumentException("Slot {$position} pada upline #{$upline->id} sudah terisi.");
+                }
+            }
+
+            // Lindungi dari pemindahan user yang sudah terpasang di tempat lain tanpa sengaja
+            if (!is_null($user->upline_id) && !is_null($user->position)) {
+                // Jika mau izinkan “relokasi”, kamu bisa hapus guard ini.
+                throw new \InvalidArgumentException("User #{$user->id} sudah terpasang (upline={$user->upline_id}, pos={$user->position}).");
+            }
+
             // Pasang ke upline
             $user->upline_id = $upline->id;
             $user->position  = $position;
@@ -88,26 +131,31 @@ class BonusManager
             $uplineLevel = $this->getUserLevel($upline);
             $userLevel   = $uplineLevel + 1;
 
-            // ✅ Pastikan UPLINE punya 10 bagan (Bagan-1 aktif, sisanya non-aktif)
+            // Bootstrap bagans (upline & user)
             $this->ensureAllBagans($upline, $upline->upline, $uplineLevel, $this->maxBagan(), [1 => true]);
+            $this->ensureAllBagans($user,   $upline,        $userLevel,   $this->maxBagan(), [1 => true]);
 
-            // ✅ Bootstrap 10 bagan untuk USER (Bagan-1 aktif, sisanya non-aktif)
-            $this->ensureAllBagans($user, $upline, $userLevel, $this->maxBagan(), [1 => true]);
-
-            // Proses pairing ke atas
+            // Proses pairing naik ke atas
             $current = $upline;
             while ($current) {
                 $this->process($current);
-                $current->refreshChildCounts(); // jika ada
+                if (method_exists($current, 'refreshChildCounts')) {
+                    $current->refreshChildCounts();
+                }
                 $current = $current->upline;
             }
         } else {
-            // ✅ Root user (tanpa upline) → langsung 10 bagan
+            // Root user (tanpa upline) → langsung 10 bagan
+            // Guard: jangan overwrite jika sudah terpasang
+            if (!is_null($user->upline_id) || !is_null($user->position)) {
+                throw new \InvalidArgumentException("User #{$user->id} sudah terpasang, tidak bisa jadi root.");
+            }
             $user->save();
             $this->ensureAllBagans($user, null, 1, $this->maxBagan(), [1 => true]);
         }
     });
-    }
+}
+
 
     /* =========================
      * ====== CORE LOGIC =======
@@ -177,7 +225,7 @@ class BonusManager
             'notes'      => $notes,
         ]);
 
-        
+        Log::info("✅ {$user->username} menerima bonus Rp" . number_format($bonus) . " (Bagan $bagan Level $level) [$status]");
 
         // Cek apakah alokasi membuat next bagan auto-aktif
         $this->checkAutoUpgradeBagan($user, $bagan);
@@ -219,7 +267,7 @@ class BonusManager
             $target->upgrade_paid_manually = false;
             $target->save();
 
-           
+           Log::info("🚀 Upgrade otomatis ke Bagan {$nextBagan} untuk {$user->username}");
         }
     }
 
@@ -237,6 +285,7 @@ class BonusManager
             $existing->save();
         }
         return;
+          Log::info("🎉 {$user->username} aktif di Bagan $nextBagan");
     }
 
     // Jika belum ada barisnya, buat 1 baris untuk bagan berikutnya dan aktifkan

@@ -5,17 +5,15 @@
   <div class="absolute right-5 top-3 z-10 flex gap-2">
     <button onclick="zoomIn()"  class="px-3 py-1 bg-blue-600 text-white rounded btn-primary">＋</button>
     <button onclick="zoomOut()" class="px-3 py-1 bg-blue-600 text-white rounded btn-primary">－</button>
-    <button onclick="resetZoom()" class="px-3 py-1 text-white rounded btn-black">⟳</button>
-    <button id="rotateTreeBtn" class="px-3 py-1 bg-gray-700 text-white rounded btn-black"><i class="fas fa-sync-alt"></i></button>
     <button onclick="navLeft()"  class="px-3 py-1 bg-yellow-600 text-white rounded btn-warning">Prev</button>
     <button onclick="navRight()" class="px-3 py-1 bg-green-600  text-white rounded btn-success">Next</button>
   </div>
 
-  <!-- Penting: position:relative supaya overlay panah relatif ke area tree -->
-  <div id="tree-scroll" class="overflow-auto w-full h-[85vh] border" style="position:relative;">
+  <!-- Kanvas tree -->
+  <div id="tree-scroll" class="overflow-auto w-full h-[85vh] border relative">
     <div id="tree-container"></div>
 
-    <!-- overlay panah di DALAM area tree -->
+    <!-- Overlay panah -->
     <div class="tree-nav left"><button onclick="navLeft()">◀</button></div>
     <div class="tree-nav right"><button onclick="navRight()">▶</button></div>
     <div class="tree-nav up"><button onclick="navUp()">▲</button></div>
@@ -23,33 +21,107 @@
   </div>
 </div>
 
+<!-- Tooltip -->
 <div id="tree-tooltip" class="hidden"></div>
 <meta name="csrf-token" content="{{ csrf_token() }}">
-    <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title font-bold">Member Yang Belum Masuk Jaringan</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+
+<!-- Modal: Clone / Tambah -->
+<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Tambah / Clone Member</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        
+<ul class="nav nav-tabs" id="addTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="tabCloneBtn" data-bs-toggle="tab" data-bs-target="#tabClone" type="button">Clone</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tabTambahBtn" data-bs-toggle="tab" data-bs-target="#tabTambah" type="button">
+      Tambah
+      <span id="pendingCountBadge" class="badge rounded-pill bg-danger ms-2 d-none">0</span>
+    </button>
+  </li>
+</ul>
+        </ul>
+
+        <div class="tab-content mt-3">
+          {{-- ======== TAB CLONE ======== --}}
+          <div class="tab-pane fade show active" id="tabClone" role="tabpanel" aria-labelledby="tabCloneBtn">
+            <form id="cloneForm">
+              @csrf
+              <input type="hidden" name="parent_id" id="cloneParentId">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label">Posisi</label>
+                  <div class="form-control-plaintext">
+                    <span id="clonePositionLabel">-</span>
+                  </div>
+                   
+                  <input type="hidden" name="position" id="clonePosition" value="left">
                 </div>
-                <div class="modal-body">
-                    <div id="userList" class="list-group"></div>
+                <div class="col-md-4">
+                  <label class="form-label">Bagan</label>
+                  <select class="form-select" name="bagan" id="cloneBagan" disabled>
+                    <option value="1" selected>Bagan 1</option>
+                  </select>
+                  <input type="hidden" name="bagan" value="1">
                 </div>
-            </div>
+                <div class="col-md-4">
+                  <label class="form-label">Base Cloning</label>
+                  <select class="form-select" name="use_login" id="cloneUseLogin">
+                    <option value="1" selected>Pakai ID yang login</option>
+                    <option value="0">Pakai ID parent</option>
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Pilih PIN Aktivasi (multi)</label>
+                  <select class="form-select" name="pin_codes[]" id="pinCodes" multiple size="8" required></select>
+                  <small class="text-muted">Jumlah ID = banyaknya PIN yang dipilih.</small>
+                </div>
+
+                <div class="col-12 d-flex align-items-center gap-2">
+                  <button type="button" class="btn btn-outline-secondary" id="btnPreview">Preview Username/Referral</button>
+                  <div id="clonePreview" class="small"></div>
+                </div>
+
+                <div class="col-12">
+                  <button class="btn btn-primary" id="btnCloneSubmit">Clone & Tempel</button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          {{-- ======== TAB TAMBAH (dari daftar pending) ======== --}}
+          <div class="tab-pane fade" id="tabTambah" role="tabpanel" aria-labelledby="tabTambahBtn">
+            <div id="userList" class="list-group"></div>
+          </div>
         </div>
+      </div>
     </div>
+  </div>
+</div>
 @endsection
+
 <style>
 .tree-nav{position:absolute;z-index:30;opacity:.9}
 .tree-nav.left{left:10px;top:50%;transform:translateY(-50%)}
 .tree-nav.right{right:10px;top:50%;transform:translateY(-50%)}
-.tree-nav.up{left:50%;top:10px;transform:translateX(-50%)}
+.tree-nav.up{
+  left:50%;
+  top:calc( var(--node-height, 80px) + 10px );
+  transform:translateX(-50%);
+}
 .tree-nav.down{left:50%;bottom:10px;transform:translateX(-50%)}
 .tree-nav button{background:#60a5fa;border:none;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 2px 6px rgba(0,0,0,.15)}
 @media (max-width:640px){.tree-nav button{padding:8px 10px}}
 #tree-tooltip{position:absolute;background:#fff;border:1px solid #ddd;padding:8px 12px;border-radius:6px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.2);pointer-events:none;z-index:40}
 </style>
-
 
 @push('scripts')
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -57,7 +129,7 @@
 (() => {
   "use strict";
 
-  /* ===================== STATE ===================== */
+  /* =============== STATE =============== */
   const AUTH_USER_ID = {{ auth()->user()->id }};
   window.currentRootId = {{ $root->id }};
   window.currentBagan  = Number(localStorage.getItem('selectedBagan') || 1);
@@ -69,13 +141,10 @@
   let isLoading = false;
   let pendingController = null;
 
-  // Stack untuk NAV UP (naik tanpa tergantung API)
-  const upStack = [];
+  const upStack = [];                    // riwayat untuk NAV UP
+  const parentCache = new Map();         // cache parent: id -> parentId
 
-  // Cache parent: id -> parentId
-  const parentCache = new Map();
-
-  /* ===================== UTIL ====================== */
+  /* =============== UTIL =============== */
   const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
   const toNum = (v) => { const n = Number(String(v ?? '').trim()); return Number.isFinite(n) ? n : null; };
 
@@ -94,7 +163,7 @@
   }
   function shortName(s,max){ if(!s) return ''; return s.length>max ? s.slice(0,max)+'…' : s; }
 
-  // Normalisasi id/parent_id/upline_id → Number
+  // Normalisasi id & parent
   function normalizeIds(node){
     if (!node || typeof node !== 'object') return node;
 
@@ -155,25 +224,23 @@
       d?.data?.parent_id, d?.data?.parentId,
       d?.user?.upline_id, d?.user?.parent_id,
       d.upline_id,
-      d.id // beberapa endpoint bisa langsung kirim id parent
+      d.id
     ];
     for (const c of arr){
       const n = toNum(c);
       if (n && n > 0) return n;
     }
     const nested = toNum(d?.parent?.id ?? d?.parent?.parent_id);
-    return nested && nested > 0 ? nested : null;
+    return (nested && nested > 0) ? nested : null;
   }
 
-  /* =============== PARENT RESOLVER ================= */
+  /* =============== PARENT RESOLVER =============== */
   async function resolveParentId(currentId){
     const cur = toNum(currentId);
     if (!cur || cur <= 0) return null;
 
-    // 0) cache
-    if (parentCache.has(cur)) return parentCache.get(cur);
+    if (parentCache.has(cur)) return parentCache.get(cur); // cache
 
-    // 1) lokal dari lastLoadedData
     const local = [
       lastLoadedData?.parent_id,
       lastLoadedData?.upline_id,
@@ -182,7 +249,6 @@
     ].map(toNum).find(n => n && n > 0);
     if (local){ parentCache.set(cur, local); return local; }
 
-    // 2) /tree/parent/{id}
     try{
       const r = await fetchTEXT(`/tree/parent/${cur}`);
       if (r.ok){
@@ -191,7 +257,6 @@
       }
     }catch{}
 
-    // 3) /users/ajax/{id}
     try{
       const r = await fetchTEXT(`/users/ajax/${cur}`);
       if (r.ok){
@@ -200,7 +265,6 @@
       }
     }catch{}
 
-    // 4) /tree/node/{id}
     try{
       const r = await fetchTEXT(`/tree/node/${cur}`);
       if (r.ok){
@@ -209,82 +273,10 @@
       }
     }catch{}
 
-    // 5) tidak ada upline
     return null;
   }
 
-  /* ===================== MODAL ===================== */
-  function ensureAddUserModal(){
-    let m = document.getElementById('addUserModal');
-    if (!m){
-      document.body.insertAdjacentHTML('beforeend', `
-<div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title fw-bold">Member Yang Belum Masuk Jaringan</h5>
-        <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body"><div id="userList" class="list-group"></div></div>
-    </div>
-  </div>
-</div>`);
-      m = document.getElementById('addUserModal');
-    }
-    return { modal: m, list: document.getElementById('userList') };
-  }
-  window.openAddModal = function(sponsorId, position, uplineId){
-    const { modal, list } = ensureAddUserModal();
-    if (!modal || !list) return;
-    list.innerHTML = 'Memuat...';
-    fetch(`/tree/available-users/${sponsorId}`, { headers:{'X-Requested-With':'XMLHttpRequest'} })
-      .then(r=>{ if(!r.ok) throw 0; return r.json(); })
-      .then(users=>{
-        list.innerHTML='';
-        if (!Array.isArray(users) || !users.length){
-          list.innerHTML = '<div class="text-center text-muted">Tidak ada user tersedia.</div>'; return;
-        }
-        users.forEach(u=>{
-          const row = document.createElement('div');
-          row.className='list-group-item d-flex justify-content-between align-items-center';
-          row.innerHTML = `<div><strong>${u.username}</strong><br><small>${u.name}</small></div>
-                           <button class="btn btn-sm btn-primary">Pasang</button>`;
-          row.querySelector('button').onclick = ()=>window.submitAddUser(u.id, position, uplineId);
-          list.appendChild(row);
-        });
-      })
-      .catch(()=> list.innerHTML = '<div class="text-center text-danger">Gagal memuat data user.</div>')
-      .finally(()=> new bootstrap.Modal(modal).show());
-  };
-  window.submitAddUser = function(userId, position, uplineId){
-    fetch(`/tree/${userId}`, {
-      method:'PUT',
-      headers:{'Content-Type':'application/json','Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content},
-      body: JSON.stringify({ user_id:userId, position, upline_id:uplineId })
-    })
-    .then(r=>r.json())
-    .then(data=>{
-      updateNode(uplineId, position, data.id, data.name);
-      bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
-    })
-    .catch(()=> toastr?.error?.('Gagal memasang user'));
-  };
-  window.updateNode = function(parentId, position, id, name){
-    const st=[lastLoadedData];
-    while(st.length){
-      const n=st.pop();
-      if(n.id==parentId){
-        n.children = (n.children||[]).filter(c=>!(c.isAddButton && c.position===position));
-        n.children.push({ id, name, parent_id: parentId, position, isAddButton:false, children:[] });
-        break;
-      }
-      (n.children||[]).forEach(c=>st.push(c));
-    }
-    drawTree(lastLoadedData, true, currentZoomTransform);
-    toastr?.success?.(`User dipasang di ${position}`);
-  };
-
-  /* ====================== ZOOM ===================== */
+  /* =============== ZOOM =============== */
   const zoomBehavior = d3.zoom().on('zoom', e=>{
     currentZoomTransform = e.transform;
     if (g) g.attr('transform', currentZoomTransform);
@@ -298,7 +290,7 @@
   window.zoomOut= ()=>{ if(!bindZoomIfNeeded()) return; const t=currentZoomTransform.scale(0.83);svgSel.transition().duration(300).call(zoomBehavior.transform,t); currentZoomTransform=t; };
   window.resetZoom= ()=>{ currentZoomTransform=d3.zoomIdentity; loadTree(); };
 
-  /* ====================== LOAD ===================== */
+  /* =============== LOAD =============== */
   async function loadTree(){
     if (isLoading) return;
     isLoading = true;
@@ -311,7 +303,6 @@
       if (data && data.parent_id == null && data.upline_id != null) data.parent_id = data.upline_id;
       lastLoadedData = normalizeIds(data);
 
-      // cache parent untuk root yang baru dimuat (bila ada)
       const cur = toNum(window.currentRootId);
       const pid = toNum(lastLoadedData?.parent_id ?? lastLoadedData?.upline_id);
       if (cur && pid && pid > 0) parentCache.set(cur, pid);
@@ -325,7 +316,7 @@
   }
   window.loadTree = loadTree;
 
-  /* ==================== SVG SKIN =================== */
+  /* =============== SKIN =============== */
   function appendGradients(sel){
     const defs = sel.append('defs');
     const grad = (id, from, to)=>{
@@ -344,7 +335,7 @@
     return isActiveOnSelected(d) ? 'url(#greenGradient)' : 'url(#grayGradient)';
   }
 
-  /* ===================== DRAW ====================== */
+  /* =============== DRAW =============== */
   function drawTree(data, preserveZoom=false, zoomOverride=null){
     if (!data) return;
 
@@ -359,7 +350,7 @@
     const RADIUS = clamp(Math.floor(NODE_W*0.16), 8, 14);
     const AVA = Math.floor(NODE_W*0.38);
 
-    // reset container → buat SVG → tempel
+    // reset container → render ulang
     const container = document.getElementById('tree-container');
     container.innerHTML = '';
     const svgEl = document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -399,10 +390,12 @@
     const layout = d3.tree().nodeSize([hGap+NODE_W, vGap+NODE_H]);
     layout(root);
 
+    // edges
     g.append('g').attr('fill','none').attr('stroke','#cbd5e1').attr('stroke-opacity',0.65).attr('stroke-width',1.2)
       .selectAll('path').data(root.links()).join('path')
       .attr('d', d3.linkVertical().x(d=>d.x).y(d=>d.y));
 
+    // nodes
     const node = g.append('g').selectAll('g').data(root.descendants()).join('g')
       .attr('transform', d=>`translate(${d.x},${d.y})`)
       .on('mouseover', showTooltip).on('mouseout', hideTooltip);
@@ -413,7 +406,9 @@
       .attr('fill', d=>getNodeColor(d.data));
 
     node.filter(d=>!d.data.isAddButton).append('image')
-      .attr('xlink:href','/assets/img/profile.jpg')
+    .attr("xlink:href", d => d.data.photo 
+      ? `/${d.data.photo}` 
+      : `/assets/img/profile.jpg`)
       .attr('x',-AVA/2).attr('y',-NODE_H/2+6)
       .attr('width',AVA).attr('height',AVA)
       .attr('clip-path', `circle(${AVA/2}px at ${AVA/2}px ${AVA/2}px)`);
@@ -430,20 +425,20 @@
       .attr('fill', d=> isActiveOnSelected(d.data) ? '#fff' : '#cbd5e1')
       .style('font-size', Math.max(10, Math.floor(NODE_W*0.12)) + 'px');
 
-    // + Tambah
+    // Tombol + Tambah (buka modal: default tab Clone)
     const addNodes = node.filter(d=>d.data.isAddButton);
     addNodes.style('cursor','pointer').on('click', (e,d)=>{
       e.stopPropagation();
       const pos = d.data.position || d.parent?.data?.position || 'left';
       const up  = d.data.parent_id ?? d.parent?.data?.id ?? null;
       if (!up){ toastr?.warning?.('Upline tidak terdeteksi.'); return; }
-      window.openAddModal(AUTH_USER_ID, pos, up);
+      openAddModalUnified({ parentId: up, position: pos, mode: 'clone' });
     });
     addNodes.append('text').attr('y',2).attr('text-anchor','middle')
       .text('+ Tambah').style('font-size', Math.max(10, Math.floor(NODE_W*0.12)) + 'px').attr('fill','#fff');
   }
 
-  /* ==================== TOOLTIP ==================== */
+  /* =============== TOOLTIP =============== */
   function showTooltip(event, d){
     const el = document.getElementById('tree-tooltip'); if(!el || d.data.isAddButton) return;
     const aktif = isActiveOnSelected(d.data) ? 'Ya' : 'Tidak';
@@ -461,7 +456,7 @@
   }
   function hideTooltip(){ document.getElementById('tree-tooltip')?.classList.add('hidden'); }
 
-  /* ==================== NAV PANAH ================== */
+  /* =============== NAV =============== */
   function realChild(side){
     const kids = (lastLoadedData?.children || [])
       .filter(c => c?.position===side && !c.isAddButton && Number.isFinite(c.id));
@@ -471,21 +466,17 @@
     const to = toNum(toId);
     if (!to || to <= 0) return;
     if (Number.isFinite(window.currentRootId) && window.currentRootId !== to){
-      upStack.push(window.currentRootId); // rekam untuk NAV UP
+      upStack.push(window.currentRootId);
     }
     window.currentRootId = to;
     loadTree();
   }
-
   window.navUp = async function(){
-    // 1) Stack dulu (pasti valid)
     if (upStack.length){
-      const prev = upStack.pop();
-      window.currentRootId = prev;
+      window.currentRootId = upStack.pop();
       loadTree();
       return;
     }
-    // 2) Resolver API/cached
     const cur = toNum(window.currentRootId);
     if (!cur || cur <= 0){ toastr?.info?.('Root tidak valid.'); return; }
     const pid = await resolveParentId(cur);
@@ -494,18 +485,9 @@
     window.currentRootId = pid;
     loadTree();
   };
-
-  window.navLeft  = function(){
-    const L=realChild('left');
-    if(!L){toastr?.info?.('Tidak ada anak kiri.');return;}
-    goDown(L.id);
-  };
-  window.navRight = function(){
-    const R=realChild('right');
-    if(!R){toastr?.info?.('Tidak ada anak kanan.');return;}
-    goDown(R.id);
-  };
-  window.navDown  = function(){
+  window.navLeft  = ()=>{ const L=realChild('left');  if(!L){toastr?.info?.('Tidak ada anak kiri.');return;}  goDown(L.id); };
+  window.navRight = ()=>{ const R=realChild('right'); if(!R){toastr?.info?.('Tidak ada anak kanan.');return;} goDown(R.id); };
+  window.navDown  = ()=>{
     const L=realChild('left'), R=realChild('right');
     const kids = [
       ...((L?.children||[]).filter(n=>!n.isAddButton && Number.isFinite(n.id))),
@@ -516,7 +498,7 @@
     goDown(mid.id);
   };
 
-  /* ================= MENU BAGAN ==================== */
+  /* =============== MENU BAGAN =============== */
   function bindBaganMenu(){
     const items = document.querySelectorAll('.menu-bagan[data-bagan]');
     items.forEach(a=>{
@@ -533,7 +515,213 @@
     });
   }
 
-  /* ====================== BOOT ===================== */
+  /* =============== TAMBAH (DAFTAR PENDING) =============== */
+  function ensureAddUserModal(){
+    return { modal: document.getElementById('addUserModal'), list: document.getElementById('userList') };
+  }
+  window.submitAddUser = function(userId, position, uplineId){
+   
+    fetch(`/tree/${userId}`, {
+      method:'PUT',
+      headers:{
+        'Content-Type':'application/json',
+        'Accept':'application/json',
+        'X-CSRF-TOKEN':document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ user_id:userId, position, upline_id:uplineId })
+    })
+    .then(r=>r.json())
+    .then(() => {
+      toastr?.success?.('User berhasil dipasang');
+      loadTree();
+      bootstrap.Modal.getInstance(document.getElementById('addUserModal'))?.hide();
+    })
+    .catch(()=> toastr?.error?.('Gagal memasang user'));
+  };
+
+  /* =============== CLONE HELPERS =============== */
+  async function refreshPendingBadge() {
+  const badge = document.getElementById('pendingCountBadge');
+  if (!badge) return;
+  try {
+    const r = await fetch(`/tree/available-users/${AUTH_USER_ID}/count`, {
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    });
+    const { count } = await r.json();
+    if (Number(count) > 0) {
+      badge.textContent = count;
+      badge.classList.remove('d-none');
+    } else {
+      badge.textContent = '0';
+      badge.classList.add('d-none');
+    }
+  } catch {
+    // kalau gagal, sembunyikan saja biar nggak mengganggu
+    badge.classList.add('d-none');
+  }
+}
+
+  async function loadUnusedPinsIntoSelect() {
+    const sel = document.getElementById('pinCodes');
+    if (!sel) return;
+    sel.innerHTML = '<option disabled>Memuat PIN...</option>';
+    try {
+      const r = await fetch(`{{ route('pins.unused') }}`, { headers: { 'Accept': 'application/json' }});
+      if (!r.ok) throw 0;
+      const { pins } = await r.json();
+      sel.innerHTML = '';
+      if (!pins || !pins.length) {
+        sel.innerHTML = '<option disabled>Tidak ada PIN tersedia</option>';
+      } else {
+        pins.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.code;
+          opt.textContent = p.code;
+          sel.appendChild(opt);
+        });
+      }
+    } catch {
+      sel.innerHTML = '<option disabled>Gagal memuat PIN</option>';
+    }
+  }
+  async function previewCloneCandidates() {
+  const parentId = document.getElementById('cloneParentId').value; // ini angka murni
+  const useLogin = document.getElementById('cloneUseLogin').value === '1';
+  const count = Array.from(document.getElementById('pinCodes').selectedOptions).length;
+
+  if (!count) {
+    toastr?.info?.('Pilih PIN dulu'); 
+    return;
+  }
+
+  const params = new URLSearchParams({ count: String(count) });
+  if (!useLogin) params.set('base_user_id', String(parentId)); // <-- tanpa titik dua
+
+  const url = `{{ route('tree.clone.preview') }}?${params.toString()}`;
+
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  const data = await res.json();
+
+  if (!res.ok) {
+    toastr?.error?.(data?.message || 'Gagal memuat preview');
+    return;
+  }
+
+  const box = document.getElementById('clonePreview');
+  box.innerHTML = (data.candidates || [])
+    .map((c, i) => `${i+1}. <code>${c.username}</code> / <code>${c.sponsor_code ?? c.referral_code ?? '-'}</code>`)
+    .join('<br>');
+}
+
+  async function submitCloneForm(e) {
+    e.preventDefault();
+    const form = document.getElementById('cloneForm');
+    const fd   = new FormData(form);
+
+    const res = await fetch(`{{ route('tree.clone.store') }}`, {
+      method: 'POST',
+      headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+      body: fd
+    });
+
+    if (!res.ok) {
+      const t = await res.text();
+      console.error('Clone failed:', t);
+      toastr?.error?.('Gagal clone: ' + t);
+      return;
+    }
+    const { ok, message } = await res.json();
+    if (ok) {
+      toastr?.success?.(message || 'Berhasil clone & pasang');
+      loadTree();
+      bootstrap.Modal.getInstance(document.getElementById('addUserModal'))?.hide();
+    }
+  }
+
+  // open modal terintegrasi
+function openAddModalUnified({ parentId, position = 'left', mode = 'clone' }) {
+  const modalEl = document.getElementById('addUserModal');
+  if (!modalEl) return;
+
+  // isi form clone
+  document.getElementById('cloneParentId').value = parentId;
+  document.getElementById('clonePosition').value = position;
+  document.getElementById('clonePositionLabel').textContent = 
+  position === 'right' ? 'Right' : 'Left';
+  
+  document.getElementById('cloneBagan').value = String(window.currentBagan || 1);
+  document.getElementById('cloneUseLogin').value = '1';
+  document.getElementById('clonePreview').innerHTML = '';
+
+  // muat PIN untuk tab Clone
+  loadUnusedPinsIntoSelect();
+
+  // siapkan loader pending
+  const loadPendingList = () => {
+    const sponsorId = AUTH_USER_ID;
+    const list = document.getElementById('userList');
+    list.innerHTML = 'Memuat...';
+    fetch(`/tree/available-users/${sponsorId}`, {
+      headers: { 'X-Requested-With':'XMLHttpRequest', 'Accept':'application/json' },
+      credentials: 'same-origin'
+    })
+    .then(r => r.json())
+    .then(users => {
+      list.innerHTML = '';
+      if (!Array.isArray(users) || !users.length) {
+        list.innerHTML = '<div class="text-center text-muted">Tidak ada user pending.</div>';
+        return;
+      }
+      users.forEach(u => {
+        const row = document.createElement('div');
+        row.className = 'list-group-item d-flex justify-content-between align-items-center';
+        row.innerHTML = `<div><strong>${u.username}</strong><br><small>${u.name ?? ''}</small></div>
+                         <button class="btn btn-sm btn-primary">Pasang</button>`;
+        row.querySelector('button').onclick = () => window.submitAddUser(u.id, position, parentId);
+        list.appendChild(row);
+      });
+    })
+    .catch(() => list.innerHTML = '<div class="text-center text-danger">Gagal memuat data pending.</div>');
+  };
+
+  // pastikan switching tab pakai Bootstrap API
+  const tabCloneBtn  = document.getElementById('tabCloneBtn');
+  const tabTambahBtn = document.getElementById('tabTambahBtn');
+
+  // tiap kali tab Tambah AKTIF, load pending
+  tabTambahBtn?.addEventListener('shown.bs.tab', () => {
+    loadPendingList();
+  }, { once: false });
+
+  // buka modal, lalu setelah MODAL tampil baru pilih tab sesuai mode
+  const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
+document.getElementById('addUserModal')
+  .addEventListener('shown.bs.modal', () => { refreshPendingBadge(); }, { once: true });
+  modalEl.addEventListener('shown.bs.modal', () => {
+    if (mode === 'tambah') {
+      bootstrap.Tab.getOrCreateInstance(tabTambahBtn).show();
+      
+      // shown.bs.tab akan memanggil loadPendingList()
+    } else {
+      bootstrap.Tab.getOrCreateInstance(tabCloneBtn).show();
+    }
+  }, { once: true });
+
+  modal.show();
+}
+
+  window.openAddModalUnified = openAddModalUnified; // expose (optional)
+
+  /* =============== BIND EVENTS =============== */
+  document.addEventListener('click', (ev) => {
+    if (ev.target?.id === 'btnPreview') previewCloneCandidates();
+  });
+  document.addEventListener('submit', (ev) => {
+    if (ev.target?.id === 'cloneForm') submitCloneForm(ev);
+  });
+
+  /* =============== BOOT =============== */
   document.addEventListener('DOMContentLoaded', ()=>{
     bindBaganMenu();
     loadTree();

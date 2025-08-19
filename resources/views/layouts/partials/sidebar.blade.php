@@ -178,13 +178,6 @@
     </li>
 
     <li class="nav-item">
-        <a href="/bank-accounts">
-            <i class="fas fa-university"></i>
-            <p>Rekening Perusahaan</p>
-        </a>
-    </li>
-
-    <li class="nav-item">
         <a href="{{ route('finance.cashflow') }}">
             <i class="fas fa-chart-line"></i>
             <p>Ringkasan Arus Kas</p>

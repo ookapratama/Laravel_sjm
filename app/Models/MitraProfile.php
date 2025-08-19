@@ -50,4 +50,8 @@ class MitraProfile extends Model
     {
         return $this->hasMany(Withdrawal::class, 'user_id', 'user_id');
     }
+    public function bankLocked(): bool
+    {
+        return filled($this->nama_bank) || filled($this->nomor_rekening) || filled($this->nama_rekening);
+    }
 }

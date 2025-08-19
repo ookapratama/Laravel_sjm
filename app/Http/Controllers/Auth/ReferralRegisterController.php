@@ -227,36 +227,44 @@ class ReferralRegisterController extends Controller
 
     public function checkSponsor(Request $request)
     {
-        $request->validate([
-            'sponsor_code' => 'required|string|min:3|max:20|regex:/^[A-Za-z0-9]+$/'
-        ]);
-
-        $sponsorCode = $request->sponsor_code;
-
-        // Cek apakah sponsor ada di database
-        // Sesuaikan dengan struktur database Anda
-        $sponsor = User::where('username', $sponsorCode)
-            ->orWhere('referral_code', $sponsorCode)
-            ->where('is_active', '1')
-            ->first();
-
-        if ($sponsor) {
+        try {
+            //code...
+            $request->validate([
+                'sponsor_code' => 'required|string|min:3|max:20|regex:/^[A-Za-z0-9]+$/'
+            ]);
+    
+            $sponsorCode = $request->sponsor_code;
+    
+            // Cek apakah sponsor ada di database
+            // Sesuaikan dengan struktur database Anda
+            $sponsor = User::where('username', $sponsorCode)
+                ->orWhere('referral_code', $sponsorCode)
+                ->where('is_active', '1')
+                ->first();
+    
+            if ($sponsor) {
+                return response()->json([
+                    'valid' => true,
+                    'message' => 'Sponsor ditemukan',
+                    'sponsor_info' => [
+                        'name' => $sponsor->name,
+                        'member_id' => $sponsor->id ?? $sponsor->username,
+                        'level' => $sponsor->level ?? 'Member',
+                        // 'join_date' => $sponsor->created_at->format('d/m/Y')
+                    ]
+                ]);
+            }
+    
             return response()->json([
-                'valid' => true,
-                'message' => 'Sponsor ditemukan',
-                'sponsor_info' => [
-                    'name' => $sponsor->name,
-                    'member_id' => $sponsor->id ?? $sponsor->username,
-                    'level' => $sponsor->level ?? 'Member',
-                    'join_date' => $sponsor->created_at->format('d/m/Y')
-                ]
+                'valid' => false,
+                'message' => 'Kode sponsor tidak ditemukan'
+            ]);
+        } catch (\Exception $th) {
+            return response()->json([
+                'message' => $th->getMessage()
+
             ]);
         }
-
-        return response()->json([
-            'valid' => false,
-            'message' => 'Kode sponsor tidak ditemukan'
-        ]);
     }
 
     // RegisterController.php

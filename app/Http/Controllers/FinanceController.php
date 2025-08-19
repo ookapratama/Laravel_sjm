@@ -22,9 +22,9 @@ class FinanceController extends Controller
     {
         $cashflow = IncomeDetail::selectRaw('
             DATE_FORMAT(date, "%Y-%m") as bulan,
-            SUM(pendaftaran_member + produk + manajemen) as total_masuk,
+            SUM(penjualan_pin + produk + manajemen) as total_masuk,
             SUM(pairing_bonus + ro_bonus + reward_poin + withdraw) as total_keluar,
-            SUM((pendaftaran_member + produk + manajemen) - (pairing_bonus + ro_bonus + reward_poin + withdraw)) as saldo
+            SUM((penjualan_pin + produk + manajemen) - (pairing_bonus + ro_bonus + reward_poin + withdraw)) as saldo
         ')
             ->groupBy('bulan')
             ->orderBy('bulan', 'desc')

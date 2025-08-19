@@ -19,8 +19,8 @@ class ReferralQrController extends Controller
         if (RouteFacade::has('register.form')) {
             return route('register.form', ['ref' => $ref]);
         }
-        if (RouteFacade::has('pre-register.form')) {
-            return route('pre-register.form', ['ref' => $ref]);
+        if (RouteFacade::has('register.form')) {
+            return route('register.form', ['ref' => $ref]);
         }
         return url('/register?ref='.$ref); // fallback
     }

@@ -15,6 +15,7 @@ use App\Http\Controllers\{
     BonusController,
     MemberController
 };
+use App\Models\PinRequest;
 use App\Http\Controllers\Admin\BonusSettingController;
 use App\Http\Controllers\Admin\PreRegistrationApprovalController;
 use App\Http\Controllers\Auth\ChangeCredentialsController;
@@ -32,6 +33,16 @@ use App\Http\Controllers\Admin\PinCtrl as AdminPinCtrl;
 use App\Http\Controllers\Finance\PinCtrl as FinancePinCtrl;
 use App\Http\Controllers\Member\PinCtrl as MemberPinCtrl;
 use App\Http\Controllers\Auth\ReferralRegisterController;
+
+// routes/web.php
+Route::middleware(['auth'])->group(function () {
+    Route::get('/pins/unused', [\App\Http\Controllers\TreeCloneController::class, 'unusedPins'])->name('pins.unused');
+    Route::get('/tree/clone/preview', [\App\Http\Controllers\TreeCloneController::class, 'preview'])->name('tree.clone.preview');
+    Route::post('/tree/clone', [\App\Http\Controllers\TreeCloneController::class, 'store'])->name('tree.clone.store');
+    Route::middleware(['auth'])->group(function () {
+    Route::get('/tree/available-users/{id}/count', [\App\Http\Controllers\MLMController::class, 'getAvailableUsersCount']);
+});
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/me/ref-qr.png', [ReferralQrController::class, 'png'])->name('member.ref.qr.png');
@@ -145,8 +156,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('redirect');
 
     Route::middleware(['auth'])->prefix('profile')->group(function () {
-        Route::get('/', [\App\Http\Controllers\ProfileController::class, 'index'])->name('profile.index');
-        Route::post('/update', [\App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+  
+            Route::get('/', [ProfileController::class, 'index'])->name('profile.index');
+            Route::post('/update', [ProfileController::class, 'update'])->name('profile.update');
+            Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('profile.update.photo');
+            Route::post('/profile/update-password', [ProfileController::class, 'updatePassword'])
+    ->name('profile.update-password');
+
     });
 
     // ✅ Change Credentials

@@ -307,11 +307,11 @@ class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bo
   aria-expanded="false"
   >
   <div class="avatar-sm">
-    <img
-    src="{{ asset('assets/img/profile.jpg')}}"
-    alt="..."
-    class="avatar-img rounded-circle"
-    />
+     <img id="avatarPreview"
+                 src="{{ asset( Auth::user()->photo ?? 'assets/img/profile.jpg') }}"
+                 class="rounded-circle w-100 h-100"
+                 style="object-fit:cover;border:4px solid #f1f1f1;"
+                 alt="Foto Profil">
   </div>
   <span class="profile-username">
     <span class="op-7">Hi, {{ Auth::user()->name }}</span>
@@ -324,7 +324,7 @@ class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bo
       <div class="user-box">
         <div class="avatar-lg">
           <img
-          src="{{ asset('assets/img/profile.jpg')}}"
+          src="{{ asset(Auth::user()->photo  ?? 'assets/img/profile.jpg') }}"
           alt="image profile"
           class="avatar-img rounded"
           />
@@ -333,7 +333,7 @@ class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bo
           <h4></h4>
           <p class="text-muted"></p>
           <a
-          href="profile.html"
+          href="{{ route('profile.index') }}"
           class="btn btn-xs btn-secondary btn-sm"
           >View Profile</a
           >
@@ -341,9 +341,6 @@ class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bo
       </div>
     </li>
     <li>
-      <div class="dropdown-divider"></div>
-      <a class="dropdown-item" href="{{ route('profile.index') }}">My Profile</a>
-      
     <div class="dropdown-divider"></div>
       <a class="dropdown-item" href="#">
         <form method="POST" action="{{ route('logout') }}">
@@ -389,30 +386,24 @@ class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bo
 <script src="{{ asset('assets/js/core/popper.min.js') }}"></script>
 <script src="{{ asset('assets/js/core/bootstrap.min.js') }}"></script>
 
-<!-- Bootstrap Treeview via CDN -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-treeview/1.2.0/bootstrap-treeview.min.js"></script>
+<!-- 1) Core Chart.js v4 -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- 2) Day.js + adapter Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-dayjs@1.0.1/dist/chartjs-adapter-dayjs.umd.min.js"></script>
+
+<!-- 3) Plugins yang kompatibel dengan v4 -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+
 
 <!-- jQuery Scrollbar -->
 <script src="{{ asset('assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js') }}"></script>
-
-<!-- Chart JS -->
-<script src="{{ asset('assets/js/plugin/chart.js/chart.min.js') }}"></script>
-
-<!-- jQuery Sparkline -->
-<script src="{{ asset('assets/js/plugin/jquery.sparkline/jquery.sparkline.min.js') }}"></script>
-
-<!-- Chart Circle -->
-<script src="{{ asset('assets/js/plugin/chart-circle/circles.min.js') }}"></script>
-
-<!-- Datatables -->
 <script src="{{ asset('assets/js/plugin/datatables/datatables.min.js') }}"></script>
-
 <!-- Bootstrap Notify -->
 <script src="{{ asset('assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js') }}"></script>
 
-<!-- jQuery Vector Maps -->
-<script src="{{ asset('assets/js/plugin/jsvectormap/jsvectormap.min.js') }}"></script>
-<script src="{{ asset('assets/js/plugin/jsvectormap/world.js') }}"></script>
 
 <!-- Sweet Alert -->
 <script src="{{ asset('assets/js/plugin/sweetalert/sweetalert.min.js') }}"></script>
@@ -422,6 +413,7 @@ class="navbar navbar-header navbar-header-transparent navbar-expand-lg border-bo
 <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
 <!-- Kaiadmin -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="{{ asset('assets/js/kaiadmin.min.js') }}"></script>
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/relativeTime.js"></script>
@@ -689,7 +681,12 @@ function copyReferral() {
     if (dResults && dForm && !dForm.contains(e.target)) dResults.style.display = "none";
   });
 })();
+
+
 </script>
+
+
+
 @stack('scripts')
 </body>
 </html>
