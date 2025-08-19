@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ActivationPin extends Model
 {
-    protected $fillable=['code','status','bagan','price','purchased_by','pin_request_id','used_by','used_at'];
+    protected $fillable=['code','status','bagan','price','purchased_by','pin_request_id','used_by','used_at','created_at'];
     protected $casts=['used_at'=>'datetime'];
 
     public function owner(){ return $this->belongsTo(User::class,'purchased_by'); }

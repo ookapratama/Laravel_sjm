@@ -33,7 +33,7 @@
 </div>
 @endsection
 @push('scripts')
-<script src="{{ asset('assets/js/plugin/chart.js/chart.min.js') }}"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const ctx = document.getElementById('targetChart').getContext('2d');

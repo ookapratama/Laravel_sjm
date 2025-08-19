@@ -6,13 +6,16 @@ use App\Events\NotificationReceived;
 use App\Events\PinRequestAprrovedByFinance;
 use App\Events\PinRequestRejected;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\PinRequest;
 use App\Models\CashTransaction;
 use App\Models\Notification;
 use App\Models\User;
+use App\Models\ActivationPin;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Str;         
+use GuzzleHttp\Client; 
+use Illuminate\Http\Request;
 
 class PinCtrl extends Controller
 {
@@ -112,6 +115,7 @@ class PinCtrl extends Controller
             \Log::error('Error rejecting PIN request', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
+
             ]);
 
             return response()->json([
@@ -119,6 +123,7 @@ class PinCtrl extends Controller
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
+//<<<<<<< ooka-dev
     }
 
     public function reject(Request $r, $id)
@@ -168,6 +173,86 @@ class PinCtrl extends Controller
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
+        }
+//=======
+
+        // === Generate PIN (idempotent) ===
+        $remaining = max(0, $req->qty - (int)$req->generated_count);
+
+        if ($remaining > 0) {
+            for ($i=0; $i<$remaining; $i++) {
+                $code = strtoupper(Str::random(16));
+                ActivationPin::create([
+                    'code'           => $code,
+                    'status'         => 'unused',
+                    'bagan'          => 1,
+                    'price'          => $req->unit_price,
+                    'purchased_by'   => $req->requester_id,
+                    'pin_request_id' => $req->id,
+                ]);
+                $newCodes->push($code);
+            }
+            $req->generated_count += $remaining;
+        }
+
+        // Set final status generated
+        $req->status = 'generated';
+        $req->generated_at = now();
+        $req->save();
+    });
+
+    // === Kirim WA ke member (setelah commit) ===
+    $req->load('requester:id,name,no_telp');
+
+    // Ambil semua kode (bukan hanya yang baru) agar pesan konsisten
+    $allCodes = ActivationPin::where('pin_request_id',$req->id)
+        ->orderBy('id')->pluck('code')->implode(', ');
+
+    $msg = "Assalamu'alaikum {$req->requester->name},\n\n"
+         . "PIN Aktivasi Anda sudah TERBIT ✅\n"
+         . "Jumlah: {$req->generated_count}\n"
+         . "Kode: {$allCodes}\n\n"
+         . "Gunakan PIN untuk aktivasi downline.";
+
+    $this->sendWhatsApp($req->requester->no_telp, $msg);
+
+    return back()->with('success', 'Approved & PIN dibuat. WA terkirim ke member.');
+}
+
+
+    public function reject(Request $r, $id){
+        $notes = $r->validate(['finance_notes'=>'required|string|max:500'])['finance_notes'];
+        $req = PinRequest::findOrFail($id);
+        if ($req->status !== 'requested') return back()->with('error','Invalid.');
+        $req->update([
+            'status'     => 'finance_rejected',
+            'finance_notes' => $notes,
+            'finance_id' => auth()->id(),
+            'finance_at' => now()
+        ]);
+        return back()->with('success','Ditolak.');
+//>>>>>>> main
+    }
+    protected function sendWhatsApp($phone, $message)
+    {
+        if (str_starts_with($phone, '0')) {
+            $phone = '+62' . substr($phone, 1);
+        }
+
+        try {
+            $client = new Client();
+            $client->post('https://api.fonnte.com/send', [
+                'headers' => [
+                    'Authorization' => env('FONNTE_TOKEN'),
+                ],
+                'form_params' => [
+                    'target' => $phone,
+                    'message' => $message,
+                    'delay' => 2,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("❌ Gagal kirim WA ke {$phone}: " . $e->getMessage());
         }
     }
 }

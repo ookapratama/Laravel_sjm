@@ -375,6 +375,7 @@
         <!-- End Custom template -->
     </div>
 
+
     <!-- Core JS -->
     <script src="{{ asset('assets/js/core/jquery-3.7.1.min.js') }}"></script>
     <script src="{{ asset('assets/js/core/popper.min.js') }}"></script>
@@ -912,6 +913,7 @@
         })();
     </script>
     @stack('scripts')
+
 </body>
 
 </html>

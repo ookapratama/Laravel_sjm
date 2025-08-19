@@ -7,8 +7,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ActivationPin;   // <-- tambahkan
 use App\Models\Notification;
-use App\Models\PinRequest;      // <-- tambahkan
+use App\Models\PinRequest;
 use App\Models\User;
+use GuzzleHttp\Client;
+     // <-- tambahkan
 
 class PinCtrl extends Controller
 {
@@ -49,6 +51,7 @@ class PinCtrl extends Controller
         }
 
 
+// <<<<<<< ooka-dev
         PinRequest::create([
             'requester_id' => auth()->id(),
             'qty' => $qty,
@@ -79,6 +82,91 @@ class PinCtrl extends Controller
             ]));
         }
 
-        return back()->with('success', 'Request dikirim. Menunggu verifikasi Finance.');
+        //return back()->with('success', 'Request dikirim. Menunggu verifikasi Finance.');
+//         $req = PinRequest::create([
+//             'requester_id'=>auth()->id(),
+//             'qty'=>$qty, 
+//             'unit_price'=>$unit, 
+//             'total_price'=>$unit*$qty, 
+//             'status'=>'requested',
+//             'payment_method'=>$r->payment_method,
+//             'payment_reference'=>$r->payment_reference ?? null,
+//             'payment_proof'=> $path,
+//         ]);
+        $this->notifyFinanceOnPinOrder($req);
+        
+        return back()->with('success','Request dikirim. Menunggu verifikasi Finance.');
+//>>>>>>> main
+    }
+
+
+private function notifyFinanceOnPinOrder(PinRequest $req): void
+{
+    $req->load('requester:id,name,no_telp,email');
+
+    $judul   = "📦 ORDER PIN AKTIVASI BARU";
+    $requester = $req->requester?->name ?? '-';
+    $hpReq   = $req->requester?->no_telp ?? '-';
+    $qty     = number_format($req->qty);
+    $unit    = $this->rupiah($req->unit_price);
+    $total   = $this->rupiah($req->total_price);
+    $method  = strtoupper($req->payment_method ?? '-');
+    $id      = $req->id;
+
+    // (Opsional) link langsung ke halaman proses/approve
+    $urlApprove = route('finance.pin.index'); // ganti dgn route detail/approve yang kamu punya
+
+    $msg = 
+        "$judul\n\n"
+        ."ID: #$id\n"
+        ."Pemesan: $requester ($hpReq)\n"
+        ."Jumlah: $qty PIN\n"
+        ."Harga/Unit: $unit\n"
+        ."Total: $total\n"
+        ."Metode: $method\n"
+        ."Status: REQUESTED\n\n"
+        ."Periksa & proses di: $urlApprove";
+
+    // Ambil semua nomor Finance berdasarkan role
+    $financePhones = User::where('role', 'finance')
+    ->pluck('no_telp')   // ambil hanya kolom no_telp
+    ->filter()           // buang null / kosong
+    ->unique()           // hilangkan duplikat
+    ->values();          // reset index jadi rapi
+
+
+    // Fallback ENV kalau belum ada role/phone
+     $phone = $financePhones->first();   // string "0852..."
+if ($phone) $this->sendWhatsApp($phone, $msg);
+}
+
+/** Format rupiah sederhana */
+private function rupiah($angka): string
+{
+    return 'Rp '.number_format((float)$angka,0,',','.');
+}
+   protected function sendWhatsApp($phone, $message)
+    {
+        
+        if (str_starts_with($phone, '0')) {
+            $phone = '+62' . substr($phone, 1);
+        }
+
+        try {
+            $client = new Client();
+            $client->post('https://api.fonnte.com/send', [
+                'headers' => [
+                    'Authorization' => env('FONNTE_TOKEN'),
+                ],
+                'form_params' => [
+                    'target' => $phone,
+                    'message' => $message,
+                    'delay' => 2,
+                ]
+            ]);
+           
+        } catch (\Exception $e) {
+            \Log::error("❌ Gagal kirim WA ke {$phone}: " . $e->getMessage());
+        }
     }
 }

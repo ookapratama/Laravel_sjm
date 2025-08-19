@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
     class IncomeDetail extends Model
 {
-    protected $fillable = ['date', 'pendaftaran_member', 'manajemen','produk','pairing_bonus','reward_poin','ro_bonus','withdraw'];
+    protected $fillable = ['date', 'penjualan_pin', 'manajemen','produk','pairing_bonus','reward_poin','ro_bonus','withdraw'];
     protected $casts = ['date' => 'date'];
 }
 

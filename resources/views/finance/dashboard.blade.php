@@ -37,7 +37,6 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/plugin/chart.js/chart.min.js') }}"></script>
 <script>
 const daily = @json($daily);
 const incomePie = @json($incomePie);

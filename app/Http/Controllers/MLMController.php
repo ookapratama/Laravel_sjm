@@ -37,6 +37,15 @@ class MLMController extends Controller
             throw $e;
         }
     }
+    public function getAvailableUsersCount($id)
+{
+    // Pending = belum ditempel (upline_id null), milik sponsor {id}
+    $count = User::whereNull('position')
+        ->where('sponsor_id', $id)     // kalau kamu pakai sponsor_code, sesuaikan
+        ->count();
+
+    return response()->json(['count' => $count]);
+}
     public function loadTree(Request $request, $id)
     {
         $max = $request->get('limit', 7); // default 7 level
@@ -79,6 +88,7 @@ class MLMController extends Controller
             'children'   => [],
             'left_count' => $leftCount,
             'right_count'=> $rightCount,
+            'photo'=> $user->photo,
             // kirim juga info star untuk konsistensi UI (opsional)
             'star_count'     => $starCount,
             'active_bagans'  => $activeBagans,
@@ -96,6 +106,7 @@ class MLMController extends Controller
             'position'   => 'right',
             'parent_id'  => $user->id,
             'children'   => [],
+            'photo'=> $user->photo,
             'left_count' => $leftCount,
             'right_count'=> $rightCount,
             'star_count'     => $starCount,
@@ -113,7 +124,7 @@ class MLMController extends Controller
         'children'      => $children,
         'left_count'    => $leftCount,
         'right_count'   => $rightCount,
-
+        'photo'=> $user->photo,
         // ⭐️ data berbasis user_bagans
         'star_count'    => $starCount,         // angka
         'active_bagans' => $activeBagans,      // [1,2,3,...]
