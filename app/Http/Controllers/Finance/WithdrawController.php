@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Finance;
 
+use App\Events\BonusRequestAprrovedByFinance;
+use App\Events\BonusRequestRejectedByFinance;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Withdrawal;
 use App\Models\CashTransaction;
+use App\Models\Notification;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -56,7 +59,7 @@ class WithdrawController extends Controller
             }
 
             $finance = auth()->user();
-            $amount = number_format($withdraw->amount-$withdraw->tax, 0, ',', '.');
+            $amount = number_format($withdraw->amount - $withdraw->tax, 0, ',', '.');
 
             if ($request->action === 'approve') {
                 // ==========================================
@@ -67,7 +70,7 @@ class WithdrawController extends Controller
                 $withdraw->status = 'approved';
                 $withdraw->transfer_reference = $request->transfer_reference;
                 $withdraw->admin_notes = $request->admin_notes;
-                 $withdraw->processed_at = now();
+                $withdraw->processed_at = now();
                 // $withdraw->processed_by = auth()->id();
                 $withdraw->save();
 
@@ -76,7 +79,7 @@ class WithdrawController extends Controller
                     'user_id'           => $user->id,
                     'type'              => 'out',
                     'source'            => 'withdraw',
-                    'amount'            => $withdraw->amount-$withdraw->tax,
+                    'amount'            => $withdraw->amount - $withdraw->tax,
                     'notes'             => 'Withdraw user ' . $user->name . ' - Approved by ' . $finance->name,
                     'payment_channel'   => 'Transfer',
                     'payment_reference' => 'WD-' . $withdraw->id,
@@ -104,6 +107,25 @@ class WithdrawController extends Controller
                     "Terima kasih telah menjadi bagian dari keluarga besar *Sair Jaya Mandiri*. Semoga rezeki Anda terus mengalir dan membawa keberkahan.";
 
                 $responseMessage = 'Withdrawal berhasil disetujui dan diproses.';
+
+                Notification::create([
+                    'user_id' => $user->id,
+                    'message' => 'Pihak Finance menyetujui Permintaan Penarikan Bonus Anda.',
+                    'url' => route('member.withdraw'),
+                ]);
+
+                // Broadcast via Pusher
+                event(new BonusRequestAprrovedByFinance($user->id, [
+                    'type' => 'approved_bonus', // atau 'preregistration_received' jika Anda ingin beda
+                    'message' => 'Pihak Finance menyetujui Permintaan Penarikan Bonus Anda.',
+                    'url' => route('member.withdraw'),
+                    'created_at' => now()->toDateTimeString()
+                ]));
+
+                \Log::info('Pihak Finance menyetujui Permintaan Penarikan Bonus Anda', [
+                    'pin_request_id' => $withdraw->id,
+                    'user_id' => $user->id,
+                ]);
             } else {
                 // ==========================================
                 // PROSES REJECT
@@ -157,6 +179,25 @@ class WithdrawController extends Controller
                     "Terima kasih atas pengertian Anda. Tim *Sair Jaya Mandiri* siap membantu Anda mencapai tujuan finansial.";
 
                 $responseMessage = 'Withdrawal ditolak. Saldo dikembalikan ke member.';
+
+                Notification::create([
+                    'user_id' => $user->id,
+                    'message' => 'Pihak Finance menolak Permintaan Penarikan Bonus Anda.',
+                    'url' => route('member.withdraw'),
+                ]);
+
+                // Broadcast via Pusher
+                event(new BonusRequestRejectedByFinance($user->id, [
+                    'type' => 'approved_bonus', // atau 'preregistration_received' jika Anda ingin beda
+                    'message' => 'Pihak Finance menolak Permintaan Penarikan Bonus Anda.',
+                    'url' => route('member.withdraw'),
+                    'created_at' => now()->toDateTimeString()
+                ]));
+
+                \Log::info('Pihak Finance menolak Permintaan Penarikan Bonus Anda', [
+                    'pin_request_id' => $withdraw->id,
+                    'user_id' => $user->id,
+                ]);
             }
 
             // Kirim WhatsApp
@@ -229,5 +270,4 @@ class WithdrawController extends Controller
             \Log::error("❌ Gagal kirim WA ke {$phone}: " . $e->getMessage());
         }
     }
-
 }

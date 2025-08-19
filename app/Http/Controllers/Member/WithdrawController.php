@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Member;
 
+use App\Events\NotificationReceived;
+use App\Events\RequestBonusByMember;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\CashTransaction;
@@ -10,6 +12,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\BonusTransaction;
 use App\Models\Withdrawal;
 use App\Models\MitraProfile;
+use App\Models\Notification;
+use App\Models\User;
 
 class WithdrawController extends Controller
 {
@@ -101,6 +105,26 @@ class WithdrawController extends Controller
             'status' => 'pending',
             'requested_at' => now(), // tambahan untuk tracking
         ]);
+
+        $financeUsers = User::where('role', 'finance')->get();
+        $findUser = User::find($user->id);
+
+        foreach ($financeUsers as $finance) {
+            // Simpan ke database (jika perlu histori)
+            Notification::create([
+                'user_id' => $finance->id,
+                'message' => 'Member : ' . $findUser->name . ' Meminta pengajuan penarikan bonus',
+                'url' => route('finance.withdraws.index'),
+            ]);
+
+            // Broadcast via Pusher
+            event(new RequestBonusByMember($finance->id, [
+                'type' => 'member_request_bonus', // atau 'preregistration_received' jika Anda ingin beda
+                'message' => 'Member : ' . $findUser->name . ' Meminta pengajuan penarikan bonus',
+                'url' => route('finance.withdraws.index'),
+                'created_at' => now()->toDateTimeString()
+            ]));
+        }
 
         return response()->json([
             'success' => true,
