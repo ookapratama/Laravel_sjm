@@ -13,8 +13,8 @@ use App\Models\User;
 use App\Models\ActivationPin;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Str;         
-use GuzzleHttp\Client; 
+use Illuminate\Support\Str;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 
 class PinCtrl extends Controller
@@ -85,32 +85,73 @@ class PinCtrl extends Controller
                 }
             });
 
-            $financeUsers = User::where('role', 'admin')->get();
+            $notes = '-';
 
-            foreach ($financeUsers as $finance) {
-                // Simpan ke database (jika perlu histori)
-                Notification::create([
-                    'user_id' => $finance->id,
-                    'message' => 'Finance menyetujui aktivasi pin : ' . auth()->user()->name . ' dengan ID : ' . auth()->id(),
-                    'url' => route('admin.admin.pin.index'),
+            DB::transaction(function () use ($id, $notes, &$req) {
+                $req = PinRequest::lockForUpdate()->findOrFail($id);
+                if (!in_array($req->status, ['finance_approved', 'generated'])) {
+                    throw ValidationException::withMessages(['status' => 'Invalid.']);
+                }
+
+                $remaining = $req->qty - $req->generated_count;
+                if ($remaining > 0) {
+                    for ($i = 0; $i < $remaining; $i++) {
+                        ActivationPin::create([
+                            'code' => strtoupper(Str::random(16)),
+                            'status' => 'unused',
+                            'bagan' => 1,
+                            'price' => $req->unit_price,
+                            'purchased_by' => $req->requester_id,
+                            'pin_request_id' => $req->id,
+                        ]);
+                    }
+                    $req->generated_count += $remaining;
+                }
+
+                $req->update([
+                    'status' => 'generated',
+                    'admin_id' => auth()->id(),
+                    'admin_notes' => $notes,
+                    'generated_at' => now(),
                 ]);
+            });
 
-                // Broadcast via Pusher
-                event(new PinRequestAprrovedByFinance($finance->id, [
-                    'type' => 'finance_approved', // atau 'preregistration_received' jika Anda ingin beda
-                    'message' => 'Finance menyetujui aktivasi pin : ' . auth()->user()->name . ' dengan ID : ' . auth()->id(),
-                    'url' => route('admin.admin.pin.index'),
-                    'created_at' => now()->toDateTimeString()
-                ]));
-            }
+
+            $user  = $req->requester()->first();
+            $codes = $req->pins()->pluck('code')->implode(', ');
+            $msg   = "Assalamu'alaikum {$user->name},\n\n"
+                . "PIN Aktivasi Anda sudah TERBIT ✅\n"
+                . "Jumlah: {$req->generated_count}\nKode: {$codes}\n\n"
+                . "Gunakan PIN untuk aktivasi downline.";
+            $req->load('requester:id,name,no_telp'); // sesuaikan nama kolom di users
+
+            $user  = $req->requester;
+            $this->sendWhatsApp($user->no_telp, $msg);
+
+
+
+            // Simpan ke database (jika perlu histori)
+            Notification::create([
+                'user_id' => $req->requester_id,
+                'message' => 'Finance menyetujui dan telah generate aktivasi pin : ' . auth()->user()->name . ' dengan ID : ' . auth()->id(),
+                'url' => route('member.pin.index'),
+            ]);
+
+            // Broadcast via Pusher
+            event(new PinRequestAprrovedByFinance($req->requester_id, [
+                'type' => 'finance_approved', // atau 'preregistration_received' jika Anda ingin beda
+                'message' => 'Finance menyetujui dan telah generate aktivasi pin : ' . auth()->user()->name . ' dengan ID : ' . auth()->id(),
+                'url' => route('member.pin.index'),
+                'created_at' => now()->toDateTimeString()
+            ]));
 
             \Log::info('PIN Request Approved and Notification Sent to Admin', [
                 'pin_request_id' => $r->id,
-                'user_id' => $r->requester_id,
+                'user_id' => $req->requester_id,
             ]);
 
 
-            return back()->with('success', 'Approved. Menunggu Admin generate.');
+            return back()->with('success', 'Approved.Finance telah generate pin aktivasi anda.');
         } catch (\Exception $e) {
             \Log::error('Error rejecting PIN request', [
                 'error' => $e->getMessage(),
@@ -123,7 +164,7 @@ class PinCtrl extends Controller
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
-//<<<<<<< ooka-dev
+        //<<<<<<< ooka-dev
     }
 
     public function reject(Request $r, $id)
@@ -174,64 +215,64 @@ class PinCtrl extends Controller
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
-//=======
+        //=======
 
         // === Generate PIN (idempotent) ===
-        $remaining = max(0, $req->qty - (int)$req->generated_count);
+        //         $remaining = max(0, $req->qty - (int)$req->generated_count);
 
-        if ($remaining > 0) {
-            for ($i=0; $i<$remaining; $i++) {
-                $code = strtoupper(Str::random(16));
-                ActivationPin::create([
-                    'code'           => $code,
-                    'status'         => 'unused',
-                    'bagan'          => 1,
-                    'price'          => $req->unit_price,
-                    'purchased_by'   => $req->requester_id,
-                    'pin_request_id' => $req->id,
-                ]);
-                $newCodes->push($code);
-            }
-            $req->generated_count += $remaining;
-        }
+        //         if ($remaining > 0) {
+        //             for ($i=0; $i<$remaining; $i++) {
+        //                 $code = strtoupper(Str::random(16));
+        //                 ActivationPin::create([
+        //                     'code'           => $code,
+        //                     'status'         => 'unused',
+        //                     'bagan'          => 1,
+        //                     'price'          => $req->unit_price,
+        //                     'purchased_by'   => $req->requester_id,
+        //                     'pin_request_id' => $req->id,
+        //                 ]);
+        //                 $newCodes->push($code);
+        //             }
+        //             $req->generated_count += $remaining;
+        //         }
 
-        // Set final status generated
-        $req->status = 'generated';
-        $req->generated_at = now();
-        $req->save();
-    });
+        //         // Set final status generated
+        //         $req->status = 'generated';
+        //         $req->generated_at = now();
+        //         $req->save();
+        //     });
 
-    // === Kirim WA ke member (setelah commit) ===
-    $req->load('requester:id,name,no_telp');
+        //     // === Kirim WA ke member (setelah commit) ===
+        //     $req->load('requester:id,name,no_telp');
 
-    // Ambil semua kode (bukan hanya yang baru) agar pesan konsisten
-    $allCodes = ActivationPin::where('pin_request_id',$req->id)
-        ->orderBy('id')->pluck('code')->implode(', ');
+        //     // Ambil semua kode (bukan hanya yang baru) agar pesan konsisten
+        //     $allCodes = ActivationPin::where('pin_request_id',$req->id)
+        //         ->orderBy('id')->pluck('code')->implode(', ');
 
-    $msg = "Assalamu'alaikum {$req->requester->name},\n\n"
-         . "PIN Aktivasi Anda sudah TERBIT ✅\n"
-         . "Jumlah: {$req->generated_count}\n"
-         . "Kode: {$allCodes}\n\n"
-         . "Gunakan PIN untuk aktivasi downline.";
+        //     $msg = "Assalamu'alaikum {$req->requester->name},\n\n"
+        //          . "PIN Aktivasi Anda sudah TERBIT ✅\n"
+        //          . "Jumlah: {$req->generated_count}\n"
+        //          . "Kode: {$allCodes}\n\n"
+        //          . "Gunakan PIN untuk aktivasi downline.";
 
-    $this->sendWhatsApp($req->requester->no_telp, $msg);
+        //     $this->sendWhatsApp($req->requester->no_telp, $msg);
 
-    return back()->with('success', 'Approved & PIN dibuat. WA terkirim ke member.');
-}
+        //     return back()->with('success', 'Approved & PIN dibuat. WA terkirim ke member.');
+        // }
 
 
-    public function reject(Request $r, $id){
-        $notes = $r->validate(['finance_notes'=>'required|string|max:500'])['finance_notes'];
-        $req = PinRequest::findOrFail($id);
-        if ($req->status !== 'requested') return back()->with('error','Invalid.');
-        $req->update([
-            'status'     => 'finance_rejected',
-            'finance_notes' => $notes,
-            'finance_id' => auth()->id(),
-            'finance_at' => now()
-        ]);
-        return back()->with('success','Ditolak.');
-//>>>>>>> main
+        //     public function reject(Request $r, $id){
+        //         $notes = $r->validate(['finance_notes'=>'required|string|max:500'])['finance_notes'];
+        //         $req = PinRequest::findOrFail($id);
+        //         if ($req->status !== 'requested') return back()->with('error','Invalid.');
+        //         $req->update([
+        //             'status'     => 'finance_rejected',
+        //             'finance_notes' => $notes,
+        //             'finance_id' => auth()->id(),
+        //             'finance_at' => now()
+        //         ]);
+        //         return back()->with('success','Ditolak.');
+        //>>>>>>> main
     }
     protected function sendWhatsApp($phone, $message)
     {

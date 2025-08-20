@@ -444,7 +444,7 @@
 
             setupAudioElement() {
                 // Set initial audio properties
-                this.audioElement.volume = 0.8;
+                this.audioElement.volume = 1;
                 this.audioElement.preload = 'auto';
 
                 // Audio event listeners untuk debugging
@@ -497,6 +497,8 @@
                         this.enableAudioForSession();
                     });
                 }
+
+                
             }
 
             async unlockAudio() {
@@ -555,7 +557,7 @@
 
                     // Restore settings
                     this.audioElement.muted = false;
-                    this.audioElement.volume = 0.8;
+                    this.audioElement.volume = 1;
 
                     // Mark as unlocked
                     this.audioUnlocked = true;
@@ -637,7 +639,7 @@
 
                 try {
                     this.audioElement.currentTime = 0;
-                    this.audioElement.volume = 0.3; // Lower volume for test
+                    this.audioElement.volume = 1; // Lower volume for test
 
                     const testPromise = this.audioElement.play();
 
@@ -649,7 +651,7 @@
                         setTimeout(() => {
                             this.audioElement.pause();
                             this.audioElement.currentTime = 0;
-                            this.audioElement.volume = 0.8; // Restore volume
+                            this.audioElement.volume = 1; // Restore volume
                         }, 300);
 
                     } else {
@@ -675,7 +677,7 @@
                 try {
                     // Reset audio to beginning
                     this.audioElement.currentTime = 0;
-                    this.audioElement.volume = 0.8;
+                    this.audioElement.volume = 1;
 
                     this.log('🎵 Playing notification sound...');
 
@@ -694,7 +696,7 @@
                                 this.audioElement.pause();
                                 this.audioElement.currentTime = 0;
                             }
-                        }, 2000);
+                        }, 4000);
 
                         return true;
                     } else {
@@ -1018,7 +1020,9 @@
             };
 
             toastr.info(notif.message, title);
-            location.reload()
+            setTimeout(() => {
+                location.reload()
+            }, 4000)
         }
 
         function getNotificationIcon(type) {
@@ -1045,7 +1049,7 @@
                 'bonus_received': 'Bonus Masuk',
                 'finance_approved': 'Finance menyetujui aktivasi pin',
                 'finance_rejected': 'Finance menolak aktivasi pin',
-                'admin_generate': 'Admin telah generate pin aktivasi anda',
+                'admin_generate': 'Finance telah generate pin aktivasi anda',
                 'member_request_bonus': 'Member meminta pengajuan penarikan bonus',
                 'pairing_downline': 'User berhasil dipasang ke tree',
                 'new_member_registered': 'User berhasil register menggunakan Kode Referal dan Pin anda'
