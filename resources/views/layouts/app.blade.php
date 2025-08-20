@@ -114,6 +114,10 @@
 
 <body>
 
+    <div id="audio-status" class="audio-status">
+        🔊 Audio Ready
+    </div>
+
     <div class="wrapper">
         <!-- Sidebar -->
         <div class="sidebar" data-background-color="dark">
@@ -248,26 +252,15 @@
                                     <div class="quick-actions-header">
                                         <span class="title mb-1">Quick Actions</span>
                                         <span class="subtitle op-7">Shortcuts</span>
+                                        <!-- ✅ Audio Debug Button (remove in production) -->
+                                        <button class="btn btn-xs btn-outline-primary ms-2"
+                                            onclick="window.audioManager?.getStatus() && console.table(window.audioManager.getStatus())">
+                                            🔊 Audio Status
+                                        </button>
                                     </div>
                                     <div class="quick-actions-scroll scrollbar-outer">
                                         <div class="quick-actions-items">
                                             <div class="row m-0">
-                                                <a class="col-6 col-md-4 p-0" href="#">
-                                                    <div class="quick-actions-item">
-                                                        <div class="avatar-item bg-danger rounded-circle">
-                                                            <i class="far fa-calendar-alt"></i>
-                                                        </div>
-                                                        <span class="text">Calendar</span>
-                                                    </div>
-                                                </a>
-                                                <a class="col-6 col-md-4 p-0" href="#">
-                                                    <div class="quick-actions-item">
-                                                        <div class="avatar-item bg-warning rounded-circle">
-                                                            <i class="fas fa-map"></i>
-                                                        </div>
-                                                        <span class="text">Maps</span>
-                                                    </div>
-                                                </a>
                                                 <a class="col-6 col-md-4 p-0" href="#">
                                                     <div class="quick-actions-item">
                                                         <div class="avatar-item bg-info rounded-circle">
@@ -428,6 +421,7 @@
                 this.audioUnlocked = false;
                 this.audioElement = null;
                 this.userHasInteracted = false;
+                this.debugMode = true; // Enable untuk debugging
                 this.init();
             }
 
@@ -439,21 +433,50 @@
                     return;
                 }
 
-                // Setup audio element
-                this.audioElement.volume = 0.7;
-                this.audioElement.preload = 'auto';
+                // Setup audio element dengan event listeners
+                this.setupAudioElement();
 
                 // Setup user interaction listeners
                 this.setupInteractionListeners();
 
-                console.log('🎵 NotificationAudioManager initialized');
+                this.log('🎵 NotificationAudioManager initialized');
+            }
+
+            setupAudioElement() {
+                // Set initial audio properties
+                this.audioElement.volume = 0.8;
+                this.audioElement.preload = 'auto';
+
+                // Audio event listeners untuk debugging
+                this.audioElement.addEventListener('loadstart', () => {
+                    this.log('📥 Audio loading started');
+                });
+
+                this.audioElement.addEventListener('loadeddata', () => {
+                    this.log('📦 Audio data loaded');
+                });
+
+                this.audioElement.addEventListener('canplay', () => {
+                    this.log('▶️ Audio can start playing');
+                });
+
+                this.audioElement.addEventListener('error', (e) => {
+                    console.error('🔴 Audio element error:', e);
+                    console.error('Error details:', {
+                        error: this.audioElement.error,
+                        src: this.audioElement.src,
+                        networkState: this.audioElement.networkState,
+                        readyState: this.audioElement.readyState
+                    });
+                });
             }
 
             setupInteractionListeners() {
-                const interactionEvents = ['click', 'touchstart', 'keydown'];
+                const interactionEvents = ['click', 'touchstart', 'keydown', 'mousedown'];
 
-                const unlockAudio = () => {
+                const unlockAudio = (event) => {
                     if (!this.userHasInteracted) {
+                        this.log(`🎯 User interaction detected: ${event.type}`);
                         this.userHasInteracted = true;
                         this.unlockAudio();
                     }
@@ -470,83 +493,244 @@
                 const notifBell = document.getElementById('notifDropdown');
                 if (notifBell) {
                     notifBell.addEventListener('click', () => {
+                        this.log('🔔 Notification bell clicked');
                         this.enableAudioForSession();
                     });
                 }
             }
 
             async unlockAudio() {
-                if (this.audioUnlocked || !this.audioElement) return;
+                if (this.audioUnlocked || !this.audioElement) {
+                    this.log('🔓 Audio already unlocked or element missing');
+                    return;
+                }
+
+                this.log('🔓 Starting audio unlock process...');
 
                 try {
+                    // Check audio element state
+                    this.log('📊 Audio element state:', {
+                        src: this.audioElement.src,
+                        readyState: this.audioElement.readyState,
+                        networkState: this.audioElement.networkState,
+                        duration: this.audioElement.duration,
+                        paused: this.audioElement.paused
+                    });
+
+                    // Wait for audio to be ready if needed
+                    if (this.audioElement.readyState < 2) { // HAVE_CURRENT_DATA
+                        this.log('⏳ Waiting for audio to load...');
+                        await this.waitForAudioReady();
+                    }
+
+                    // Backup original settings
+                    const originalMuted = this.audioElement.muted;
+                    const originalVolume = this.audioElement.volume;
+
+                    // Set to silent for unlock
                     this.audioElement.muted = true;
                     this.audioElement.volume = 0;
+                    this.audioElement.currentTime = 0;
+
+                    this.log('🤫 Playing silent audio for unlock...');
 
                     const playPromise = this.audioElement.play();
 
                     if (playPromise !== undefined) {
-                        await playPromise;
-                        this.audioElement.pause();
-                        this.audioElement.currentTime = 0;
+                        try {
+                            await playPromise;
+                            this.log('✅ Silent play successful');
+
+                            // Stop the silent playback immediately
+                            this.audioElement.pause();
+                            this.audioElement.currentTime = 0;
+
+                        } catch (playError) {
+                            this.log('❌ Silent play failed:', playError);
+                            throw playError;
+                        }
+                    } else {
+                        this.log('⚠️ Play method returned undefined (older browser)');
                     }
 
+                    // Restore settings
                     this.audioElement.muted = false;
-                    this.audioElement.volume = 0.7;
+                    this.audioElement.volume = 0.8;
 
+                    // Mark as unlocked
                     this.audioUnlocked = true;
                     this.audioEnabled = true;
 
-                    console.log('🔊 Audio unlocked successfully');
+                    this.log('🔊 Audio successfully unlocked!');
+
+                    // Show success notification
+                    this.showAudioStatus('🔊 Audio Ready', 'success');
 
                     if (typeof toastr !== 'undefined') {
-                        // toastr.success('Suara notifikasi telah diaktifkan', 'Audio Enabled');
+                        // toastr.success('🔊 Suara notifikasi aktif', 'Audio Ready', {
+                        //     timeOut: 2000,
+                        //     progressBar: true
+                        // });
+                        
+                    }
+
+                    // Test with actual notification sound
+                    // setTimeout(() => {
+                    //     this.testNotificationSound();
+                    // }, 500);
+
+                } catch (error) {
+                    this.log('⚠️ Audio unlock failed:', error);
+                    this.handleUnlockError(error);
+                }
+            }
+
+            async waitForAudioReady() {
+                return new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Audio load timeout'));
+                    }, 5000);
+
+                    const checkReady = () => {
+                        if (this.audioElement.readyState >= 2) {
+                            clearTimeout(timeout);
+                            resolve();
+                        } else {
+                            setTimeout(checkReady, 100);
+                        }
+                    };
+
+                    checkReady();
+                });
+            }
+
+            handleUnlockError(error) {
+                console.error('Audio unlock error details:', {
+                    name: error.name,
+                    message: error.message,
+                    code: error.code || 'No code'
+                });
+
+                switch (error.name) {
+                    case 'NotAllowedError':
+                        this.log('🚫 Autoplay blocked - showing permission prompt');
+                        this.showAudioPermissionPrompt();
+                        break;
+                    case 'NotSupportedError':
+                        this.log('🔇 Audio format not supported');
+                        this.fallbackToVisualNotification();
+                        break;
+                    case 'AbortError':
+                        this.log('⏹️ Audio operation aborted');
+                        break;
+                    default:
+                        this.log('❓ Unknown audio error, falling back to visual');
+                        this.fallbackToVisualNotification();
+                }
+
+                this.audioEnabled = false;
+                this.audioUnlocked = false;
+            }
+
+            async testNotificationSound() {
+                this.log('🧪 Testing notification sound...');
+
+                try {
+                    this.audioElement.currentTime = 0;
+                    this.audioElement.volume = 0.3; // Lower volume for test
+
+                    const testPromise = this.audioElement.play();
+
+                    if (testPromise !== undefined) {
+                        await testPromise;
+                        this.log('✅ Test sound played successfully');
+
+                        // Stop after brief play
+                        setTimeout(() => {
+                            this.audioElement.pause();
+                            this.audioElement.currentTime = 0;
+                            this.audioElement.volume = 0.8; // Restore volume
+                        }, 300);
+
+                    } else {
+                        this.log('⚠️ Test play returned undefined');
                     }
 
                 } catch (error) {
-                    console.warn('⚠️ Audio unlock failed:', error.message);
+                    this.log('❌ Test sound failed:', error);
                     this.audioEnabled = false;
+                    this.audioUnlocked = false;
                 }
-            }
-
-            enableAudioForSession() {
-                if (!this.audioUnlocked) {
-                    this.unlockAudio();
-                }
-                sessionStorage.setItem('audio_enabled', 'true');
             }
 
             async playNotificationSound() {
+                this.log('🔔 Attempting to play notification sound...');
+
                 if (!this.canPlayAudio()) {
-                    console.log('🔇 Audio tidak dapat diputar, menggunakan notifikasi visual');
+                    this.log('🔇 Cannot play audio, using visual notification');
                     this.showVisualNotification();
                     return false;
                 }
 
                 try {
+                    // Reset audio to beginning
                     this.audioElement.currentTime = 0;
+                    this.audioElement.volume = 0.8;
+
+                    this.log('🎵 Playing notification sound...');
+
                     const playPromise = this.audioElement.play();
 
                     if (playPromise !== undefined) {
                         await playPromise;
-                        console.log('🔊 Notification sound played');
+                        this.log('✅ Notification sound played successfully');
+
+                        // Show status indicator
+                        this.showAudioStatus('🔊 Sound Played', 'success');
+
+                        // Auto-stop after 2 seconds (adjust as needed)
+                        setTimeout(() => {
+                            if (!this.audioElement.paused) {
+                                this.audioElement.pause();
+                                this.audioElement.currentTime = 0;
+                            }
+                        }, 2000);
+
                         return true;
+                    } else {
+                        this.log('⚠️ Play promise undefined');
+                        return false;
                     }
 
                 } catch (error) {
-                    console.warn('⚠️ Failed to play notification sound:', error.message);
+                    this.log('❌ Failed to play notification sound:', error);
+                    this.showAudioStatus('🔇 Sound Failed', 'error');
                     this.showVisualNotification();
                     return false;
                 }
             }
 
             canPlayAudio() {
-                return this.audioElement &&
+                const canPlay = this.audioElement &&
                     this.audioEnabled &&
                     this.audioUnlocked &&
-                    this.userHasInteracted;
+                    this.userHasInteracted &&
+                    this.audioElement.readyState >= 2;
+
+                this.log('🔍 Can play audio check:', {
+                    hasElement: !!this.audioElement,
+                    enabled: this.audioEnabled,
+                    unlocked: this.audioUnlocked,
+                    interacted: this.userHasInteracted,
+                    readyState: this.audioElement?.readyState,
+                    result: canPlay
+                });
+
+                return canPlay;
             }
 
             showVisualNotification() {
+                this.log('👁️ Showing visual notification');
                 this.flashBrowserTab();
                 this.showVisualIndicator();
             }
@@ -571,7 +755,121 @@
                 const notifBell = document.querySelector('#notifDropdown i');
                 if (notifBell) {
                     notifBell.style.animation = 'pulse 1s ease-in-out 3';
+                    notifBell.style.color = '#ff6b6b';
+
+                    setTimeout(() => {
+                        notifBell.style.color = '';
+                    }, 3000);
                 }
+            }
+
+            showAudioStatus(message, type = 'info') {
+                const statusEl = document.getElementById('audio-status');
+                if (statusEl) {
+                    statusEl.textContent = message;
+                    statusEl.className = `audio-status show ${type}`;
+
+                    setTimeout(() => {
+                        statusEl.classList.remove('show');
+                    }, 2000);
+                }
+            }
+
+            showAudioPermissionPrompt() {
+                // Remove existing prompt
+                const existingPrompt = document.querySelector('.audio-permission-prompt');
+                if (existingPrompt) {
+                    existingPrompt.remove();
+                }
+
+                const prompt = document.createElement('div');
+                prompt.className = 'audio-permission-prompt';
+                prompt.innerHTML = `
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-volume-up me-2 fs-4"></i>
+                            <div class="flex-grow-1">
+                                <strong>🔊 Aktifkan Suara Notifikasi</strong><br>
+                                <small>Browser memblokir audio otomatis. Klik tombol di bawah untuk mengaktifkan.</small>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="button" class="btn btn-primary btn-sm me-2" onclick="audioManager.forceUnlockAudio()">
+                                <i class="fa fa-volume-up"></i> Aktifkan Suara
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="this.closest('.audio-permission-prompt').remove()">
+                                Nanti Saja
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(prompt);
+
+                // Auto remove after 15 seconds
+                setTimeout(() => {
+                    if (prompt.parentNode) {
+                        prompt.remove();
+                    }
+                }, 15000);
+            }
+
+            async forceUnlockAudio() {
+                this.log('🔄 Force unlock requested by user');
+
+                // Remove permission prompt
+                const prompt = document.querySelector('.audio-permission-prompt');
+                if (prompt) prompt.remove();
+
+                // Reset flags
+                this.audioUnlocked = false;
+                this.audioEnabled = false;
+                this.userHasInteracted = true; // Ensure this is set
+
+                // Try unlock again
+                await this.unlockAudio();
+            }
+
+            fallbackToVisualNotification() {
+                this.log('🔇 Falling back to visual notifications only');
+                this.audioEnabled = false;
+                this.audioUnlocked = false;
+
+                this.showAudioStatus('🔇 Audio Disabled', 'warning');
+
+                if (typeof toastr !== 'undefined') {
+                    toastr.warning('Audio tidak tersedia. Hanya notifikasi visual yang aktif.', 'Audio Disabled', {
+                        timeOut: 4000
+                    });
+                }
+            }
+
+            enableAudioForSession() {
+                this.log('📝 Enabling audio for session');
+                if (!this.audioUnlocked) {
+                    this.unlockAudio();
+                }
+                sessionStorage.setItem('audio_enabled', 'true');
+            }
+
+            // Debug logging helper
+            log(...args) {
+                if (this.debugMode) {
+                    console.log('[AudioManager]', ...args);
+                }
+            }
+
+            // Public method to get status
+            getStatus() {
+                return {
+                    audioElement: !!this.audioElement,
+                    audioEnabled: this.audioEnabled,
+                    audioUnlocked: this.audioUnlocked,
+                    userHasInteracted: this.userHasInteracted,
+                    readyState: this.audioElement?.readyState,
+                    src: this.audioElement?.src,
+                    canPlay: this.canPlayAudio()
+                };
             }
         }
 
@@ -589,6 +887,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize audio manager
             audioManager = new NotificationAudioManager();
+
+            // Make it globally accessible for debugging
+            window.audioManager = audioManager;
 
             @auth
             // Pusher configuration
@@ -637,21 +938,26 @@
             const privateChannel = pusher.subscribe(`private-notifications.${loggedInUserId}`);
 
             privateChannel.bind('pusher:subscription_succeeded', () => {
-                console.log('🔐 Terhubung ke private-notifications untuk user', loggedInUserId);
+                console.log('🔐 Connected to private notifications for user', loggedInUserId);
             });
 
+            // ✅ ENHANCED NOTIFICATION HANDLER
             privateChannel.bind('notification.received', async function(data) {
                 console.log('🔔 Notification received:', data);
 
                 const notif = data.notification;
 
-                // Try to play sound
-                await audioManager.playNotificationSound();
+                // ✅ PRIORITAS 1: Coba putar suara
+                const soundPlayed = await audioManager.playNotificationSound();
+                console.log('🔊 Sound played:', soundPlayed);
 
-                // Update UI
+                // ✅ PRIORITAS 2: Update UI
                 updateNotificationCounts();
                 addNotificationToList(notif);
                 showNotificationToast(notif);
+
+                // ✅ PRIORITAS 3: Log untuk debugging
+                console.log('📊 Audio Manager Status:', audioManager.getStatus());
             });
         @endauth
         });
@@ -680,7 +986,7 @@
             const createdAt = dayjs(notif.created_at).fromNow();
 
             const html = `
-                <a href="${notif.url}" class="notification-item" data-id="${notif.id || ''}">
+                <a href="${notif.url}" class="notification-item new" data-id="${notif.id || ''}">
                     <div class="notif-icon notif-primary">
                         <i class="fa ${iconClass}"></i>
                     </div>
@@ -692,6 +998,14 @@
             `;
 
             listEl.insertAdjacentHTML('afterbegin', html);
+
+            // Remove 'new' class after animation
+            setTimeout(() => {
+                const newItem = listEl.querySelector('.notification-item.new');
+                if (newItem) {
+                    newItem.classList.remove('new');
+                }
+            }, 3000);
         }
 
         function showNotificationToast(notif) {
@@ -704,6 +1018,7 @@
             };
 
             toastr.info(notif.message, title);
+            location.reload()
         }
 
         function getNotificationIcon(type) {
@@ -716,7 +1031,8 @@
                 'finance_rejected': 'fa-times-circle',
                 'admin_generate': 'fa-check-circle',
                 'member_request_bonus': 'fa-money-bill',
-                'pairing_downline': 'fa-users'
+                'pairing_downline': 'fa-users',
+                'new_member_registered': 'fa-user-check'
             };
             return icons[type] || 'fa-bell';
         }
@@ -731,7 +1047,8 @@
                 'finance_rejected': 'Finance menolak aktivasi pin',
                 'admin_generate': 'Admin telah generate pin aktivasi anda',
                 'member_request_bonus': 'Member meminta pengajuan penarikan bonus',
-                'pairing_downline': 'User berhasil dipasang ke tree'
+                'pairing_downline': 'User berhasil dipasang ke tree',
+                'new_member_registered': 'User berhasil register menggunakan Kode Referal dan Pin anda'
             };
             return titles[type] || 'Notifikasi Baru';
         }
@@ -750,17 +1067,13 @@
             "use strict";
 
             const SEARCH_URL = "/tree/search";
-
-            // --- Elemen desktop & mobile ---
             const dForm = document.getElementById("global-search-form");
             const dInput = document.getElementById("global-search-input");
-
             const mForm = document.getElementById("navSearchForm");
             const mInput = document.getElementById("navSearchInput");
             const mResults = document.getElementById("navSearchResults");
             const mMenu = mResults ? mResults.closest(".dropdown-menu") : null;
 
-            // --- Kontainer hasil untuk DESKTOP (dropdown custom) ---
             let dResults = document.getElementById("global-search-results");
             if (!dResults && dForm) {
                 dForm.style.position = "relative";
@@ -780,7 +1093,6 @@
                 dForm.appendChild(dResults);
             }
 
-            // --- Helpers ---
             const debounce = (fn, ms = 300) => {
                 let t;
                 return (...args) => {
@@ -802,7 +1114,6 @@
             }
 
             async function doSearch(target, q) {
-                // kosongkan saat input kosong
                 if (!q) {
                     if (target === "desktop" && dResults) dResults.style.display = "none";
                     if (target === "mobile" && mResults) {
@@ -842,7 +1153,6 @@
             }
 
             function setRootAndReload(id) {
-                // jadikan global & reload tree jika fungsi tersedia
                 window.currentRootId = Number(id);
                 if (typeof window.setRoot === "function") {
                     window.setRoot(id);
@@ -852,11 +1162,8 @@
                     window.loadTree();
                     return;
                 }
-                // fallback (kalau dipakai di luar halaman MLM, boleh di-nonaktifkan)
-                // window.location.href = `/mlm/tree?root=${id}`;
             }
 
-            // --- Cegah reload form ---
             dForm?.addEventListener("submit", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -866,7 +1173,6 @@
                 e.stopPropagation();
             });
 
-            // --- Desktop listeners ---
             dInput?.addEventListener("input", debounce(e => doSearch("desktop", e.target.value.trim()), 250));
             dInput?.addEventListener("keydown", (e) => {
                 if (e.key === "Enter") {
@@ -884,7 +1190,6 @@
                 dResults.style.display = "none";
             });
 
-            // --- Mobile listeners ---
             mInput?.addEventListener("input", debounce(e => doSearch("mobile", e.target.value.trim()), 250));
             mInput?.addEventListener("keydown", (e) => {
                 if (e.key === "Enter") {
@@ -906,7 +1211,6 @@
                 mMenu?.classList.remove("show");
             });
 
-            // --- Tutup hasil desktop bila klik di luar ---
             document.addEventListener("click", (e) => {
                 if (dResults && dForm && !dForm.contains(e.target)) dResults.style.display = "none";
             });
