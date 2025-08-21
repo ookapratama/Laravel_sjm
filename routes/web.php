@@ -16,7 +16,6 @@ use App\Http\Controllers\{
     BonusController,
     MemberController
 };
-use App\Models\PinRequest;
 use App\Http\Controllers\Admin\BonusSettingController;
 use App\Http\Controllers\Admin\PreRegistrationApprovalController;
 use App\Http\Controllers\Auth\ChangeCredentialsController;
