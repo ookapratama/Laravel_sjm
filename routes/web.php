@@ -40,8 +40,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/tree/clone/preview', [\App\Http\Controllers\TreeCloneController::class, 'preview'])->name('tree.clone.preview');
     Route::post('/tree/clone', [\App\Http\Controllers\TreeCloneController::class, 'store'])->name('tree.clone.store');
     Route::middleware(['auth'])->group(function () {
-    Route::get('/tree/available-users/{id}/count', [\App\Http\Controllers\MLMController::class, 'getAvailableUsersCount']);
-});
+        Route::get('/tree/available-users/{id}/count', [\App\Http\Controllers\MLMController::class, 'getAvailableUsersCount']);
+    });
 });
 
 Route::middleware('auth')->group(function () {
@@ -73,11 +73,39 @@ Route::post('/notifications/{id}/read', function ($id) {
     $notif = Notification::where('id', $id)
         ->where('user_id', auth()->id())
         ->firstOrFail();
-
+  
     $notif->update(['is_read' => true]);
 
     return response()->json(['success' => true]);
 })->middleware('auth');
+  
+Route::post('/notifications/mark-all-read', function () {
+    $updated = Notification::where('user_id', auth()->id())
+        ->where('is_read', false)
+        ->update(['is_read' => true]);
+
+    return response()->json([
+        'success' => true,
+        'marked_count' => $updated
+    ]);
+})->middleware('auth');
+
+Route::get('/test-notification/{userId}', function ($userId) {
+    try {
+        NotificationService::sendNotification(
+            $userId,
+            'test_notification',
+            'Ini adalah notifikasi test',
+            route('home'),
+            ['test' => true]
+        );
+
+        return response()->json(['message' => 'Test notification sent']);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+})->middleware('auth');
+    
 
 Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
     if (!Auth::check()) {
@@ -156,13 +184,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('redirect');
 
     Route::middleware(['auth'])->prefix('profile')->group(function () {
-  
-            Route::get('/', [ProfileController::class, 'index'])->name('profile.index');
-            Route::post('/update', [ProfileController::class, 'update'])->name('profile.update');
-            Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('profile.update.photo');
-            Route::post('/profile/update-password', [ProfileController::class, 'updatePassword'])
-    ->name('profile.update-password');
 
+        Route::get('/', [ProfileController::class, 'index'])->name('profile.index');
+        Route::post('/update', [ProfileController::class, 'update'])->name('profile.update');
+        Route::post('/update-photo', [ProfileController::class, 'updatePhoto'])->name('profile.update.photo');
+        Route::post('/profile/update-password', [ProfileController::class, 'updatePassword'])
+            ->name('profile.update-password');
     });
 
     // ✅ Change Credentials

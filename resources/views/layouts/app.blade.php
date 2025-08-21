@@ -47,10 +47,42 @@
             color: #aaa;
             border: none;
             background: transparent;
+            font-size: 12px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
         }
 
         .notification-item .mark-read-btn:hover {
             color: #e3342f;
+            background: rgba(227, 52, 47, 0.1);
+            transform: scale(1.1);
+        }
+
+        /* ✅ Enhanced CSS untuk Notification Items */
+        .notification-item {
+            position: relative;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            margin: 2px 0;
+        }
+
+        .notification-item:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+            transform: translateX(2px);
+        }
+
+        .notification-item.unread {
+            background-color: rgba(0, 123, 255, 0.05);
+            border-left: 3px solid #007bff;
+        }
+
+        .notification-item.read {
+            opacity: 0.7;
         }
 
         /* ✅ CSS untuk Audio Notification Effects */
@@ -100,12 +132,43 @@
             color: #ff6b6b !important;
         }
 
-        .notification-item {
-            transition: background-color 0.3s ease;
+        /* ✅ Audio status indicator */
+        .audio-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: none;
+            transition: all 0.3s ease;
         }
 
-        .notification-item:hover {
-            background-color: rgba(0, 123, 255, 0.1);
+        .audio-status.show {
+            display: block;
+            animation: slideInUp 0.3s ease;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* ✅ Mark all as read button */
+        .mark-all-read-btn {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
         }
     </style>
     <!-- Toastr CSS -->
@@ -114,6 +177,7 @@
 
 <body>
 
+    <!-- ✅ Audio Status Indicator -->
     <div id="audio-status" class="audio-status">
         🔊 Audio Ready
     </div>
@@ -210,15 +274,24 @@
                                     data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                     <i class="fa fa-bell"></i>
                                     <span class="notification"
-                                        id="notification-count">{{ $notifications->count() }}</span>
+                                        id="notification-count">{{ $notifications->where('is_read', false)->count() }}</span>
                                 </a>
 
                                 <ul class="dropdown-menu notif-box animated fadeIn" aria-labelledby="notifDropdown">
                                     <li>
-                                        <div class="dropdown-title">
-                                            Terdapat <span
-                                                id="notification-text-count">{{ $notifications->count() }}</span>
-                                            notifikasi baru
+                                        <div class="dropdown-title d-flex justify-content-between align-items-center">
+                                            <span>
+                                                Terdapat <span
+                                                    id="notification-text-count">{{ $notifications->where('is_read', false)->count() }}</span>
+                                                notifikasi baru
+                                            </span>
+                                            <!-- ✅ Mark All as Read Button -->
+                                            @if ($notifications->where('is_read', false)->count() > 0)
+                                                <button class="btn btn-sm btn-outline-primary mark-all-read-btn"
+                                                    onclick="markAllAsRead()">
+                                                    <i class="fa fa-check"></i> Tandai Semua
+                                                </button>
+                                            @endif
                                         </div>
                                     </li>
 
@@ -226,18 +299,42 @@
                                         <div class="notif-scroll scrollbar-outer">
                                             <div class="notif-center" id="notification-list">
                                                 @foreach ($notifications as $notif)
-                                                    <a href="{{ $notif->url }}" class="notification-item"
+                                                    <div class="notification-item {{ $notif->is_read ? 'read' : 'unread' }}"
                                                         data-id="{{ $notif->id }}">
-                                                        <div class="notif-icon notif-primary">
-                                                            <i class="fa fa-user-plus"></i>
-                                                        </div>
-                                                        <div class="notif-content">
-                                                            <span class="block">{{ $notif->message }}</span>
-                                                            <span
-                                                                class="time">{{ $notif->created_at->diffForHumans() }}</span>
-                                                        </div>
-                                                    </a>
+                                                        <!-- ✅ Mark as Read Button -->
+                                                        @if (!$notif->is_read)
+                                                            <button class="mark-read-btn"
+                                                                onclick="markAsRead({{ $notif->id }}, event)"
+                                                                title="Tandai sebagai telah dibaca">
+                                                                <i class="fa fa-times"></i>
+                                                            </button>
+                                                        @endif
+
+                                                        <a href="{{ $notif->url }}"
+                                                            class="d-block text-decoration-none"
+                                                            onclick="markAsReadAndRedirect({{ $notif->id }}, '{{ $notif->url }}', event)">
+                                                            <div class="d-flex">
+                                                                <div class="notif-icon notif-primary">
+                                                                    <i
+                                                                        class="fa {{ App\Helpers\getNotificationIcon($notif->type ?? 'default') }}"></i>
+                                                                </div>
+                                                                <div class="notif-content flex-grow-1">
+                                                                    <span class="block">{{ $notif->message }}</span>
+                                                                    <span
+                                                                        class="time">{{ $notif->created_at->diffForHumans() }}</span>
+                                                                </div>
+                                                            </div>
+                                                        </a>
+                                                    </div>
                                                 @endforeach
+
+                                                <!-- ✅ Empty State -->
+                                                @if ($notifications->count() === 0)
+                                                    <div class="text-center py-4 text-muted">
+                                                        <i class="fa fa-bell-slash fa-2x mb-2"></i>
+                                                        <p class="mb-0">Belum ada notifikasi</p>
+                                                    </div>
+                                                @endif
                                             </div>
                                         </div>
                                     </li>
@@ -368,7 +465,6 @@
         <!-- End Custom template -->
     </div>
 
-
     <!-- Core JS -->
     <script src="{{ asset('assets/js/core/jquery-3.7.1.min.js') }}"></script>
     <script src="{{ asset('assets/js/core/popper.min.js') }}"></script>
@@ -421,7 +517,7 @@
                 this.audioUnlocked = false;
                 this.audioElement = null;
                 this.userHasInteracted = false;
-                this.debugMode = true; // Enable untuk debugging
+                this.debugMode = true;
                 this.init();
             }
 
@@ -433,21 +529,15 @@
                     return;
                 }
 
-                // Setup audio element dengan event listeners
                 this.setupAudioElement();
-
-                // Setup user interaction listeners
                 this.setupInteractionListeners();
-
                 this.log('🎵 NotificationAudioManager initialized');
             }
 
             setupAudioElement() {
-                // Set initial audio properties
                 this.audioElement.volume = 1;
                 this.audioElement.preload = 'auto';
 
-                // Audio event listeners untuk debugging
                 this.audioElement.addEventListener('loadstart', () => {
                     this.log('📥 Audio loading started');
                 });
@@ -489,7 +579,6 @@
                     });
                 });
 
-                // Special handler for notification bell
                 const notifBell = document.getElementById('notifDropdown');
                 if (notifBell) {
                     notifBell.addEventListener('click', () => {
@@ -497,8 +586,6 @@
                         this.enableAudioForSession();
                     });
                 }
-
-                
             }
 
             async unlockAudio() {
@@ -510,7 +597,6 @@
                 this.log('🔓 Starting audio unlock process...');
 
                 try {
-                    // Check audio element state
                     this.log('📊 Audio element state:', {
                         src: this.audioElement.src,
                         readyState: this.audioElement.readyState,
@@ -519,17 +605,14 @@
                         paused: this.audioElement.paused
                     });
 
-                    // Wait for audio to be ready if needed
-                    if (this.audioElement.readyState < 2) { // HAVE_CURRENT_DATA
+                    if (this.audioElement.readyState < 2) {
                         this.log('⏳ Waiting for audio to load...');
                         await this.waitForAudioReady();
                     }
 
-                    // Backup original settings
                     const originalMuted = this.audioElement.muted;
                     const originalVolume = this.audioElement.volume;
 
-                    // Set to silent for unlock
                     this.audioElement.muted = true;
                     this.audioElement.volume = 0;
                     this.audioElement.currentTime = 0;
@@ -543,7 +626,6 @@
                             await playPromise;
                             this.log('✅ Silent play successful');
 
-                            // Stop the silent playback immediately
                             this.audioElement.pause();
                             this.audioElement.currentTime = 0;
 
@@ -555,31 +637,14 @@
                         this.log('⚠️ Play method returned undefined (older browser)');
                     }
 
-                    // Restore settings
                     this.audioElement.muted = false;
                     this.audioElement.volume = 1;
 
-                    // Mark as unlocked
                     this.audioUnlocked = true;
                     this.audioEnabled = true;
 
                     this.log('🔊 Audio successfully unlocked!');
-
-                    // Show success notification
                     this.showAudioStatus('🔊 Audio Ready', 'success');
-
-                    if (typeof toastr !== 'undefined') {
-                        // toastr.success('🔊 Suara notifikasi aktif', 'Audio Ready', {
-                        //     timeOut: 2000,
-                        //     progressBar: true
-                        // });
-                        
-                    }
-
-                    // Test with actual notification sound
-                    // setTimeout(() => {
-                    //     this.testNotificationSound();
-                    // }, 500);
 
                 } catch (error) {
                     this.log('⚠️ Audio unlock failed:', error);
@@ -634,37 +699,6 @@
                 this.audioUnlocked = false;
             }
 
-            async testNotificationSound() {
-                this.log('🧪 Testing notification sound...');
-
-                try {
-                    this.audioElement.currentTime = 0;
-                    this.audioElement.volume = 1; // Lower volume for test
-
-                    const testPromise = this.audioElement.play();
-
-                    if (testPromise !== undefined) {
-                        await testPromise;
-                        this.log('✅ Test sound played successfully');
-
-                        // Stop after brief play
-                        setTimeout(() => {
-                            this.audioElement.pause();
-                            this.audioElement.currentTime = 0;
-                            this.audioElement.volume = 1; // Restore volume
-                        }, 300);
-
-                    } else {
-                        this.log('⚠️ Test play returned undefined');
-                    }
-
-                } catch (error) {
-                    this.log('❌ Test sound failed:', error);
-                    this.audioEnabled = false;
-                    this.audioUnlocked = false;
-                }
-            }
-
             async playNotificationSound() {
                 this.log('🔔 Attempting to play notification sound...');
 
@@ -675,7 +709,6 @@
                 }
 
                 try {
-                    // Reset audio to beginning
                     this.audioElement.currentTime = 0;
                     this.audioElement.volume = 1;
 
@@ -687,10 +720,8 @@
                         await playPromise;
                         this.log('✅ Notification sound played successfully');
 
-                        // Show status indicator
                         this.showAudioStatus('🔊 Sound Played', 'success');
 
-                        // Auto-stop after 2 seconds (adjust as needed)
                         setTimeout(() => {
                             if (!this.audioElement.paused) {
                                 this.audioElement.pause();
@@ -778,7 +809,6 @@
             }
 
             showAudioPermissionPrompt() {
-                // Remove existing prompt
                 const existingPrompt = document.querySelector('.audio-permission-prompt');
                 if (existingPrompt) {
                     existingPrompt.remove();
@@ -808,7 +838,6 @@
 
                 document.body.appendChild(prompt);
 
-                // Auto remove after 15 seconds
                 setTimeout(() => {
                     if (prompt.parentNode) {
                         prompt.remove();
@@ -819,16 +848,13 @@
             async forceUnlockAudio() {
                 this.log('🔄 Force unlock requested by user');
 
-                // Remove permission prompt
                 const prompt = document.querySelector('.audio-permission-prompt');
                 if (prompt) prompt.remove();
 
-                // Reset flags
                 this.audioUnlocked = false;
                 this.audioEnabled = false;
-                this.userHasInteracted = true; // Ensure this is set
+                this.userHasInteracted = true;
 
-                // Try unlock again
                 await this.unlockAudio();
             }
 
@@ -854,14 +880,12 @@
                 sessionStorage.setItem('audio_enabled', 'true');
             }
 
-            // Debug logging helper
             log(...args) {
                 if (this.debugMode) {
                     console.log('[AudioManager]', ...args);
                 }
             }
 
-            // Public method to get status
             getStatus() {
                 return {
                     audioElement: !!this.audioElement,
@@ -889,8 +913,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize audio manager
             audioManager = new NotificationAudioManager();
-
-            // Make it globally accessible for debugging
             window.audioManager = audioManager;
 
             @auth
@@ -964,7 +986,176 @@
         @endauth
         });
 
-        // Helper functions
+        // ✅ NOTIFICATION MANAGEMENT FUNCTIONS
+
+        // Mark single notification as read
+        async function markAsRead(notificationId, event) {
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+
+            try {
+                const response = await fetch(`/notifications/${notificationId}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                            'content')
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Update UI
+                    const notifItem = document.querySelector(`[data-id="${notificationId}"]`);
+                    if (notifItem) {
+                        notifItem.classList.remove('unread');
+                        notifItem.classList.add('read');
+
+                        // Remove mark as read button
+                        const markBtn = notifItem.querySelector('.mark-read-btn');
+                        if (markBtn) {
+                            markBtn.remove();
+                        }
+                    }
+
+                    // Update counts
+                    updateNotificationCountsAfterRead();
+
+                    // Show success feedback
+                    toastr.success('Notifikasi ditandai sebagai telah dibaca', 'Success', {
+                        timeOut: 2000
+                    });
+
+                } else {
+                    throw new Error(result.message || 'Gagal menandai notifikasi');
+                }
+
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+                toastr.error('Gagal menandai notifikasi sebagai telah dibaca', 'Error');
+            }
+        }
+
+        // Mark all notifications as read
+        async function markAllAsRead() {
+            try {
+                const unreadNotifications = document.querySelectorAll('.notification-item.unread');
+
+                if (unreadNotifications.length === 0) {
+                    toastr.info('Tidak ada notifikasi yang belum dibaca', 'Info');
+                    return;
+                }
+
+                // Show loading
+                const loadingToast = toastr.info('Menandai semua notifikasi...', 'Loading', {
+                    timeOut: 0,
+                    closeButton: false
+                });
+
+                // Mark all unread notifications
+                const promises = Array.from(unreadNotifications).map(item => {
+                    const notifId = item.getAttribute('data-id');
+                    return fetch(`/notifications/${notifId}/read`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .getAttribute('content')
+                        }
+                    });
+                });
+
+                await Promise.all(promises);
+
+                // Clear loading toast
+                toastr.clear(loadingToast);
+
+                // Update UI
+                unreadNotifications.forEach(item => {
+                    item.classList.remove('unread');
+                    item.classList.add('read');
+
+                    const markBtn = item.querySelector('.mark-read-btn');
+                    if (markBtn) {
+                        markBtn.remove();
+                    }
+                });
+
+                // Update counts to 0
+                const countEl = document.getElementById('notification-count');
+                const textCountEl = document.getElementById('notification-text-count');
+
+                if (countEl) countEl.innerText = '0';
+                if (textCountEl) textCountEl.innerText = '0';
+
+                // Hide mark all button
+                const markAllBtn = document.querySelector('.mark-all-read-btn');
+                if (markAllBtn) {
+                    markAllBtn.style.display = 'none';
+                }
+
+                toastr.success('Semua notifikasi telah ditandai sebagai dibaca', 'Success');
+
+            } catch (error) {
+                console.error('Error marking all notifications as read:', error);
+                toastr.error('Gagal menandai semua notifikasi', 'Error');
+            }
+        }
+
+        // Mark as read and redirect
+        async function markAsReadAndRedirect(notificationId, url, event) {
+            if (event) {
+                event.preventDefault();
+            }
+
+            try {
+                // Mark as read first
+                await fetch(`/notifications/${notificationId}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute(
+                            'content')
+                    }
+                });
+
+                // Then redirect
+                if (url && url !== '#') {
+                    window.location.href = url;
+                }
+
+            } catch (error) {
+                console.error('Error marking notification as read:', error);
+                // Still redirect even if marking failed
+                if (url && url !== '#') {
+                    window.location.href = url;
+                }
+            }
+        }
+
+        // Helper function to update counts after reading
+        function updateNotificationCountsAfterRead() {
+            const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+
+            const countEl = document.getElementById('notification-count');
+            const textCountEl = document.getElementById('notification-text-count');
+
+            if (countEl) countEl.innerText = unreadCount;
+            if (textCountEl) textCountEl.innerText = unreadCount;
+
+            // Hide mark all button if no unread notifications
+            if (unreadCount === 0) {
+                const markAllBtn = document.querySelector('.mark-all-read-btn');
+                if (markAllBtn) {
+                    markAllBtn.style.display = 'none';
+                }
+            }
+        }
+
+        // Helper functions for notifications
         function updateNotificationCounts() {
             const countEl = document.getElementById('notification-count');
             const textCountEl = document.getElementById('notification-text-count');
@@ -977,6 +1168,12 @@
                 textCountEl.innerText = newCount;
 
                 countEl.style.animation = 'pulse 0.5s ease-in-out';
+
+                // Show mark all button if there are unread notifications
+                const markAllBtn = document.querySelector('.mark-all-read-btn');
+                if (markAllBtn && newCount > 0) {
+                    markAllBtn.style.display = 'inline-block';
+                }
             }
         }
 
@@ -988,41 +1185,48 @@
             const createdAt = dayjs(notif.created_at).fromNow();
 
             const html = `
-                <a href="${notif.url}" class="notification-item new" data-id="${notif.id || ''}">
-                    <div class="notif-icon notif-primary">
-                        <i class="fa ${iconClass}"></i>
-                    </div>
-                    <div class="notif-content">
-                        <span class="block">${notif.message}</span>
-                        <span class="time">${createdAt}</span>
-                    </div>
-                </a>
+                <div class="notification-item unread" data-id="${notif.id || ''}">
+                    <button class="mark-read-btn" 
+                            onclick="markAsRead(${notif.id || 0}, event)"
+                            title="Tandai sebagai telah dibaca">
+                        <i class="fa fa-times"></i>
+                    </button>
+                    
+                    <a href="${notif.url || '#'}" class="d-block text-decoration-none"
+                       onclick="markAsReadAndRedirect(${notif.id || 0}, '${notif.url || '#'}', event)">
+                        <div class="d-flex">
+                            <div class="notif-icon notif-primary">
+                                <i class="fa ${iconClass}"></i>
+                            </div>
+                            <div class="notif-content flex-grow-1">
+                                <span class="block">${notif.message}</span>
+                                <span class="time">${createdAt}</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
             `;
 
             listEl.insertAdjacentHTML('afterbegin', html);
 
-            // Remove 'new' class after animation
-            setTimeout(() => {
-                const newItem = listEl.querySelector('.notification-item.new');
-                if (newItem) {
-                    newItem.classList.remove('new');
-                }
-            }, 3000);
+            // Show mark all button
+            const markAllBtn = document.querySelector('.mark-all-read-btn');
+            if (markAllBtn) {
+                markAllBtn.style.display = 'inline-block';
+            }
         }
 
         function showNotificationToast(notif) {
             const title = getNotificationTitle(notif.type);
 
             toastr.options.onclick = function() {
-                if (notif.url) {
-                    window.location.href = notif.url;
+                if (notif.url && notif.url !== '#') {
+                    // Mark as read when clicking toast
+                    markAsReadAndRedirect(notif.id, notif.url);
                 }
             };
 
             toastr.info(notif.message, title);
-            setTimeout(() => {
-                location.reload()
-            }, 4000)
         }
 
         function getNotificationIcon(type) {
@@ -1216,7 +1420,7 @@
             });
 
             document.addEventListener("click", (e) => {
-                if (dResults && dForm && !dForm.contains(e.target)) dResults.style.display = "none";
+                if (dResults && dForm && !dResults.contains(e.target)) dResults.style.display = "none";
             });
         })();
     </script>
