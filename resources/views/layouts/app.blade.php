@@ -322,7 +322,7 @@
                                                 <div class="u-text">
                                                     <h4></h4>
                                                     <p class="text-muted"></p>
-                                                    <a href="profile.html"
+                                                    <a href="{{ route('profile.index') }}"
                                                         class="btn btn-xs btn-secondary btn-sm">View Profile</a>
                                                 </div>
                                             </div>
