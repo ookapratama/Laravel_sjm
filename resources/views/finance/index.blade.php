@@ -108,7 +108,7 @@
                                 <label for="transfer_reference" class="form-label">Nomor Referensi Transfer:</label>
                                 <input type="text" id="transfer_reference" class="swal2-input" placeholder="Misal: TRF12345678">
                                 
-                                <label for="admin_notes" class="form-label">Catatan Admin (opsional):</label>
+                                <label for="admin_notes" class="form-label">Catatan Finance (opsional):</label>
                                 <textarea id="admin_notes" class="swal2-textarea" placeholder="Catatan untuk member..."></textarea>
                             </div>
                         `,

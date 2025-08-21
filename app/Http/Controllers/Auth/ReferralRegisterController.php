@@ -3,6 +3,7 @@
 // app/Http/Controllers/Auth/ReferralRegisterController.php
 namespace App\Http\Controllers\Auth;
 
+use App\Events\NewMemberRegistered;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Models\MitraProfile;
 // Ganti model/tablename PIN sesuai sistem Anda
 use App\Models\ActivationPin; // -> table: activation_pins (atau pin_codes)
+use App\Models\Notification;
 
 class ReferralRegisterController extends Controller
 {
@@ -150,6 +152,26 @@ class ReferralRegisterController extends Controller
             // 4) Auto-login dan balas JSON
             auth()->login($user);
 
+            Notification::create([
+                'user_id' => $sponsor->id,
+                'message' => 'Member baru telah register menggunakan Kode Referal dan Pin anda.',
+                'url' => route('users.downline'),
+            ]);
+
+            // Broadcast via Pusher
+            event(new NewMemberRegistered($sponsor->id, [
+                'type' => 'new_member_registered', // atau 'preregistration_received' jika Anda ingin beda
+                'message' => 'Member baru telah register menggunakan Kode Referal dan Pin anda.',
+                'url' => route('users.downline'),
+                'created_at' => now()->toDateTimeString()
+            ]));
+
+            \Log::info('new member has been registered', [
+                'user_id' => $user->id,
+            ]);
+
+
+
             return response()->json([
                 'success'  => 'Registrasi berhasil. Akun Anda aktif.',
                 'redirect' => route('member'),
@@ -161,7 +183,7 @@ class ReferralRegisterController extends Controller
         } catch (\Exception $e) {
             \Log::error('Registration error: ' . $e->getMessage());
             return response()->json([
-                'message' => 'Terjadi kesalahan internal server. Silakan coba lagi nanti.'
+                'message' => 'Terjadi kesalahan internal server. Silakan coba lagi nanti.' . $e->getMessage()
             ], 500);
         }
     }
@@ -232,16 +254,16 @@ class ReferralRegisterController extends Controller
             $request->validate([
                 'sponsor_code' => 'required|string|min:3|max:20|regex:/^[A-Za-z0-9]+$/'
             ]);
-    
+
             $sponsorCode = $request->sponsor_code;
-    
+
             // Cek apakah sponsor ada di database
             // Sesuaikan dengan struktur database Anda
             $sponsor = User::where('username', $sponsorCode)
                 ->orWhere('referral_code', $sponsorCode)
                 ->where('is_active', '1')
                 ->first();
-    
+
             if ($sponsor) {
                 return response()->json([
                     'valid' => true,
@@ -254,7 +276,7 @@ class ReferralRegisterController extends Controller
                     ]
                 ]);
             }
-    
+
             return response()->json([
                 'valid' => false,
                 'message' => 'Kode sponsor tidak ditemukan'

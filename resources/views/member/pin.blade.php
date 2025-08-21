@@ -162,15 +162,15 @@ document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el=>{
   new bootstrap.Tooltip(el);
 });
 
-if ({{ $hasOpen ? 'true' : 'false' }}) {
-  setInterval(async ()=>{
-    try{
-      const res = await fetch("{{ route('member.pin.status') }}", {headers:{'X-Requested-With':'XMLHttpRequest'}});
-      const json = await res.json();
-      if(!json.hasOpen) location.reload(); // reload agar tombol aktif & data terbaru tampil
-    }catch(e){}
-  }, 8000); // cek tiap 8 detik
-}
+// if ({{ $hasOpen ? 'true' : 'false' }}) {
+//   setInterval(async ()=>{
+//     try{
+//       const res = await fetch("{{ route('member.pin.status') }}", {headers:{'X-Requested-With':'XMLHttpRequest'}});
+//       const json = await res.json();
+//       // if(!json.hasOpen) location.reload(); // reload agar tombol aktif & data terbaru tampil
+//     }catch(e){}
+//   }, 8000); // cek tiap 8 detik
+// }
 
 (function() {
   // Toggle QRIS/Transfer sections

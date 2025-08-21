@@ -93,7 +93,7 @@ class PinCtrl extends Controller
 //             'payment_reference'=>$r->payment_reference ?? null,
 //             'payment_proof'=> $path,
 //         ]);
-        $this->notifyFinanceOnPinOrder($req);
+        // $this->notifyFinanceOnPinOrder($req);
         
         return back()->with('success','Request dikirim. Menunggu verifikasi Finance.');
 //>>>>>>> main
