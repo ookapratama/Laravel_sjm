@@ -8,14 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use App\Events\MemberCountUpdated;
-use App\Events\PairingDownline;
 use App\Services\BonusManager;
 use DB;
 use Illuminate\Support\Facades\Log;
 use App\Jobs\ProcessPairingJob;
 use App\Events\UserNotificationReceived;
 use App\Models\ActivationPin;
-use App\Models\Notification;
 use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
@@ -193,7 +191,7 @@ class UserController extends Controller
 
         // (opsional) kalau kamu ingin pairing via job, matikan process() di service
         // lalu baru dispatch job di sini. Kalau tidak, JOB ini tidak perlu.
-        // ProcessPairingJob::dispatch($user);
+        ProcessPairingJob::dispatch($user);
 
         return response()->json([
             'ok'      => true,
@@ -202,69 +200,12 @@ class UserController extends Controller
             'name'    => $user->username,
         ]);
 
-// <<<<<<< ooka-dev
-        DB::beginTransaction();
-
-        try {
-            $user = User::findOrFail($request->input('user_id'));
-
-            $user->upline_id = $validated['upline_id'];
-            $user->position = $validated['position'];
-            $user->save();
-
-            // ✅ Ganti ini:
-            $bonusManager = new BonusManager();
-            $bonusManager->assignToUpline($user, $user->upline, $user->position);
-
-            DB::commit();
-
-            ProcessPairingJob::dispatch($user);
-
-            // Jika ingin tetap asynchronous
-            Notification::create([
-                'user_id' => auth()->id(),
-                'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
-                'url' => route('member'),
-            ]);
-
-            // Broadcast via Pusher
-            event(new PairingDownline(auth()->id(), [
-                'type' => 'pairing_downline', // atau 'preregistration_received' jika Anda ingin beda
-                'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
-                'url' => route('member'),
-                'created_at' => now()->toDateTimeString()
-            ]));
-
-            \Log::info('PIN Request Rejected and Notification Sent', [
-                'user_id' => 'User berhasil dipasang ke tree dan pairing diproses.',
-                'message' => auth()->id(),
-            ]);
-
-
-            return response()->json([
-                'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
-                'id' => auth()->id(),
-                'name' => $user->username,
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('❌ Gagal update dan pasang user', [
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'message' => 'Terjadi kesalahan.',
-                'error' => $e->getMessage()
-            ], 500);
-//         }
-// =======
-//     } catch (\InvalidArgumentException $e) {
-//         // dari guard: slot penuh / user sudah terpasang
-//         return response()->json(['ok'=>false, 'message'=>$e->getMessage()], 422);
-//     } catch (\Throwable $e) {
-//         \Log::error('❌ Gagal update/pasang user', ['error' => $e->getMessage()]);
-//         return response()->json(['ok'=>false, 'message'=>'Terjadi kesalahan.'], 500);
-// >>>>>>> main
+    } catch (\InvalidArgumentException $e) {
+        // dari guard: slot penuh / user sudah terpasang
+        return response()->json(['ok'=>false, 'message'=>$e->getMessage()], 422);
+    } catch (\Throwable $e) {
+        \Log::error('❌ Gagal update/pasang user', ['error' => $e->getMessage()]);
+        return response()->json(['ok'=>false, 'message'=>'Terjadi kesalahan.'], 500);
     }
 }
 
