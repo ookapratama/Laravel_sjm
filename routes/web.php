@@ -1,6 +1,5 @@
 <?php
 
-use App\Models\PinRequest;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\{
@@ -26,7 +25,6 @@ use App\Http\Controllers\Super\SuperWithdrawController as SuperWithdrawControlle
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\AccessController;
 use App\Events\MemberCountUpdated;
-use App\Events\NotificationService;
 use App\Models\User;
 use App\Models\Notification;
 use App\Http\Controllers\ReferralQrController;
@@ -34,7 +32,7 @@ use App\Http\Controllers\Admin\PinCtrl as AdminPinCtrl;
 use App\Http\Controllers\Finance\PinCtrl as FinancePinCtrl;
 use App\Http\Controllers\Member\PinCtrl as MemberPinCtrl;
 use App\Http\Controllers\Auth\ReferralRegisterController;
-use Illuminate\Support\Facades\Broadcast;
+
 
 // routes/web.php
 Route::middleware(['auth'])->group(function () {
@@ -72,50 +70,14 @@ Route::middleware('guest')->group(function () {
 
 
 Route::post('/notifications/{id}/read', function ($id) {
-    try {
-        $notif = Notification::where('id', $id)
-            ->where('user_id', auth()->id())
-            ->firstOrFail();
+    $notif = Notification::where('id', $id)
+        ->where('user_id', auth()->id())
+        ->firstOrFail();
 
-        $notif->update(['is_read' => true]);
+    $notif->update(['is_read' => true]);
 
-        \Log::info('Notification marked as read', [
-            'notification_id' => $id,
-            'user_id' => auth()->id()
-        ]);
-
-        return response()->json(['success' => true]);
-    } catch (\Exception $e) {
-        \Log::error('Failed to mark notification as read', [
-            'notification_id' => $id,
-            'user_id' => auth()->id(),
-            'error' => $e->getMessage()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menandai notifikasi sebagai telah dibaca'
-        ], 500);
-    }
+    return response()->json(['success' => true]);
 })->middleware('auth');
-
-Route::get('/test-notification/{userId}', function($userId) {
-    try {
-        NotificationService::sendNotification(
-            $userId,
-            'test_notification',
-            'Ini adalah notifikasi test',
-            route('home'),
-            ['test' => true]
-        );
-        
-        return response()->json(['message' => 'Test notification sent']);
-        
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-})->middleware('auth');
-
 
 Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
     if (!Auth::check()) {
