@@ -51,8 +51,8 @@ class PinCtrl extends Controller
         }
 
 
-// <<<<<<< ooka-dev
-        PinRequest::create([
+
+       $req= PinRequest::create([
             'requester_id' => auth()->id(),
             'qty' => $qty,
             'unit_price' => $unit,
@@ -81,7 +81,7 @@ class PinCtrl extends Controller
                 'created_at' => now()->toDateTimeString()
             ]));
         }
-
+$this->notifyFinanceOnPinOrder($req);
         //return back()->with('success', 'Request dikirim. Menunggu verifikasi Finance.');
 //         $req = PinRequest::create([
 //             'requester_id'=>auth()->id(),
@@ -93,10 +93,10 @@ class PinCtrl extends Controller
 //             'payment_reference'=>$r->payment_reference ?? null,
 //             'payment_proof'=> $path,
 //         ]);
-        // $this->notifyFinanceOnPinOrder($req);
+        
         
         return back()->with('success','Request dikirim. Menunggu verifikasi Finance.');
-//>>>>>>> main
+
     }
 
 
@@ -114,7 +114,7 @@ private function notifyFinanceOnPinOrder(PinRequest $req): void
     $id      = $req->id;
 
     // (Opsional) link langsung ke halaman proses/approve
-    $urlApprove = route('finance.pin.index'); // ganti dgn route detail/approve yang kamu punya
+    $urlApprove = route('finance.pin.index'); 
 
     $msg = 
         "$judul\n\n"

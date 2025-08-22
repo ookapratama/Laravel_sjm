@@ -11,6 +11,7 @@ use App\Models\Withdrawal;
 use App\Models\User;
 use App\Models\Notification;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 
 class DashboardController extends Controller
 {
@@ -90,30 +91,53 @@ class DashboardController extends Controller
 
     public function finance()
     {
-        $notifications = Notification::where('user_id', auth()->id())
-            ->where('is_read', false)
-            ->orderByDesc('created_at')
-            ->get();
+       $notifications = Notification::where('user_id', auth()->id())
+        ->where('is_read', false)
+        ->orderByDesc('created_at')
+        ->get();
 
-        $data = IncomeDetail::orderBy('date')->get();
+    // Rentang 30 hari terakhir (hari ini termasuk)
+    $end   = Carbon::today();
+    $start = (clone $end)->subDays(29);
 
-        $daily = $data->sortBy('date')->take(-30)->values(); // ambil 30 hari terakhir
+    // Ambil data dalam rentang sekali saja
+    $rows = IncomeDetail::whereBetween('date', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+        ->orderBy('date')
+        ->get()
+        ->groupBy(fn ($r) => Carbon::parse($r->date)->toDateString()); // key: Y-m-d
 
-        $currentMonth = Carbon::now()->format('Y-m');
-        $bulanIni = $data->filter(fn($i) => $i->date->format('Y-m') === $currentMonth);
+    // Buat deret tanggal lengkap (isi 0 kalau tidak ada)
+    $period = CarbonPeriod::create($start, $end);
+    $daily = collect($period)->map(function (Carbon $day) use ($rows) {
+        $key  = $day->toDateString(); // Y-m-d
+        $list = $rows->get($key, collect());
 
-        $incomePie = [
-            'penjualan_pin' => $bulanIni->sum('penjualan_pin'),
-            'produk' => $bulanIni->sum('produk'),
-            'manajemen' => $bulanIni->sum('manajemen'),
+        return [
+            'date'           => $key,                                  // mentah
+            'label'          => $day->locale('id_ID')->isoFormat('DD MMM'), // cantik: 14 Agu
+            'penjualan_pin'  => (int) $list->sum('penjualan_pin'),
+            'produk'         => (int) $list->sum('produk'),
+            'manajemen'      => (int) $list->sum('manajemen'),
+            'pairing_bonus'  => (int) $list->sum('pairing_bonus'),
+            'withdraw'       => (int) $list->sum('withdraw'),
         ];
+    })->values();
 
-        $expensePie = [
-            'pairing_bonus' => $bulanIni->sum('pairing_bonus'),
-            'withdraw' => $bulanIni->sum('withdraw'),
-        ];
+    // Pie bulan ini (lebih efisien pakai whereBetween)
+    $bulanIni = IncomeDetail::whereBetween('date', [now()->startOfMonth(), now()->endOfMonth()])->get();
 
-        return view('finance.dashboard', compact('daily', 'incomePie', 'expensePie', 'notifications'));
+    $incomePie = [
+        'penjualan_pin' => (int) $bulanIni->sum('penjualan_pin'),
+        'produk'        => (int) $bulanIni->sum('produk'),
+        'manajemen'     => (int) $bulanIni->sum('manajemen'),
+    ];
+
+    $expensePie = [
+        'pairing_bonus' => (int) $bulanIni->sum('pairing_bonus'),
+        'withdraw'      => (int) $bulanIni->sum('withdraw'),
+    ];
+
+    return view('finance.dashboard', compact('daily', 'incomePie', 'expensePie', 'notifications'));
     }
 
     public function member()
