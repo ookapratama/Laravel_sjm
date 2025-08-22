@@ -96,38 +96,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Downline Information -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <div class="card card-black">
-                    <div class="card-body">
-                        <h4 class="text-center text-white">Downline Kiri <strong>{{ $leftDownline }}</strong></h4>
-                        <p class="text-center text-white">
-                            {{ optional($user->getLeftChild())->name ?? 'Belum Ada' }}
-                        </p>
-                        <p class="text-center text-white">
-                            {{ optional($user->getLeftChild())->username ?? 'Belum Ada' }}
-                        </p>
-                    </div>
-                </div>
-
-            </div>
-            <div class="col-md-6">
-                <div class="card card-black">
-                    <div class="card-body">
-                        <h4 class="text-center text-white">Downline Kanan <strong>{{ $rightDownline }}</strong></h4>
-                        <p class="text-center text-white">
-                            {{ optional($user->getRightChild())->name ?? 'Belum Ada' }}
-                        </p>
-                        <p class="text-center text-white">
-                            {{ optional($user->getRightChild())->username ?? 'Belum Ada' }}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Referral Section -->
         <div class="row">
             <div class="col-md-8">
@@ -170,7 +138,7 @@
                 <div class="mt-0">
                     <div class="voucher-card">
                         <div class="card border-0 shadow-sm overflow-hidden"
-                            style="background: linear-gradient(135deg, #1a5d1a 0%, #2d8f2d 50%, #4caf50 100%); 
+                            style="background: linear-gradient(135deg, #0e0b01 0%, #efa906 50%, hsl(42, 97%, 48%) 100%); 
                             border-radius: 12px;">
 
                             <!-- Subtle Background Pattern -->
@@ -194,18 +162,18 @@
                                     <div class="col">
                                         <div class="row align-items-center">
                                             <div class="col-md-7">
-                                                <h6 class="fw-bold mb-1" style="color: #ffd700; font-size: 14px;">
-                                                    VOUCHER UMROH & WISATA HALAL
+                                                <h6 class="fw-bold mb-1" style="color: #ffd700; font-size: 30px;">
+                                                    VOUCHER UMROH 
                                                 </h6>
                                                 <div class="mb-1">
                                                     <span class="h5 fw-bold mb-0" style="color: #ffd700;">
                                                         Rp 1.000.000
                                                     </span>
                                                 </div>
-                                                <small class="opacity-75" style="font-size: 11px;">
+                                                {{-- <small class="opacity-75" style="font-size: 11px;">
                                                     <i class="fas fa-calendar me-1"></i>Berlaku hingga
                                                     {{ now()->addYear()->format('d M Y') }}
-                                                </small>
+                                                </small> --}}
                                             </div>
 
                                             <div class="col-md-5">
@@ -244,7 +212,7 @@
                                     <div class="col-md-6">
                                         <small class="opacity-75" style="font-size: 10px;">
                                             <i class="fas fa-tag me-1"></i>
-                                            Min. pembelian: Rp 5.000.000
+                                            Min. pembelian: Rp 750.000
                                         </small>
                                     </div>
                                     <div class="col-md-6">
@@ -286,7 +254,30 @@
             </div>
         </div>
 
+        <!-- Downline Information -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card card-black">
+                    <div class="card-body">
+                        <h4 class="text-center text-white">Downline Kiri <strong>{{ $leftDownline }}</strong></h4>
+                        <p class="text-center text-white">
+                            {{ optional($user->getLeftChild())->name ?? 'Belum Ada' }}
+                        </p>
+                    </div>
+                </div>
 
+            </div>
+            <div class="col-md-6">
+                <div class="card card-black">
+                    <div class="card-body">
+                        <h4 class="text-center text-white">Downline Kanan <strong>{{ $rightDownline }}</strong></h4>
+                        <p class="text-center text-white">
+                            {{ optional($user->getRightChild())->name ?? 'Belum Ada' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Bagan Status & Upgrade -->
         <div class="row">
@@ -604,7 +595,7 @@
 
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: 'Voucher Umroh & Wisata Halal',
+                    title: 'Voucher Umroh',
                     html: `
                 <div class="text-start">
                     <div class="mb-3 text-center">
@@ -621,9 +612,8 @@
                             <i class="fas fa-check-circle me-2"></i>Keuntungan
                         </h6>
                         <ul class="text-muted small">
-                            <li>Diskon Rp 1.000.000 untuk paket Umroh</li>
-                            <li>Berlaku untuk paket Wisata Halal</li>
-                            <li>Dapat dikombinasi dengan promo lain</li>
+                            <li>Subsidi Rp 1.000.000 untuk paket Umroh</li>
+                            <li>Berlaku untuk paket Umroh/Wisata Religi</li>
                         </ul>
                     </div>
                     
@@ -632,10 +622,10 @@
                             <i class="fas fa-exclamation-triangle me-2"></i>Syarat & Ketentuan
                         </h6>
                         <ul class="text-muted small">
-                            <li>Berlaku 1 tahun sejak registrasi</li>
-                            <li>Minimum pembelian Rp 5.000.000</li>
+                            <li>Minimum pembelian Rp 750.000</li>
                             <li>Tidak dapat diuangkan</li>
                             <li>Berlaku untuk 1 kali penggunaan</li>
+                            <li>Hanya berlaku untuk member aktif</li>
                         </ul>
                     </div>
                 </div>
@@ -648,7 +638,7 @@
                 });
             } else {
                 alert(
-                    `Voucher Umroh & Wisata Halal\nNilai: Rp 1.000.000\nKode: ${voucherCode}\n\nSyarat:\n- Berlaku 1 tahun\n- Min. pembelian Rp 5.000.000\n- Tidak dapat diuangkan`
+                    `Voucher Umroh & Wisata Halal\nNilai: Rp 1.000.000\nKode: ${voucherCode}\n\nSyarat:\n- Min. pembelian Rp 750.000\n- Tidak dapat diuangkan`
                 );
             }
         }

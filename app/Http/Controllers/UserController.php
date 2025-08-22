@@ -179,40 +179,7 @@ class UserController extends Controller
     }
 
     public function update(Request $request, $id)
-// <<<<<<< perubahan_sjm
-// {
-//     $validated = $request->validate([
-//         'upline_id' => 'required|exists:users,id',
-//         'position'  => 'required|in:left,right',
-//     ]);
 
-//     try {
-//         $user   = \App\Models\User::findOrFail($request->input('user_id'));
-//         $upline = \App\Models\User::findOrFail($validated['upline_id']);
-
-//         // ✅ JANGAN set $user->upline_id/position di sini.
-//         // Biarkan BonusManager yang validasi slot, pasang, bootstrap bagan, dan proses pairing.
-//         app(\App\Services\BonusManager::class)
-//             ->assignToUpline($user, $upline, $validated['position'], false); // false = kalau penuh, 422
-
-//         // (opsional) kalau kamu ingin pairing via job, matikan process() di service
-//         // lalu baru dispatch job di sini. Kalau tidak, JOB ini tidak perlu.
-//         ProcessPairingJob::dispatch($user);
-
-//         return response()->json([
-//             'ok'      => true,
-//             'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
-//             'id'      => $user->id,
-//             'name'    => $user->username,
-//         ]);
-
-//     } catch (\InvalidArgumentException $e) {
-//         // dari guard: slot penuh / user sudah terpasang
-//         return response()->json(['ok'=>false, 'message'=>$e->getMessage()], 422);
-//     } catch (\Throwable $e) {
-//         \Log::error('❌ Gagal update/pasang user', ['error' => $e->getMessage()]);
-//         return response()->json(['ok'=>false, 'message'=>'Terjadi kesalahan.'], 500);
-// =======
     {
         $validated = $request->validate([
             'upline_id' => 'required|exists:users,id',
@@ -230,9 +197,6 @@ class UserController extends Controller
             app(\App\Services\BonusManager::class)
                 ->assignToUpline($user, $upline, $validated['position'], false); // false = kalau penuh, 422
 
-            // (opsional) kalau kamu ingin pairing via job, matikan process() di service
-            // lalu baru dispatch job di sini. Kalau tidak, JOB ini tidak perlu.
-            // ProcessPairingJob::dispatch($user);
 
 
 
@@ -242,9 +206,6 @@ class UserController extends Controller
             $user->position = $validated['position'];
             $user->save();
 
-            // ✅ Ganti ini:
-            // $bonusManager = new BonusManager();
-            // $bonusManager->assignToUpline($user, $user->upline, $user->position);
 
             DB::commit();
 
@@ -287,7 +248,6 @@ class UserController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-// >>>>>>> main
     }
 
 

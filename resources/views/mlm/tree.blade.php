@@ -143,7 +143,7 @@
 
   const upStack = [];                    // riwayat untuk NAV UP
   const parentCache = new Map();         // cache parent: id -> parentId
-
+let firstRenderDone = false;
   /* =============== UTIL =============== */
   const clamp = (v,lo,hi)=>Math.max(lo,Math.min(hi,v));
   const toNum = (v) => { const n = Number(String(v ?? '').trim()); return Number.isFinite(n) ? n : null; };
@@ -391,9 +391,24 @@
     layout(root);
 
     // edges
-    g.append('g').attr('fill','none').attr('stroke','#cbd5e1').attr('stroke-opacity',0.65).attr('stroke-width',1.2)
-      .selectAll('path').data(root.links()).join('path')
-      .attr('d', d3.linkVertical().x(d=>d.x).y(d=>d.y));
+  // edges (pakai garis siku/elbow)
+g.append('g')
+  .attr('fill', 'none')
+  .attr('stroke', '#cbd5e1')
+  .attr('stroke-opacity', 0.65)
+  .attr('stroke-width', 1.2)
+  .selectAll('path')
+  .data(root.links())
+  .join('path')
+  .attr('d', d => {
+    return `
+      M${d.source.x},${d.source.y}
+      V${(d.source.y + d.target.y) / 2}
+      H${d.target.x}
+      V${d.target.y}
+    `;
+  });
+
 
     // nodes
     const node = g.append('g').selectAll('g').data(root.descendants()).join('g')

@@ -203,7 +203,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/withdraw', [SuperWithdrawController::class, 'store'])->name('super.withdraw.store');
         Route::get('/withdraw/bonus', [SuperWithdrawController::class, 'getBonusAvailable'])->name('super.withdraw.bonus');
         Route::get('/withdraw/history', [SuperWithdrawController::class, 'history'])->name('super.withdraw.history');
-        Route::post('/super/withdraw/drain/{group}', [SuperWithdrawController::class, 'drainGroup'])
+        Route::post('/withdraw/drain/{group}', [SuperWithdrawController::class, 'drainGroup'])
             ->name('super.withdraw.drain');
     });
     Route::prefix('bonus-settings')->middleware('role:super-admin')->group(function () {
@@ -293,6 +293,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // ✅ Tree & Binary MLM
     Route::get('/tree', [MLMController::class, 'tree'])->name('tree.index');
+    Route::get('/tree-master', [MLMController::class, 'master'])->name('master.index');
     Route::get('/tree/node/{id}', [MLMController::class, 'getNode']);
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
     Route::get('/users/ajax/{id}', [MLMController::class, 'ajax']);

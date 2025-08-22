@@ -13,6 +13,12 @@ class MLMController extends Controller
         return view('mlm.tree', compact('root'));
     }
 
+    public function master()
+    {
+        $root = User::find(1); // Atau super admin
+        return view('mlm.tree-master', compact('root'));
+    }
+
     public function ajax($id)
     {
         $user = User::with(['left', 'right'])->findOrFail($id);
@@ -48,7 +54,7 @@ class MLMController extends Controller
 }
     public function loadTree(Request $request, $id)
     {
-        $max = $request->get('limit', 7); // default 7 level
+        $max = $request->get('limit', 3); // default 7 level
         $user = User::findOrFail($id);
         $tree = $this->buildTreeRecursive($user, 1, $max);
         return response()->json($tree);

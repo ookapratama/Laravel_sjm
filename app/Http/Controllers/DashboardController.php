@@ -98,7 +98,7 @@ class DashboardController extends Controller
 
     // Rentang 30 hari terakhir (hari ini termasuk)
     $end   = Carbon::today();
-    $start = (clone $end)->subDays(29);
+    $start = (clone $end)->subDays(15);
 
     // Ambil data dalam rentang sekali saja
     $rows = IncomeDetail::whereBetween('date', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
