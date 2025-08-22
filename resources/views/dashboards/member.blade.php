@@ -1,5 +1,44 @@
 @extends('layouts.app')
+@push('styles')
+    <style>
+        .voucher-card:hover .card {
+            transform: translateY(-3px);
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
 
+        .voucher-card .card {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Button hover effects */
+        .voucher-card .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .voucher-card .card-body {
+                padding: 1rem !important;
+            }
+
+            .voucher-card .h5 {
+                font-size: 1.1rem !important;
+            }
+
+            .voucher-card h6 {
+                font-size: 12px !important;
+            }
+        }
+
+        /* Compact SweetAlert */
+        .swal-compact {
+            width: 85% !important;
+            max-width: 500px !important;
+        }
+    </style>
+@endpush
 @section('content')
     @php
         $baganNames = [
@@ -72,6 +111,7 @@
                         </p>
                     </div>
                 </div>
+
             </div>
             <div class="col-md-6">
                 <div class="card card-black">
@@ -89,7 +129,7 @@
         </div>
 
         <!-- Referral Section -->
-        <div class="row mb-4">
+        <div class="row">
             <div class="col-md-8">
                 <div class="card card-secondary bg-secondary-gradient">
                     <div class="card-body">
@@ -126,6 +166,104 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="mt-0">
+                    <div class="voucher-card">
+                        <div class="card border-0 shadow-sm overflow-hidden"
+                            style="background: linear-gradient(135deg, #1a5d1a 0%, #2d8f2d 50%, #4caf50 100%); 
+                            border-radius: 12px;">
+
+                            <!-- Subtle Background Pattern -->
+                            <div class="position-absolute w-100 h-100"
+                                style="background-image: url('data:image/svg+xml,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\"><defs><pattern id=\"dots\" width=\"20\" height=\"20\" patternUnits=\"userSpaceOnUse\"><circle cx=\"10\" cy=\"10\" r=\"2\" fill=\"rgba(255,255,255,0.05)\"/></pattern></defs><rect width=\"100\" height=\"100\" fill=\"url(%23dots)\"/></svg>'
+                            </div>
+
+                            <div class="card-body
+                                text-white p-3 position-relative">
+                                <div class="row align-items-center">
+                                    <!-- Left Section - Icon -->
+                                    <div class="col-auto">
+                                        <div class="d-inline-block p-2 rounded-circle">
+                                            {{-- <i class="fas fa-kaaba" style="font-size: 20px; color: #ffd700;"></i> --}}
+                                            <img src="{{ asset('images/religion.png') }}" alt="" class="img-fluid"
+                                                width="100">
+                                        </div>
+                                    </div>
+
+                                    <!-- Center Section - Main Content -->
+                                    <div class="col">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-7">
+                                                <h6 class="fw-bold mb-1" style="color: #ffd700; font-size: 14px;">
+                                                    VOUCHER UMROH & WISATA HALAL
+                                                </h6>
+                                                <div class="mb-1">
+                                                    <span class="h5 fw-bold mb-0" style="color: #ffd700;">
+                                                        Rp 1.000.000
+                                                    </span>
+                                                </div>
+                                                <small class="opacity-75" style="font-size: 11px;">
+                                                    <i class="fas fa-calendar me-1"></i>Berlaku hingga
+                                                    {{ now()->addYear()->format('d M Y') }}
+                                                </small>
+                                            </div>
+
+                                            <div class="col-md-5">
+                                                <!-- Voucher Code -->
+                                                <div class="mb-2">
+                                                    <div class="bg-white text-dark px-2 py-1 rounded text-center">
+                                                        <small class="fw-bold d-block"
+                                                            style="font-size: 9px; letter-spacing: 0.5px;">
+                                                            KODE VOUCHER
+                                                        </small>
+                                                        <div class="fw-bold"
+                                                            style="font-size: 11px; letter-spacing: 1px; font-family: monospace; color: #1a5d1a;">
+                                                            UMROH{{ strtoupper(substr(auth()->user()->username ?? 'USER', 0, 4)) }}2025
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Action Buttons -->
+                                                <div class="d-grid gap-1">
+                                                    <button class="btn btn-light btn-sm py-1" style="font-size: 11px;"
+                                                        onclick="copyVoucherCode('UMROH{{ strtoupper(substr(auth()->user()->username ?? 'USER', 0, 4)) }}2025')">
+                                                        <i class="fas fa-copy me-1"></i>Salin Kode
+                                                    </button>
+                                                    <button class="btn btn-outline-light btn-sm py-1"
+                                                        style="font-size: 11px;" onclick="showVoucherDetails()">
+                                                        <i class="fas fa-info-circle me-1"></i>Detail
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Bottom Info -->
+                                <div class="row mt-2 pt-2" style="border-top: 1px solid rgba(255,255,255,0.2);">
+                                    <div class="col-md-6">
+                                        <small class="opacity-75" style="font-size: 10px;">
+                                            <i class="fas fa-tag me-1"></i>
+                                            Min. pembelian: Rp 5.000.000
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="opacity-75" style="font-size: 10px;">
+                                            <i class="fas fa-check me-1"></i>
+                                            Berlaku untuk semua paket
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Minimal Decorative Element -->
+                            <div class="position-absolute" style="bottom: 10px; left: 10px; opacity: 0.2;">
+                                <i class="fas fa-crescent-moon" style="font-size: 14px; color: #ffd700;"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             <!-- QR Code Detail -->
@@ -147,6 +285,8 @@
                 </div>
             </div>
         </div>
+
+
 
         <!-- Bagan Status & Upgrade -->
         <div class="row">
@@ -438,6 +578,93 @@
                     submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;
                 });
+        }
+
+        function copyVoucherCode(code) {
+            navigator.clipboard.writeText(code).then(function() {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success(`Kode voucher berhasil disalin!`, 'Berhasil', {
+                        timeOut: 2000,
+                        progressBar: true
+                    });
+                } else {
+                    alert(`Kode voucher ${code} berhasil disalin!`);
+                }
+            }).catch(function(err) {
+                console.error('Gagal menyalin:', err);
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('Gagal menyalin kode voucher', 'Error');
+                }
+            });
+        }
+
+        // Show voucher details - Simplified
+        function showVoucherDetails() {
+            const voucherCode = 'UMROH{{ strtoupper(substr(auth()->user()->username ?? 'USER', 0, 4)) }}2025';
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Voucher Umroh & Wisata Halal',
+                    html: `
+                <div class="text-start">
+                    <div class="mb-3 text-center">
+                        <div class="badge bg-success px-3 py-2 mb-2">
+                            Rp 1.000.000
+                        </div>
+                        <div class="fw-bold text-primary small" style="font-family: monospace;">
+                            ${voucherCode}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-success mb-2 small">
+                            <i class="fas fa-check-circle me-2"></i>Keuntungan
+                        </h6>
+                        <ul class="text-muted small">
+                            <li>Diskon Rp 1.000.000 untuk paket Umroh</li>
+                            <li>Berlaku untuk paket Wisata Halal</li>
+                            <li>Dapat dikombinasi dengan promo lain</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="text-warning mb-2 small">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Syarat & Ketentuan
+                        </h6>
+                        <ul class="text-muted small">
+                            <li>Berlaku 1 tahun sejak registrasi</li>
+                            <li>Minimum pembelian Rp 5.000.000</li>
+                            <li>Tidak dapat diuangkan</li>
+                            <li>Berlaku untuk 1 kali penggunaan</li>
+                        </ul>
+                    </div>
+                </div>
+            `,
+                    confirmButtonText: 'Tutup',
+                    confirmButtonColor: '#4caf50',
+                    customClass: {
+                        popup: 'swal-compact'
+                    }
+                });
+            } else {
+                alert(
+                    `Voucher Umroh & Wisata Halal\nNilai: Rp 1.000.000\nKode: ${voucherCode}\n\nSyarat:\n- Berlaku 1 tahun\n- Min. pembelian Rp 5.000.000\n- Tidak dapat diuangkan`
+                );
+            }
+        }
+
+        // Copy referral link function
+        function copyReferralLink() {
+            const link = document.getElementById('referralLink').textContent;
+            navigator.clipboard.writeText(link).then(function() {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('Link referral berhasil disalin!', 'Berhasil');
+                }
+            }).catch(function(err) {
+                if (typeof toastr !== 'undefined') {
+                    toastr.error('Gagal menyalin link referral', 'Error');
+                }
+            });
         }
     </script>
 @endpush
