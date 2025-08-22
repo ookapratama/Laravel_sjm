@@ -39,6 +39,9 @@
     <!-- Bootstrap Treeview CSS -->
     <link rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-treeview/1.2.0/bootstrap-treeview.min.css">
+
+    @stack('styles')
+
     <style>
         .notification-item .mark-read-btn {
             position: absolute;
@@ -562,29 +565,249 @@
             }
 
             setupInteractionListeners() {
-                const interactionEvents = ['click', 'touchstart', 'keydown', 'mousedown'];
+                // ✅ COMPREHENSIVE EVENT LIST - Semua kemungkinan interaksi user
+                const interactionEvents = [
+                    // Mouse Events
+                    'click',
+                    'mousedown',
+                    'mouseup',
+                    'mousemove',
+                    'dblclick',
+
+                    // Touch Events (Mobile)
+                    'touchstart',
+                    'touchend',
+                    'touchmove',
+
+                    // Keyboard Events
+                    'keydown',
+                    'keyup',
+                    'keypress',
+
+                    // Focus Events
+                    'focus',
+                    'focusin',
+
+                    // Scroll Events
+                    'scroll',
+                    'wheel',
+
+                    // Form Events
+                    'input',
+                    'change',
+                    'submit',
+
+                    // Pointer Events (Modern browsers)
+                    'pointerdown',
+                    'pointerup',
+                    'pointermove'
+                ];
 
                 const unlockAudio = (event) => {
                     if (!this.userHasInteracted) {
-                        this.log(`🎯 User interaction detected: ${event.type}`);
+                        this.log(
+                            `🎯 User interaction detected: ${event.type} on ${event.target.tagName || 'unknown'}`
+                        );
                         this.userHasInteracted = true;
+
+                        // Immediate unlock attempt
                         this.unlockAudio();
+
+                        // Mark in session storage for persistence
+                        sessionStorage.setItem('user_has_interacted', 'true');
+
+                        // Remove all listeners to prevent multiple triggers
+                        this.removeInteractionListeners();
                     }
                 };
 
-                interactionEvents.forEach(event => {
-                    document.addEventListener(event, unlockAudio, {
-                        once: true,
-                        passive: true
-                    });
+                // Store reference untuk bisa remove later
+                this.unlockAudioHandler = unlockAudio;
+
+                // ✅ ADD LISTENERS TO MULTIPLE TARGETS
+                const targets = [
+                    document, // Global document
+                    document.body, // Body element
+                    window // Window object
+                ];
+
+                targets.forEach(target => {
+                    if (target) {
+                        interactionEvents.forEach(eventType => {
+                            try {
+                                target.addEventListener(eventType, unlockAudio, {
+                                    once: true, // Auto-remove after first trigger
+                                    passive: true, // Don't block default behavior
+                                    capture: true // Capture phase untuk lebih reliable
+                                });
+                            } catch (error) {
+                                // Skip unsupported events
+                                this.log(
+                                    `⚠️ Event ${eventType} not supported on ${target.constructor.name}`
+                                );
+                            }
+                        });
+                    }
                 });
 
+                // ✅ SPECIAL TARGETED LISTENERS - High-probability elements
+                this.setupSpecialTargets();
+
+                // ✅ FALLBACK TIMER - Jika semua gagal, coba setelah delay
+                this.setupFallbackTimer();
+
+                // ✅ NOTIFICATION BELL HANDLER
                 const notifBell = document.getElementById('notifDropdown');
                 if (notifBell) {
                     notifBell.addEventListener('click', () => {
                         this.log('🔔 Notification bell clicked');
                         this.enableAudioForSession();
                     });
+                }
+
+                // ✅ CHECK SESSION STORAGE - Jika user sudah pernah interact
+                if (sessionStorage.getItem('user_has_interacted') === 'true') {
+                    this.log('📝 Previous interaction found in session');
+                    this.userHasInteracted = true;
+                    setTimeout(() => this.unlockAudio(), 100);
+                }
+            }
+
+            // ✅ SETUP SPECIAL HIGH-PROBABILITY TARGETS
+            setupSpecialTargets() {
+                // Delay setup untuk memastikan DOM ready
+                setTimeout(() => {
+                    const specialSelectors = [
+                        // Navigation elements
+                        '.navbar', '.nav', '.navigation',
+
+                        // Sidebar elements  
+                        '.sidebar', '.menu', '.side-menu',
+
+                        // Button elements
+                        'button', '.btn', '[role="button"]',
+
+                        // Link elements
+                        'a', '[href]',
+
+                        // Form elements
+                        'input', 'textarea', 'select', 'form',
+
+                        // Interactive elements
+                        '[onclick]', '[data-toggle]', '[data-bs-toggle]',
+
+                        // Common UI elements
+                        '.card', '.dropdown', '.modal',
+
+                        // Specific to your app
+                        '#global-search-input', '#notifDropdown', '.quick-actions'
+                    ];
+
+                    specialSelectors.forEach(selector => {
+                        try {
+                            const elements = document.querySelectorAll(selector);
+                            elements.forEach(element => {
+                                if (element && !element.hasAttribute('data-audio-listener')) {
+                                    // Mark to prevent duplicate listeners
+                                    element.setAttribute('data-audio-listener', 'true');
+
+                                    // Add multiple event types for reliability
+                                    ['click', 'mousedown', 'touchstart', 'focus'].forEach(
+                                        eventType => {
+                                            element.addEventListener(eventType, this
+                                                .unlockAudioHandler, {
+                                                    once: true,
+                                                    passive: true
+                                                });
+                                        });
+                                }
+                            });
+
+                            if (elements.length > 0) {
+                                this.log(
+                                    `📍 Added listeners to ${elements.length} ${selector} elements`);
+                            }
+                        } catch (error) {
+                            // Skip invalid selectors
+                            this.log(`⚠️ Invalid selector: ${selector}`);
+                        }
+                    });
+                }, 500);
+            }
+
+            // ✅ FALLBACK TIMER - Last resort
+            setupFallbackTimer() {
+                // Check every 2 seconds for 30 seconds
+                let checkCount = 0;
+                const maxChecks = 15;
+
+                const fallbackCheck = setInterval(() => {
+                    checkCount++;
+
+                    // If user still hasn't interacted and we haven't exceeded max checks
+                    if (!this.userHasInteracted && checkCount < maxChecks) {
+                        // Try to detect any signs of user presence
+                        if (this.detectUserPresence()) {
+                            this.log('🔍 User presence detected via fallback');
+                            this.userHasInteracted = true;
+                            this.unlockAudio();
+                            clearInterval(fallbackCheck);
+                        }
+                    } else {
+                        clearInterval(fallbackCheck);
+
+                        // If still no interaction after 30 seconds, show explicit prompt
+                        if (!this.userHasInteracted) {
+                            this.log('⏰ Fallback timeout - showing explicit prompt');
+                            this.showExplicitAudioPrompt();
+                        }
+                    }
+                }, 2000);
+            }
+
+            // ✅ DETECT USER PRESENCE via indirect signals
+            detectUserPresence() {
+                try {
+                    // Check if page is visible and focused
+                    const isVisible = !document.hidden;
+                    const isFocused = document.hasFocus();
+
+                    // Check if mouse has moved (store previous position)
+                    if (!this.lastMousePosition) {
+                        this.lastMousePosition = {
+                            x: 0,
+                            y: 0
+                        };
+
+                        // Track mouse movement
+                        document.addEventListener('mousemove', (e) => {
+                            this.lastMousePosition = {
+                                x: e.clientX,
+                                y: e.clientY
+                            };
+                        }, {
+                            passive: true
+                        });
+                    }
+
+                    // Check scroll position changes
+                    const currentScrollY = window.scrollY;
+                    if (this.lastScrollY === undefined) {
+                        this.lastScrollY = currentScrollY;
+                    }
+
+                    const hasScrolled = Math.abs(currentScrollY - this.lastScrollY) > 50;
+                    this.lastScrollY = currentScrollY;
+
+                    // Check if any form fields have been focused
+                    const focusedElement = document.activeElement;
+                    const isInteractiveElement = focusedElement && ['INPUT', 'TEXTAREA', 'SELECT', 'BUTTON', 'A']
+                        .includes(focusedElement.tagName);
+
+                    return isVisible && isFocused && (hasScrolled || isInteractiveElement);
+                } catch (error) {
+                    this.log('⚠️ Error detecting user presence:', error);
+                    return false;
                 }
             }
 
@@ -1227,6 +1450,9 @@
             };
 
             toastr.info(notif.message, title);
+            setTimeout(() => {
+                location.reload()
+            }, 4000)
         }
 
         function getNotificationIcon(type) {
