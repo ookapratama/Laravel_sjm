@@ -32,9 +32,41 @@ use App\Http\Controllers\Admin\PinCtrl as AdminPinCtrl;
 use App\Http\Controllers\Finance\PinCtrl as FinancePinCtrl;
 use App\Http\Controllers\Member\PinCtrl as MemberPinCtrl;
 use App\Http\Controllers\Auth\ReferralRegisterController;
+use App\Http\Controllers\InvitationController;
+use App\Http\Controllers\GuestEntryController;
 
+use App\Http\Controllers\GuestbookController;
 
-// routes/web.php
+Route::middleware('auth')->group(function () {
+    Route::get('member/guestbook',        [GuestbookController::class,'index'])->name('guestbook.index');
+    Route::get('member/guestbook/export', [GuestbookController::class,'export'])->name('guestbook.export');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::get('/member/invitations',                 [InvitationController::class,'index'])->name('inv.index');
+    Route::get('/member/invitations/create',          [InvitationController::class,'create'])->name('inv.create');
+    Route::post('/member/invitations',                [InvitationController::class,'store'])->name('inv.store');
+    Route::get('/member/invitations/{invitation}/edit',[InvitationController::class,'edit'])->name('inv.edit');
+    Route::put('/member/invitations/{invitation}',    [InvitationController::class,'update'])->name('inv.update');
+    Route::get('/member/invitations/{invitation}/qr', [InvitationController::class,'qr'])->name('inv.qr');
+});
+Route::get('/i/{slug}/r/{ref}', function (string $slug, string $ref) {
+    return redirect()->to(route('inv.public', $slug).'?ref='.$ref, 302);
+})->name('inv.public.ref');
+Route::get('/i/{slug}',                  [InvitationController::class,'publicShow'])->name('inv.public');
+Route::get('/i/{slug}/g',                [GuestEntryController::class,'form'])->name('guest.form.inv');
+Route::post('/i/{slug}/g',               [GuestEntryController::class,'store'])->name('guest.store.inv');
+Route::get('/i/{slug}/thanks',           [GuestEntryController::class,'thanks'])->name('guest.thanks.inv');
+
+// ambil QR ulang
+Route::get ('/inv/{invitation:slug}/my-qr',  [GuestEntryController::class,'myQrForm'])->name('guest_entries.myqr.form');
+Route::post('/inv/{invitation:slug}/my-qr',  [GuestEntryController::class,'myQrFetch'])->name('guest_entries.myqr.fetch');
+
+// check-in (signed)
+Route::get('/inv/{invitation:slug}/entry/{entry}/check-in',
+  [GuestEntryController::class,'checkInScan']
+)->name('guest_entries.scan_checkin')->middleware(['signed','throttle:30,1']);
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/pins/unused', [\App\Http\Controllers\TreeCloneController::class, 'unusedPins'])->name('pins.unused');
     Route::get('/tree/clone/preview', [\App\Http\Controllers\TreeCloneController::class, 'preview'])->name('tree.clone.preview');
@@ -47,6 +79,8 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/me/ref-qr.png', [ReferralQrController::class, 'png'])->name('member.ref.qr.png');
     Route::get('/me/ref-qr/download', [ReferralQrController::class, 'download'])->name('member.ref.qr.download');
+     Route::get('/inv-qr/{slug}', [ReferralQrController::class, 'invitationPng'])->name('inv.qr.show');
+    Route::get('/inv-qr/{slug}/download', [ReferralQrController::class, 'invitationDownload'])->name('inv.qr.dl');
 });
 
 Broadcast::routes(['middleware' => ['web', 'auth']]);
@@ -290,10 +324,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/{id}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     });
-
+Route::middleware('role:super-admin,finance')->group(function () {
+     Route::get('/tree-master', [MLMController::class, 'master'])->name('master.index');
+});
     // ✅ Tree & Binary MLM
     Route::get('/tree', [MLMController::class, 'tree'])->name('tree.index');
-    Route::get('/tree-master', [MLMController::class, 'master'])->name('master.index');
+   
     Route::get('/tree/node/{id}', [MLMController::class, 'getNode']);
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
     Route::get('/users/ajax/{id}', [MLMController::class, 'ajax']);

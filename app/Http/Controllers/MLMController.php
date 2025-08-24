@@ -35,7 +35,7 @@ class MLMController extends Controller
                 ->where('sponsor_id', $id)
                 ->select('id', 'username', 'name', 'created_at')
                 ->orderBy('created_at', 'desc')
-                ->limit(10)
+                ->limit(30)
                 ->get();
 
             return response()->json($users);

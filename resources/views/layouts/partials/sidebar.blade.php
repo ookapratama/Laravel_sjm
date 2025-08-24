@@ -56,7 +56,12 @@
         </ul>
       </div>
     </li>
-
+    <li class="nav-item">
+        <a href="/tree-master">
+            <i class="fas fa-sitemap"></i>
+            <p>Master Jaringan</p>
+        </a>
+    </li>
     {{-- Bonus --}}
     <li class="nav-item">
       <a data-bs-toggle="collapse" href="#bonus">
@@ -96,7 +101,19 @@
         <p>Bonus Saya</p>
       </a>
     </li>
-
+    <li class="nav-item">
+      <a data-bs-toggle="collapse" href="#undangan">
+        <i class="fas  fa-envelope"></i>
+        <p>Undangan</p>
+        <span class="caret"></span>
+      </a>
+      <div class="collapse" id="undangan">
+        <ul class="nav nav-collapse">
+          <li><a href="/member/invitations" ><span class="sub-item">Undangan Saya</span></a></li>
+          <li><a href="/member/guestbook" ><span class="sub-item">Buku Tamu</span></a></li>
+        </ul>
+      </div>
+    </li>
     {{-- Pengaturan --}}
     <li class="nav-item">
       <a data-bs-toggle="collapse" href="#bonustetting">
@@ -128,6 +145,19 @@
         <li class="nav-item"><a href="/admin/pre-register"><i class="fas fa-user-check"></i><p>Pre-Registrasi</p></a></li>
         <li class="nav-item"><a href="/admin/pin-requests"><i class="fas fa-user-check"></i><p>Pin Aktivasi</p></a></li>
         <li class="nav-item"><a href="/produk"><i class="fas fa-box"></i><p>Produk</p></a></li>
+            <li class="nav-item">
+      <a data-bs-toggle="collapse" href="#undangan">
+        <i class="fas  fa-envelope"></i>
+        <p>Undangan</p>
+        <span class="caret"></span>
+      </a>
+      <div class="collapse" id="undangan">
+        <ul class="nav nav-collapse">
+          <li><a href="/member/invitations" ><span class="sub-item">Undangan Saya</span></a></li>
+          <li><a href="/member/guestbook" ><span class="sub-item">Buku Tamu</span></a></li>
+        </ul>
+      </div>
+    </li>
         @break
 
       {{-- FINANCE --}}
@@ -252,6 +282,20 @@
         <li class="nav-item"><a href="/member/pins"><i class="fas fa-cart-plus"></i><p>Pin Aktivasi</p></a></li>
         <li class="nav-item"><a href="/notifications"><i class="fas fa-bell"></i><p>Notifikasi</p></a></li>
         <li class="nav-item"><a href="/help"><i class="fas fa-headset"></i><p>Bantuan</p></a></li>
+            <li class="nav-item">
+      <a data-bs-toggle="collapse" href="#undangan">
+        <i class="fas  fa-envelope"></i>
+        <p>Undangan</p>
+        <span class="caret"></span>
+      </a>
+      <div class="collapse" id="undangan">
+        <ul class="nav nav-collapse">
+          <li><a href="/member/invitations" ><span class="sub-item">Undangan Saya</span></a></li>
+          <li><a href="/member/guestbook" ><span class="sub-item">Buku Tamu</span></a></li>
+        </ul>
+      </div>
+    </li>
+
         @break
 
       @endswitch
