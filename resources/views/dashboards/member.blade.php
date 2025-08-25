@@ -17,6 +17,61 @@
             transform: translateY(-1px);
         }
 
+        /* PIN Transfer Card Styles */
+        .pin-transfer-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .pin-transfer-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="pin-dots" width="15" height="15" patternUnits="userSpaceOnUse"><circle cx="7.5" cy="7.5" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23pin-dots)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .pin-transfer-card .card-body {
+            position: relative;
+            z-index: 1;
+        }
+
+        .pin-badge {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(238, 90, 36, 0.3);
+        }
+
+        .upline-info {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .pulse-animation {
+            animation: pulse-glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse-glow {
+            from {
+                box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+            }
+
+            to {
+                box-shadow: 0 0 20px rgba(102, 126, 234, 0.6), 0 0 30px rgba(118, 75, 162, 0.4);
+            }
+        }
+
         /* Responsive adjustments */
         @media (max-width: 768px) {
             .voucher-card .card-body {
@@ -29,6 +84,10 @@
 
             .voucher-card h6 {
                 font-size: 12px !important;
+            }
+
+            .pin-transfer-card {
+                margin-bottom: 1rem;
             }
         }
 
@@ -63,9 +122,150 @@
         $refUrl = Route::has('register')
             ? route('register', ['ref' => $refCode])
             : url('/register') . '?ref=' . urlencode($refCode);
+
+        // Sample data untuk PIN transfer - ganti dengan data dari database
+        $pinTransfers = [
+            [
+                'id' => 1,
+                'pin_code' => 'PIN' . strtoupper(substr(md5('1'), 0, 8)),
+                'upline_name' => 'Ahmad Suharto',
+                'upline_username' => 'ahmad123',
+                'bagan_type' => 'Basic',
+                'bagan_level' => 1,
+                'transfer_date' => now()->subDays(2),
+                'status' => 'active',
+                'value' => 750000,
+            ],
+            [
+                'id' => 2,
+                'pin_code' => 'PIN' . strtoupper(substr(md5('12345'), 0, 8)),
+                'upline_name' => 'Ahmad Suharto',
+                'upline_username' => 'ahmad123',
+                'bagan_type' => 'Basic',
+                'bagan_level' => 1,
+                'transfer_date' => now()->subDays(2),
+                'status' => 'active',
+                'value' => 750000,
+            ],
+            [
+                'id' => 3,
+                'pin_code' => 'PIN' . strtoupper(substr(md5('54321'), 0, 8)),
+                'upline_name' => 'Ahmad Suharto',
+                'upline_username' => 'ahmad123',
+                'bagan_type' => 'Basic',
+                'bagan_level' => 1,
+                'transfer_date' => now()->subDays(2),
+                'status' => 'active',
+                'value' => 750000,
+            ],
+            // Tambahkan data lain jika ada multiple transfers
+        ];
     @endphp
 
     <div class="container-fluid">
+        @if (is_null($user->upline_id))
+            <div></div>
+        @else
+            <!-- PIN Transfer Information -->
+            {{-- {{dd($downlines)}} --}}
+            @if (!empty($downlines))
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card pin-transfer-card pulse-animation">
+                            <div class="card-body text-white p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="me-3">
+                                        <div class="bg-white bg-opacity-20 rounded-circle p-3">
+                                            <i class="fas fa-key text-white" style="font-size: 24px;"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h5 class="mb-1 fw-bold">
+                                            <i class="fas fa-gift me-2"></i>PIN Aktivasi Diterima!
+                                        </h5>
+                                        <p class="mb-0 opacity-80">Anda telah menerima PIN aktivasi dari upline</p>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="pin-badge">
+                                            {{ $downlines[0]['code'] }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="row">
+                                    @foreach ($downlines as $transfer)
+                                        <div class="col-md-6 mb-3">
+                                            <div class="upline-info p-3">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <div class="me-3">
+                                                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center"
+                                                            style="width: 40px; height: 40px;">
+                                                            <i class="fas fa-user text-white"></i>
+                                                        </div>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="mb-0 fw-bold">{{ $transfer->owner['name'] }}</h6>
+                                                        <small class="opacity-75">Username :{{ $transfer->owner['username'] }}</small>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row text-center">
+                                                    <div class="col-6">
+                                                        <div class="border-end border-white border-opacity-25">
+                                                            <div class="fw-bold">{{ $transfer['bagan'] }}</div>
+                                                            <small class="opacity-75">Bagan Level</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-6">
+                                                        <div class="fw-bold">Rp
+                                                            {{ number_format($transfer['price'], 0, ',', '.') }}</div>
+                                                        <small class="opacity-75">Nilai PIN</small>
+                                                    </div>
+                                                </div>
+
+                                                <hr class="border-white border-opacity-25 my-2">
+
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <small class="opacity-75">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        {{ $transfer['transferred_date'] }}
+                                                    </small>
+                                                    <div class="d-flex gap-2">
+                                                        <button class="btn btn-light btn-sm"
+                                                            onclick="copyPinCode('{{ $transfer['code'] }}')">
+                                                            <i class="fas fa-copy me-1"></i>Salin
+                                                        </button>
+                                                        <button class="btn btn-outline-light btn-sm"
+                                                            onclick="showPinDetails({{ json_encode($transfer) }})">
+                                                            <i class="fas fa-info-circle me-1"></i>Detail
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="text-center mt-3">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-light"
+                                            onclick="activatePin('{{ $downlines[0]['code'] }}')">
+                                            <i class="fas fa-play me-2"></i>Order Pin
+                                        </button>
+                                        <button type="button" class="btn btn-outline-light" onclick="viewPinHistory({{ json_encode($transfer) }})">
+                                            <i class="fas fa-history me-2"></i>Riwayat PIN
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+        @endif
+
         <!-- Statistics Cards -->
         <div class="row mb-4">
             <div class="col-md-4">
@@ -96,6 +296,7 @@
                 </div>
             </div>
         </div>
+
         <!-- Referral Section -->
         <div class="row">
             <div class="col-md-8">
@@ -117,8 +318,8 @@
                             <div class="col">
                                 <h5 class="mb-2 text-white"><b>Kode Referral Anda</b></h5>
                                 <div class="mb-2">
-                                    <span id="referralCode" class="badge bg-info text-white fs-6 px-3 py-2" role="button"
-                                        onclick="copyReferral()">
+                                    <span id="referralCode" class="badge bg-info text-white fs-6 px-3 py-2"
+                                        role="button" onclick="copyReferral()">
                                         {{ $refCode ?? 'Tidak ada kode' }}
                                     </span>
                                 </div>
@@ -153,8 +354,8 @@
                                     <div class="col-auto">
                                         <div class="d-inline-block p-2 rounded-circle">
                                             {{-- <i class="fas fa-kaaba" style="font-size: 20px; color: #ffd700;"></i> --}}
-                                            <img src="{{ asset('images/religion.png') }}" alt="" class="img-fluid"
-                                                width="100">
+                                            <img src="{{ asset('images/religion.png') }}" alt=""
+                                                class="img-fluid" width="100">
                                         </div>
                                     </div>
 
@@ -163,7 +364,7 @@
                                         <div class="row align-items-center">
                                             <div class="col-md-7">
                                                 <h6 class="fw-bold mb-1" style="color: #ffd700; font-size: 30px;">
-                                                    VOUCHER UMROH 
+                                                    VOUCHER UMROH
                                                 </h6>
                                                 <div class="mb-1">
                                                     <span class="h5 fw-bold mb-0" style="color: #ffd700;">
@@ -433,6 +634,220 @@
             });
         }
 
+        // PIN Transfer Functions
+        function copyPinCode(pinCode) {
+            navigator.clipboard.writeText(pinCode).then(function() {
+                toastr.success(`PIN ${pinCode} berhasil disalin!`, 'Berhasil', {
+                    timeOut: 2000,
+                    progressBar: true
+                });
+            }).catch(function(err) {
+                console.error('Gagal menyalin:', err);
+                toastr.error('Gagal menyalin kode PIN', 'Error');
+            });
+        }
+
+        function showPinDetails(transfer) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Detail PIN Transfer',
+                    html: `
+                        <div class="text-start">
+                            <div class="card border-0 mb-3" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                <div class="card-body text-white p-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-auto">
+                                            <div class="bg-white bg-opacity-20 rounded-circle p-2">
+                                                <i class="fas fa-key" style="font-size: 20px;"></i>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <h6 class="mb-1">PIN Code</h6>
+                                            <div class="badge bg-light text-dark px-3 py-1">${transfer.pin_code}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6 class="text-primary mb-2">
+                                    <i class="fas fa-user me-2"></i>Purchased By
+                                </h6>
+                                <div class="border rounded p-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-success rounded-circle d-flex align-items-center justify-content-center me-3" 
+                                             style="width: 45px; height: 45px;">
+                                            <i class="fas fa-user text-white"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">${transfer.owner.name}</div>
+                                            <small class="text-muted">@${transfer.owner.username}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <div class="text-center border rounded p-2">
+                                        <div class="fw-bold text-primary">${transfer.bagan}</div>
+                                        <small class="text-muted">Bagan Type</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center border rounded p-2">
+                                        <div class="fw-bold text-success">Rp ${transfer.price.toLocaleString('id-ID')}</div>
+                                        <small class="text-muted">Nilai PIN</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <h6 class="text-info mb-2">
+                                    <i class="fas fa-info-circle me-2"></i>Informasi Transfer
+                                </h6>
+                                <ul class="list-unstyled mb-0">
+                                    <li><strong>Tanggal:</strong> ${new Date(transfer.transferred_date).toLocaleDateString('id-ID', {
+                                        year: 'numeric', 
+                                        month: 'long', 
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}</li>
+                                    <li><strong>Status:</strong> <span class="badge bg-success">${transfer.status}</span></li>
+                                    <li><strong>Berlaku:</strong> Sampai digunakan</li>
+                                </ul>
+                            </div>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    // confirmButtonText: 'Order PIN',
+                    cancelButtonText: 'Tutup',
+                    confirmButtonColor: '#667eea',
+                    cancelButtonColor: '#6c757d',
+                    customClass: {
+                        popup: 'swal-compact'
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // activatePin(transfer.pin_code);
+                    }
+                });
+            } else {
+                alert(
+                    `PIN Details:\nCode: ${transfer.code}\nFrom: ${transfer.owner.name}\nValue: Rp ${transfer.price.toLocaleString('id-ID')}\nType: ${transfer.bagan}`
+                );
+            }
+        }
+
+        function activatePin(pinCode) {
+            if (typeof Swal !== 'undefined') {
+                // Swal.fire({
+                //     title: 'Konfirmasi Aktivasi',
+                //     text: `Apakah Anda yakin ingin mengaktifkan PIN ${pinCode}?`,
+                //     icon: 'question',
+                //     showCancelButton: true,
+                //     confirmButtonText: 'Ya, Aktivasi!',
+                //     cancelButtonText: 'Batal',
+                //     confirmButtonColor: '#28a745',
+                //     cancelButtonColor: '#dc3545'
+                // }).then((result) => {
+                //     if (result.isConfirmed) {
+                //         // Simulate activation process
+                //         Swal.fire({
+                //             title: 'Mengaktifkan PIN...',
+                //             text: 'Mohon tunggu sebentar',
+                //             allowOutsideClick: false,
+                //             didOpen: () => {
+                //                 Swal.showLoading();
+
+                //                 // Simulate API call
+                //                 setTimeout(() => {
+                //                     Swal.fire({
+                //                         title: 'Berhasil!',
+                //                         text: 'PIN telah berhasil diaktifkan',
+                //                         icon: 'success',
+                //                         confirmButtonText: 'OK'
+                //                     }).then(() => {
+                //                         // Reload page or update UI
+                //                         location.reload();
+                //                     });
+                //                 }, 2000);
+                //             }
+                //         });
+                //     }
+                // });
+                Swal.fire({
+                    title: 'Order PIN...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+
+                        // Simulate API call
+                        setTimeout(() => {
+                            Swal.fire({
+                                title: 'Berhasil!',
+                                text: 'PIN telah berhasil di order',
+                                icon: 'success',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                // Reload page or update UI
+                                location.reload();
+                            });
+                        }, 2000);
+                    }
+                });
+            } else {
+                if (confirm(`Order PIN ${pinCode}?`)) {
+                    alert('PIN berhasil diorder!');
+                    location.reload();
+                }
+            }
+        }
+
+        function viewPinHistory(transfer) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Riwayat PIN Transfer',
+                    html: `
+                        <div class="text-start">
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>PIN Code</th>
+                                            <th>From</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td><code>${transfer.code}</code></td>
+                                            <td>${transfer.owner.name}</td>
+                                            <td><span class="badge bg-success">${transfer.status}</span></td>
+                                            <td>${transfer.transferred_date}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-center mt-3">
+                                <small class="text-muted">Menampilkan 10 riwayat terakhir</small>
+                            </div>
+                        </div>
+                    `,
+                    confirmButtonText: 'Tutup',
+                    confirmButtonColor: '#6c757d',
+                    customClass: {
+                        popup: 'swal-wide'
+                    }
+                });
+            } else {
+                alert('Fitur riwayat PIN dalam pengembangan');
+            }
+        }
+
         // Open upgrade modal
         function openUpgradeModal(button) {
             const bagan = button.getAttribute('data-bagan');
@@ -642,19 +1057,12 @@
                 );
             }
         }
-
-        // Copy referral link function
-        function copyReferralLink() {
-            const link = document.getElementById('referralLink').textContent;
-            navigator.clipboard.writeText(link).then(function() {
-                if (typeof toastr !== 'undefined') {
-                    toastr.success('Link referral berhasil disalin!', 'Berhasil');
-                }
-            }).catch(function(err) {
-                if (typeof toastr !== 'undefined') {
-                    toastr.error('Gagal menyalin link referral', 'Error');
-                }
-            });
-        }
     </script>
+
+    <style>
+        .swal-wide {
+            width: 90% !important;
+            max-width: 700px !important;
+        }
+    </style>
 @endpush

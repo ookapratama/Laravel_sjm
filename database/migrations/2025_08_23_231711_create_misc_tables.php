@@ -14,6 +14,7 @@ return new class extends Migration {
 
         Schema::create('income_details', function (Blueprint $table) {
             $table->id();
+            $table->date('date');
             // Dump tidak mendeskripsikan kolom selain id+timestamps
             $table->timestamps();
         });
