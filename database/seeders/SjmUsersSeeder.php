@@ -12,6 +12,57 @@ class SjmUsersSeeder extends Seeder
     {
         $now = now();
 
+        // Admin
+        User::updateOrCreate(
+            ['username' => "admin"],
+            [
+                'name'              => "SJM Admin",
+                'email'             => "admin@sjm.local",
+                'password'          => Hash::make('admin'),
+                'referral_code'     => sprintf('ADM%03d', 1),
+                'joined_at'         => $now,
+                'is_active'         => true,
+                'role'              => 'admin',     // biarkan default kalau tak perlu
+                'no_telp'           => '',
+                'sponsor_id'        => null,
+                'upline_id'         => null,
+            ]
+        );
+
+        // Super Admin
+        User::updateOrCreate(
+            ['username' => "superadmin"],
+            [
+                'name'              => "Super Admin",
+                'email'             => "superadmin@sjm.local",
+                'password'          => Hash::make('superadmin'),
+                'referral_code'     => sprintf('SPRADM%03d', 1),
+                'joined_at'         => $now,
+                'is_active'         => true,
+                'role'              => 'super-admin',     // biarkan default kalau tak perlu
+                'no_telp'           => '',
+                'sponsor_id'        => null,
+                'upline_id'         => null,
+            ]
+        );
+
+        // Finance
+        User::updateOrCreate(
+            ['username' => "finance"],
+            [
+                'name'              => "Finance",
+                'email'             => "finance@sjm.local",
+                'password'          => Hash::make('finance'),
+                'referral_code'     => sprintf('FNC%03d', 1),
+                'joined_at'         => $now,
+                'is_active'         => true,
+                'role'              => 'finance',     // biarkan default kalau tak perlu
+                'no_telp'           => '',
+                'sponsor_id'        => null,
+                'upline_id'         => null,
+            ]
+        );
+
         // 15 user untuk SJM
         for ($i = 1; $i <= 15; $i++) {
             User::updateOrCreate(

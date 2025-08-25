@@ -79,9 +79,9 @@
                                 </td>
                                 <td class="d-flex gap-1">
                                     @if ($r->status === 'requested')
-                                        {{-- APPROVE --}}
+                                        {{-- ✅ APPROVE FORM - Fixed data-id --}}
                                         <form method="POST" action="{{ route('finance.pin.approve', $r->id) }}"
-                                            class="d-inline approve-form">
+                                            class="d-inline approve-form" data-id="{{ $r->id }}">
                                             @csrf @method('PUT')
                                             <input type="hidden" name="payment_method"
                                                 value="{{ $r->payment_method ?: 'transfer' }}" />
@@ -90,9 +90,10 @@
                                             <button class="btn btn-success btn-sm" type="submit">Approve</button>
                                         </form>
 
-                                        {{-- REJECT (modal textarea cepat) --}}
+                                        {{-- ✅ REJECT BUTTON - Pastikan data-id ada --}}
                                         <button class="btn btn-danger btn-sm" data-bs-toggle="modal"
-                                            data-bs-target="#rejectModal" data-id="{{ $r->id }}">
+                                            data-bs-target="#rejectModal" data-id="{{ $r->id }}"
+                                            data-requester="{{ $r->requester->name }}">
                                             Reject
                                         </button>
                                     @else
@@ -126,21 +127,32 @@
         </div>
     </div>
 
-    {{-- Modal Reject --}}
+    {{-- ✅ MODAL REJECT - Tambahkan action placeholder --}}
     <div class="modal fade" id="rejectModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
-            <form class="modal-content" method="POST" id="rejectForm">
+            <form class="modal-content" method="POST" id="rejectForm" action="">
                 @csrf @method('PUT')
                 <div class="modal-header bg-danger text-white">
                     <h6 class="modal-title">Tolak Permintaan</h6>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div id="requester-info" class="mb-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="fas fa-user me-2"></i>
+                            <strong>Requester:</strong> <span id="requester-name"></span>
+                        </div>
+                    </div>
                     <label class="form-label">Alasan penolakan</label>
-                    <textarea name="finance_notes" class="form-control" rows="3" required></textarea>
+                    <textarea name="finance_notes" class="form-control" rows="3" required
+                        placeholder="Masukkan alasan penolakan yang jelas..."></textarea>
+                    <small class="text-muted">Alasan ini akan dikirim ke requester</small>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-danger">Kirim Penolakan</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-times me-1"></i>Kirim Penolakan
+                    </button>
                 </div>
             </form>
         </div>
@@ -149,56 +161,197 @@
 
 @push('scripts')
     <script>
-        (function() {
-            // Preview bukti: image/pdf
-            const proofModal = document.getElementById('proofModal');
-            proofModal?.addEventListener('show.bs.modal', e => {
-                const btn = e.relatedTarget;
-                const url = btn.getAttribute('data-url');
-                const title = btn.getAttribute('data-title') || 'Bukti';
-                document.getElementById('proofTitle').textContent = title;
-                const body = document.getElementById('proofBody');
-                body.innerHTML = '';
-                if (url.endsWith('.pdf')) {
-                    body.innerHTML = `<iframe src="${url}" style="width:100%;height:70vh;border:0;"></iframe>`;
-                } else {
-                    body.innerHTML =
-                        `<img src="${url}" style="max-width:100%;max-height:70vh;border-radius:8px;">`;
-                }
-            });
-
-            // Reject modal: set action ke route reject
-            const rejectModal = document.getElementById('rejectModal');
-            rejectModal?.addEventListener('show.bs.modal', e => {
-                const id = e.relatedTarget.getAttribute('data-id');
-                const form = document.getElementById('rejectForm');
-                form.action = "{{ url('/finance/pin-requests') }}/" + id + "/reject";
-            });
-        })();
-
         document.addEventListener('DOMContentLoaded', function() {
+
+            // ✅ PROOF MODAL - Preview bukti pembayaran
+            const proofModal = document.getElementById('proofModal');
+            if (proofModal) {
+                proofModal.addEventListener('show.bs.modal', function(e) {
+                    const btn = e.relatedTarget;
+                    const url = btn.getAttribute('data-url');
+                    const title = btn.getAttribute('data-title') || 'Bukti';
+
+                    document.getElementById('proofTitle').textContent = title;
+                    const body = document.getElementById('proofBody');
+                    body.innerHTML = '';
+
+                    if (url.endsWith('.pdf')) {
+                        body.innerHTML =
+                            `<iframe src="${url}" style="width:100%;height:70vh;border:0;"></iframe>`;
+                    } else {
+                        body.innerHTML =
+                            `<img src="${url}" style="max-width:100%;max-height:70vh;border-radius:8px;">`;
+                    }
+                });
+            }
+
+            // ✅ REJECT MODAL - Set form action dan info
+            const rejectModal = document.getElementById('rejectModal');
+            if (rejectModal) {
+                rejectModal.addEventListener('show.bs.modal', function(e) {
+                    const button = e.relatedTarget;
+                    const id = button.getAttribute('data-id');
+                    const requesterName = button.getAttribute('data-requester');
+                    const form = document.getElementById('rejectForm');
+
+                    console.group('🔍 Reject Modal Debug');
+                    console.log('Button clicked:', button);
+                    console.log('PIN Request ID:', id);
+                    console.log('Requester name:', requesterName);
+                    console.log('Form element:', form);
+                    console.groupEnd();
+
+                    if (!form) {
+                        console.error('❌ Form #rejectForm not found!');
+                        return;
+                    }
+
+                    if (!id) {
+                        console.error('❌ No data-id found on button!');
+                        Swal.fire('Error!', 'ID tidak ditemukan. Refresh halaman dan coba lagi.', 'error');
+                        return;
+                    }
+
+                    // ✅ Set form action menggunakan route helper
+                    const routeTemplate = "{{ route('finance.pin.reject', ':id') }}";
+                    form.action = routeTemplate.replace(':id', id);
+
+                    console.log('✅ Form action set to:', form.action);
+
+                    // ✅ Set requester info jika ada
+                    if (requesterName) {
+                        document.getElementById('requester-name').textContent = requesterName;
+                        document.getElementById('requester-info').style.display = 'block';
+                    } else {
+                        document.getElementById('requester-info').style.display = 'none';
+                    }
+
+                    // ✅ Clear textarea
+                    const textarea = form.querySelector('textarea[name="finance_notes"]');
+                    if (textarea) {
+                        textarea.value = '';
+                        textarea.focus();
+                    }
+                });
+            }
+
+            // ✅ APPROVE FORM - Fixed event handler
             document.querySelectorAll('.approve-form').forEach((form) => {
                 form.addEventListener('submit', function(e) {
-                    e.preventDefault(); // Mencegah submit form default
+                    e.preventDefault(); // Prevent default submit
 
-                    const requestId =
-                    {{ $r->id }}; // Ambil ID dari PHP atau dari data-attribute jika di loop
+                    // ✅ Get ID from form data attribute
+                    const requestId = this.getAttribute('data-id');
+
+                    console.log('Approve request ID:', requestId);
+
+                    if (!requestId) {
+                        console.error('❌ No request ID found');
+                        Swal.fire('Error!', 'ID permintaan tidak ditemukan.', 'error');
+                        return;
+                    }
+
                     Swal.fire({
-                        title: 'Approve request #' + requestId + '?',
+                        title: 'Approve Request #' + requestId + '?',
                         text: 'Anda yakin ingin menyetujui permintaan ini?',
-                        icon: 'warning',
+                        icon: 'question',
                         showCancelButton: true,
-                        confirmButtonColor: '#3085d6',
-                        cancelButtonColor: '#d33',
-                        confirmButtonText: 'Ya, Setujui!',
-                        cancelButtonText: 'Batal',
+                        confirmButtonColor: '#28a745',
+                        cancelButtonColor: '#dc3545',
+                        confirmButtonText: '<i class="fas fa-check me-1"></i>Ya, Setujui!',
+                        cancelButtonText: '<i class="fas fa-times me-1"></i>Batal',
+                        reverseButtons: true
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            form.submit(); // Jika dikonfirmasi, submit form
+                            // Show loading
+                            Swal.fire({
+                                title: 'Processing...',
+                                text: 'Sedang memproses persetujuan',
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                willOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+
+                            this.submit(); // Submit form
                         }
                     });
                 });
             });
+
+            // ✅ REJECT FORM - Add submit handler with confirmation
+            const rejectForm = document.getElementById('rejectForm');
+            if (rejectForm) {
+                rejectForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const textarea = this.querySelector('textarea[name="finance_notes"]');
+                    const reason = textarea.value.trim();
+
+                    if (reason.length < 10) {
+                        Swal.fire('Perhatian!', 'Alasan penolakan minimal 10 karakter.', 'warning');
+                        textarea.focus();
+                        return;
+                    }
+
+                    Swal.fire({
+                        title: 'Tolak Permintaan?',
+                        text: 'Anda yakin ingin menolak permintaan ini?',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '<i class="fas fa-times me-1"></i>Ya, Tolak!',
+                        cancelButtonText: '<i class="fas fa-arrow-left me-1"></i>Batal',
+                        reverseButtons: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Show loading
+                            Swal.fire({
+                                title: 'Processing...',
+                                text: 'Sedang memproses penolakan',
+                                allowOutsideClick: false,
+                                showConfirmButton: false,
+                                willOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+
+                            this.submit(); // Submit form
+                        }
+                    });
+                });
+            }
         });
+
+        // ✅ SHOW SUCCESS/ERROR MESSAGES
+        @if (session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil!',
+                text: '{{ session('success') }}',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        @endif
+
+        @if (session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal!',
+                text: '{{ session('error') }}',
+                confirmButtonColor: '#dc3545'
+            });
+        @endif
+
+        @if ($errors->any())
+            Swal.fire({
+                icon: 'error',
+                title: 'Validasi Gagal!',
+                html: '<ul class="text-start">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>',
+                confirmButtonColor: '#dc3545'
+            });
+        @endif
     </script>
 @endpush

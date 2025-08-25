@@ -36,36 +36,38 @@ use App\Http\Controllers\InvitationController;
 use App\Http\Controllers\GuestEntryController;
 
 use App\Http\Controllers\GuestbookController;
+use App\Models\PinRequest;
 
 Route::middleware('auth')->group(function () {
-    Route::get('member/guestbook',        [GuestbookController::class,'index'])->name('guestbook.index');
-    Route::get('member/guestbook/export', [GuestbookController::class,'export'])->name('guestbook.export');
+    Route::get('member/guestbook',        [GuestbookController::class, 'index'])->name('guestbook.index');
+    Route::get('member/guestbook/export', [GuestbookController::class, 'export'])->name('guestbook.export');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::get('/member/invitations',                 [InvitationController::class,'index'])->name('inv.index');
-    Route::get('/member/invitations/create',          [InvitationController::class,'create'])->name('inv.create');
-    Route::post('/member/invitations',                [InvitationController::class,'store'])->name('inv.store');
-    Route::get('/member/invitations/{invitation}/edit',[InvitationController::class,'edit'])->name('inv.edit');
-    Route::put('/member/invitations/{invitation}',    [InvitationController::class,'update'])->name('inv.update');
-    Route::get('/member/invitations/{invitation}/qr', [InvitationController::class,'qr'])->name('inv.qr');
+    Route::get('/member/invitations',                 [InvitationController::class, 'index'])->name('inv.index');
+    Route::get('/member/invitations/create',          [InvitationController::class, 'create'])->name('inv.create');
+    Route::post('/member/invitations',                [InvitationController::class, 'store'])->name('inv.store');
+    Route::get('/member/invitations/{invitation}/edit', [InvitationController::class, 'edit'])->name('inv.edit');
+    Route::put('/member/invitations/{invitation}',    [InvitationController::class, 'update'])->name('inv.update');
+    Route::get('/member/invitations/{invitation}/qr', [InvitationController::class, 'qr'])->name('inv.qr');
 });
 Route::get('/i/{slug}/r/{ref}', function (string $slug, string $ref) {
-    return redirect()->to(route('inv.public', $slug).'?ref='.$ref, 302);
+    return redirect()->to(route('inv.public', $slug) . '?ref=' . $ref, 302);
 })->name('inv.public.ref');
-Route::get('/i/{slug}',                  [InvitationController::class,'publicShow'])->name('inv.public');
-Route::get('/i/{slug}/g',                [GuestEntryController::class,'form'])->name('guest.form.inv');
-Route::post('/i/{slug}/g',               [GuestEntryController::class,'store'])->name('guest.store.inv');
-Route::get('/i/{slug}/thanks',           [GuestEntryController::class,'thanks'])->name('guest.thanks.inv');
+Route::get('/i/{slug}',                  [InvitationController::class, 'publicShow'])->name('inv.public');
+Route::get('/i/{slug}/g',                [GuestEntryController::class, 'form'])->name('guest.form.inv');
+Route::post('/i/{slug}/g',               [GuestEntryController::class, 'store'])->name('guest.store.inv');
+Route::get('/i/{slug}/thanks',           [GuestEntryController::class, 'thanks'])->name('guest.thanks.inv');
 
 // ambil QR ulang
-Route::get ('/inv/{invitation:slug}/my-qr',  [GuestEntryController::class,'myQrForm'])->name('guest_entries.myqr.form');
-Route::post('/inv/{invitation:slug}/my-qr',  [GuestEntryController::class,'myQrFetch'])->name('guest_entries.myqr.fetch');
+Route::get('/inv/{invitation:slug}/my-qr',  [GuestEntryController::class, 'myQrForm'])->name('guest_entries.myqr.form');
+Route::post('/inv/{invitation:slug}/my-qr',  [GuestEntryController::class, 'myQrFetch'])->name('guest_entries.myqr.fetch');
 
 // check-in (signed)
-Route::get('/inv/{invitation:slug}/entry/{entry}/check-in',
-  [GuestEntryController::class,'checkInScan']
-)->name('guest_entries.scan_checkin')->middleware(['signed','throttle:30,1']);
+Route::get(
+    '/inv/{invitation:slug}/entry/{entry}/check-in',
+    [GuestEntryController::class, 'checkInScan']
+)->name('guest_entries.scan_checkin')->middleware(['signed', 'throttle:30,1']);
 
 Route::middleware(['auth'])->group(function () {
     Route::get('/pins/unused', [\App\Http\Controllers\TreeCloneController::class, 'unusedPins'])->name('pins.unused');
@@ -79,7 +81,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/me/ref-qr.png', [ReferralQrController::class, 'png'])->name('member.ref.qr.png');
     Route::get('/me/ref-qr/download', [ReferralQrController::class, 'download'])->name('member.ref.qr.download');
-     Route::get('/inv-qr/{slug}', [ReferralQrController::class, 'invitationPng'])->name('inv.qr.show');
+    Route::get('/inv-qr/{slug}', [ReferralQrController::class, 'invitationPng'])->name('inv.qr.show');
     Route::get('/inv-qr/{slug}/download', [ReferralQrController::class, 'invitationDownload'])->name('inv.qr.dl');
 });
 
@@ -107,12 +109,12 @@ Route::post('/notifications/{id}/read', function ($id) {
     $notif = Notification::where('id', $id)
         ->where('user_id', auth()->id())
         ->firstOrFail();
-  
+
     $notif->update(['is_read' => true]);
 
     return response()->json(['success' => true]);
 })->middleware('auth');
-  
+
 Route::post('/notifications/mark-all-read', function () {
     $updated = Notification::where('user_id', auth()->id())
         ->where('is_read', false)
@@ -139,7 +141,7 @@ Route::get('/test-notification/{userId}', function ($userId) {
         return response()->json(['error' => $e->getMessage()], 500);
     }
 })->middleware('auth');
-    
+
 
 Route::post('/broadcasting/auth', function (\Illuminate\Http\Request $request) {
     if (!Auth::check()) {
@@ -292,6 +294,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/register', [UserController::class, 'store_member'])->name('users.downline.store');
         Route::get('/pins', [MemberPinCtrl::class, 'index'])->name('member.pin.index');
         Route::post('/pins/request', [MemberPinCtrl::class, 'store'])->name('member.pin.request');
+        Route::post('/transfer', [MemberPinCtrl::class, 'transfer'])->name('member.pin.transfer');
         Route::get('/', [DashboardController::class, 'member'])->name('member');
         Route::get('/withdraw', [MemberWithdrawController::class, 'index'])->name('member.withdraw');
         Route::post('/withdraw', [MemberWithdrawController::class, 'store'])->name('member.withdraw.store');
@@ -324,12 +327,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::put('/{id}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     });
-Route::middleware('role:super-admin,finance')->group(function () {
-     Route::get('/tree-master', [MLMController::class, 'master'])->name('master.index');
-});
+    Route::middleware('role:super-admin,finance')->group(function () {
+        Route::get('/tree-master', [MLMController::class, 'master'])->name('master.index');
+    });
     // ✅ Tree & Binary MLM
     Route::get('/tree', [MLMController::class, 'tree'])->name('tree.index');
-   
+
     Route::get('/tree/node/{id}', [MLMController::class, 'getNode']);
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
     Route::get('/users/ajax/{id}', [MLMController::class, 'ajax']);

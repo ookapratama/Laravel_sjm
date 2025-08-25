@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\BonusTransaction;
 use App\Models\IncomeDetail;
 use App\Helpers\TreeHelper;
+use App\Models\ActivationPin;
 use App\Models\Withdrawal;
 use App\Models\User;
 use App\Models\Notification;
@@ -161,7 +162,11 @@ class DashboardController extends Controller
 
         $saldoBonusTersedia = $totalBonusPaid - $totalWithdrawn;
         $pajakSaldo = $saldoBonusTersedia * 0.05;
-        // dd($saldoBonusTersedia - $pajakSaldo);
+
+        // member downline
+        $downlines = ActivationPin::where('transferred_to', $user->id)->orderBy('id', 'asc')->get();
+        // dd($downlines);
+
         return view('dashboards.member', [
             'user' => $user,
             'userBagans' => $userBagans,
@@ -171,6 +176,7 @@ class DashboardController extends Controller
             'leftDownline' => $leftDownline,
             'rightDownline' => $rightDownline,
             'saldoBonusTersedia' => $saldoBonusTersedia,
+            'downlines' => $downlines,
         ]);
     }
 }
