@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use App\Events\MemberCountUpdated;
+use App\Events\PairingDownline;
 use App\Services\BonusManager;
 // use DB;
 use Illuminate\Support\Facades\Log;
@@ -25,23 +26,32 @@ class UserController extends Controller
 {
     public function index()
     {
-        $userId = auth()->id();
+        try {
+            //code...
+            $userId = auth()->id();
 
-        $users = collect(DB::select("
-            WITH RECURSIVE downlines AS (
-                SELECT id, username,name, upline_id, sponsor_id,email,position
-                FROM users
-                WHERE upline_id = ?
-
-                UNION ALL
-
-                SELECT u.id, u.username,u.name, u.upline_id, u.sponsor_id,u.email,u.position
-                FROM users u
-                INNER JOIN downlines d ON u.upline_id = d.id
-            )
-            SELECT * FROM downlines
-        ", [$userId]));
-        return view('users.index', compact('users'));
+            $users = collect(DB::select("
+                WITH RECURSIVE downlines AS (
+                    SELECT id, username,name, upline_id, sponsor_id,email,position
+                    FROM users
+                    WHERE upline_id = ?
+    
+                    UNION ALL
+    
+                    SELECT u.id, u.username,u.name, u.upline_id, u.sponsor_id,u.email,u.position
+                    FROM users u
+                    INNER JOIN downlines d ON u.upline_id = d.id
+                )
+                SELECT * FROM downlines
+            ", [$userId]));
+            return view('users.index', compact('users'));
+        } catch (\Exception $e) {
+            \Log::error('Gagal akses halaman: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat akses halaman',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function store(Request $request)
@@ -271,6 +281,11 @@ class UserController extends Controller
                 'ref'              => ['required', 'string'],
                 'pin_aktivasi'     => ['required', 'string'],
 
+                // Tree placement fields
+                'tree_upline_id' => ['nullable', 'exists:users,id'],
+                'tree_position' => ['nullable', 'in:left,right'],
+                'register_method' => ['nullable', 'string'],
+
                 'name'             => ['required', 'string', 'max:255'],
                 'username'         => ['required', 'alpha_dash', 'min:4', 'max:30', 'unique:users,username'],
                 'email'            => ['nullable', 'email', 'max:255'],
@@ -298,9 +313,11 @@ class UserController extends Controller
                 'hubungan_ahli_waris'  => ['nullable', 'string', 'max:100'],
 
                 'agree'            => ['accepted'],
+
             ], [
                 'agree.accepted' => 'Anda harus menyetujui syarat & ketentuan.',
             ]);
+
 
             // 2) Validasi sponsor
             $sponsor = User::where('referral_code', $validated['ref'])
@@ -313,6 +330,10 @@ class UserController extends Controller
                     'errors'  => ['ref' => ['Kode referal tidak valid.']],
                 ], 422);
             }
+
+
+
+
 
             // 3) Transaksi: klaim PIN + buat user + profil
             $user = DB::transaction(function () use ($validated, $sponsor) {
@@ -375,12 +396,45 @@ class UserController extends Controller
                 return $user;
             });
 
-            // 4) Auto-login dan balas JSON
-            // auth()->login($user);
+            if (!is_null($request->register_method)) {
+                $getUser = User::find(auth()->id());
+                $user->upline_id = $validated['tree_upline_id'];
+                $user->position = $validated['tree_position'];
+                $user->save();
+
+
+                DB::commit();
+
+                ProcessPairingJob::dispatch($user);
+
+                // Jika ingin tetap asynchronous
+                Notification::create([
+                    'user_id' => $user->id,
+                    'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
+                    'url' => route('tree.index'),
+                ]);
+
+                // Broadcast via Pusher
+                event(new PairingDownline($user->id, [
+                    'type' => 'pairing_downProcessPairingJobline', // atau 'preregistration_received' jika Anda ingin beda
+                    'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
+                    'url' => route('tree.index'),
+                    'created_at' => now()->toDateTimeString()
+                ]));
+
+                \Log::info('PIN Request Rejected and Notification Sent', [
+                    'user_id' => 'User berhasil dipasang ke tree dan pairing diproses.',
+                    'message' => $user->id,
+                ]);
+            }
+
+            $route = $request->register_method === 'from_tree' ? route('tree.index') :  route('users.downline');
+            $message = $request->register_method === 'from_tree' ? 'User berhasil disimpan dan di pairing. Akun user telah aktif.' :  'User berhasil disimpan. Akun user telah aktif.';
 
             return response()->json([
-                'success'  => 'User berhasil disimpan. Akun user telah aktif.',
-                'redirect' => route('users.downline'),
+                'success'  => $message,
+                // 'redirect' => route('users.downline'),
+                'redirect' => $route,
             ]);
         } catch (ValidationException $e) {
             return response()->json([
