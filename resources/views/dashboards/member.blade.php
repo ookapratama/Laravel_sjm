@@ -368,7 +368,7 @@
                                     </div>
                                     <div class="text-end">
                                         <span class="pin-badge">
-                                            {{ $downlines[0]['code'] }}
+                                            {{ $downlines[0]['code'] ?? '-' }}
                                         </span>
                                     </div>
                                 </div>

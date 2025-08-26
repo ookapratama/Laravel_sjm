@@ -143,40 +143,50 @@ class DashboardController extends Controller
 
     public function member()
     {
-        $user = Auth::user();
-        $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('amount');
-        $totalBonusnet = BonusTransaction::where('user_id', $user->id)
-            ->where('status', 'paid')
-            ->sum('amount');
-        $userBagans = $user->bagans()->orderBy('bagan')->get();
-        $userBaganAktif = $userBagans->pluck('bagan')->toArray(); // array angka: [1, 2]
-        $leftDownline = TreeHelper::countDownlines($user, 'left');
-        $rightDownline = TreeHelper::countDownlines($user, 'right');
-        $totalBonusPaid = BonusTransaction::where('user_id', $user->id)
-            ->where('status', 'paid')
-            ->sum('amount');
-
-        $totalWithdrawn = Withdrawal::where('user_id', $user->id)
-            ->where('status', 'approved')
-            ->sum('amount');
-
-        $saldoBonusTersedia = $totalBonusPaid - $totalWithdrawn;
-        $pajakSaldo = $saldoBonusTersedia * 0.05;
-
-        // member downline
-        $downlines = ActivationPin::where('transferred_to', $user->id)->orderBy('id', 'asc')->get();
-        // dd($downlines);
-
-        return view('dashboards.member', [
-            'user' => $user,
-            'userBagans' => $userBagans,
-            'userBaganAktif' => $userBaganAktif,
-            'totalBonus' => $totalBonus,
-            'totalBonusnett' => $saldoBonusTersedia,
-            'leftDownline' => $leftDownline,
-            'rightDownline' => $rightDownline,
-            'saldoBonusTersedia' => $saldoBonusTersedia,
-            'downlines' => $downlines,
-        ]);
+        try {
+            //code...
+            $user = Auth::user();
+            $totalBonus = BonusTransaction::where('user_id', $user->id)->sum('amount');
+            $totalBonusnet = BonusTransaction::where('user_id', $user->id)
+                ->where('status', 'paid')
+                ->sum('amount');
+            $userBagans = $user->bagans()->orderBy('bagan')->get();
+            $userBaganAktif = $userBagans->pluck('bagan')->toArray(); // array angka: [1, 2]
+            $leftDownline = TreeHelper::countDownlines($user, 'left');
+            $rightDownline = TreeHelper::countDownlines($user, 'right');
+            $totalBonusPaid = BonusTransaction::where('user_id', $user->id)
+                ->where('status', 'paid')
+                ->sum('amount');
+    
+            $totalWithdrawn = Withdrawal::where('user_id', $user->id)
+                ->where('status', 'approved')
+                ->sum('amount');
+    
+            $saldoBonusTersedia = $totalBonusPaid - $totalWithdrawn;
+            $pajakSaldo = $saldoBonusTersedia * 0.05;
+    
+            // member downline
+            $downlines = ActivationPin::where('transferred_to', $user->id)->orderBy('id', 'asc')->get();
+            // dd($downlines);
+    
+            return view('dashboards.member', [
+                'user' => $user,
+                'userBagans' => $userBagans,
+                'userBaganAktif' => $userBaganAktif,
+                'totalBonus' => $totalBonus,
+                'totalBonusnett' => $saldoBonusTersedia,
+                'leftDownline' => $leftDownline,
+                'rightDownline' => $rightDownline,
+                'saldoBonusTersedia' => $saldoBonusTersedia,
+                // 'downlines' => $downlines ,
+                'downlines' => [] ,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Gagal menyimpan user: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Terjadi kesalahan saat menyimpan',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }
