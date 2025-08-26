@@ -368,7 +368,7 @@
                                     </div>
                                     <div class="text-end">
                                         <span class="pin-badge">
-                                            {{ $downlines[0]['code'] }}
+                                            {{ $downlines[0]['code'] ?? '-' }}
                                         </span>
                                     </div>
                                 </div>
@@ -410,7 +410,7 @@
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <small class="opacity-75">
                                                         <i class="fas fa-clock me-1"></i>
-                                                        {{ $transfer['transferred_date'] }}
+                                                        {{ date('d/M/Y H:i', strtotime($transfer['transferred_date'])) }}
                                                     </small>
                                                     <div class="d-flex gap-2">
                                                         <button class="btn btn-light btn-sm"
@@ -436,7 +436,7 @@
                                             <i class="fas fa-play me-2"></i>Order Pin
                                         </button>
                                         <button type="button" class="btn btn-outline-light"
-                                            onclick="viewPinHistory({{ json_encode($transfer) }})">
+                                            onclick="viewPinHistory({{ json_encode($downlines) }})">
                                             <i class="fas fa-history me-2"></i>Riwayat PIN
                                         </button>
                                     </div>
@@ -1063,7 +1063,7 @@
                                         </div>
                                         <div class="col">
                                             <h6 class="mb-1">PIN Code</h6>
-                                            <div class="badge bg-light text-dark px-3 py-1">${transfer.pin_code}</div>
+                                            <div class="badge bg-light text-dark px-3 py-1">${transfer.code}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -1206,37 +1206,55 @@
             }
         }
 
-        function viewPinHistory(transfer) {
+        function viewPinHistory(transfers) {
+            // console.log(transfer)
             if (typeof Swal !== 'undefined') {
+                let tableRows = '';
+                transfers.forEach(transfer => {
+                    const statusBadge = getStatusBadge(transfer.status);
+                    const formattedDate = new Date(transfer.transferred_date).toLocaleDateString('id-ID', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: 'numeric',
+                    });
+
+                    tableRows += `
+                    <tr>
+                        <td><code>${transfer.code}</code></td>
+                        <td>${transfer.owner.name}</td>
+                        <td>${statusBadge}</td>
+                        <td>${formattedDate}</td>
+                    </tr>
+                `;
+                });
+
+                // Show modal with data
                 Swal.fire({
                     title: 'Riwayat PIN Transfer',
                     html: `
-                        <div class="text-start">
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>PIN Code</th>
-                                            <th>From</th>
-                                            <th>Status</th>
-                                            <th>Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                            <td><code>${transfer.code}</code></td>
-                                            <td>${transfer.owner.name}</td>
-                                            <td><span class="badge bg-success">${transfer.status}</span></td>
-                                            <td>${transfer.transferred_date}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="text-center mt-3">
-                                <small class="text-muted">Menampilkan 10 riwayat terakhir</small>
-                            </div>
+                    <div class="text-start">
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>PIN Code</th>
+                                        <th>From</th>
+                                        <th>Status</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${tableRows}
+                                </tbody>
+                            </table>
                         </div>
-                    `,
+                        <div class="text-center mt-3">
+                            <small class="text-muted">Menampilkan ${transfers.length} riwayat terakhir</small>
+                        </div>
+                    </div>
+                `,
                     confirmButtonText: 'Tutup',
                     confirmButtonColor: '#6c757d',
                     customClass: {
@@ -1246,6 +1264,37 @@
             } else {
                 alert('Fitur riwayat PIN dalam pengembangan');
             }
+        }
+
+        function getStatusBadge(status) {
+            const statusConfig = {
+                'active': {
+                    class: 'bg-success',
+                    text: 'Active'
+                },
+                'transferred': {
+                    class: 'bg-info',
+                    text: 'Transferred'
+                },
+                'activated': {
+                    class: 'bg-secondary',
+                    text: 'Activated'
+                },
+                'expired': {
+                    class: 'bg-danger',
+                    text: 'Expired'
+                },
+                'pending': {
+                    class: 'bg-warning',
+                    text: 'Pending'
+                }
+            };
+
+            const config = statusConfig[status] || {
+                class: 'bg-secondary',
+                text: status
+            };
+            return `<span class="badge ${config.class}">${config.text}</span>`;
         }
 
         // Open upgrade modal
