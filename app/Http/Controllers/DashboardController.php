@@ -178,8 +178,8 @@ class DashboardController extends Controller
                 'leftDownline' => $leftDownline,
                 'rightDownline' => $rightDownline,
                 'saldoBonusTersedia' => $saldoBonusTersedia,
-                // 'downlines' => $downlines ,
-                'downlines' => [] ,
+                'downlines' => $downlines ,
+                // 'downlines' => [] ,
             ]);
         } catch (\Exception $e) {
             \Log::error('Gagal menyimpan user: ' . $e->getMessage());
