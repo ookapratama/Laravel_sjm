@@ -225,6 +225,7 @@
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
+                    console.log(data)
                     if (data.success) {
                         displayAllWithdrawals(data.withdrawals);
                         // document.getElementById('totalRecords').textContent = data.withdrawals.length;
@@ -287,7 +288,7 @@
             } else {
                 tbody.innerHTML = '';
                 document.getElementById('noHistoryMessage').style.display = 'block';
-                document.getElementById('noDataText').textContent = 'Tidak ada data withdrawal sesuai filter';
+                // document.getElementById('noDataText').textContent = 'Tidak ada data withdrawal sesuai filter';
             }
         }
 

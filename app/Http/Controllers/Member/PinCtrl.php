@@ -45,7 +45,7 @@ class PinCtrl extends Controller
         $hasOpen = $requests->contains(fn($r) => in_array($r->status, ['requested', 'finance_approved']));
 
         // member downline
-        $downlines = User::where('upline_id', auth()->id())->get();
+        $downlines = User::where('sponsor_id', auth()->id())->get();
         // $downlines = User::find( auth()->id());
         // dd($downlines);
         // $downlines = $this->getUserDownlines(auth()->user());
@@ -218,7 +218,7 @@ class PinCtrl extends Controller
             }
 
             // Validasi downline
-            $downline = User::where('id', $request->downline_id)->where('upline_id', $user->id)->first();
+            $downline = User::where('id', $request->downline_id)->where('sponsor_id', $user->id)->first();
             // dd($downline);
             if (!$downline) {
                 return response()->json([
