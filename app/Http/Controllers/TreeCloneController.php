@@ -98,6 +98,7 @@ class TreeCloneController extends Controller
     $parent  = \App\Models\User::findOrFail($r->parent_id);
     $baseUser= $r->boolean('use_login') ? $auth : $parent;
 
+
     DB::transaction(function () use ($r, $auth, $pins, $qty, $baseUser, $parent) {
         // Lock PIN milik user login
         $pinRows = ActivationPin::whereIn('code', $pins)
@@ -118,7 +119,8 @@ class TreeCloneController extends Controller
             $newSponsor  = $this->nextIncrement(($baseUser->referral_code ?? $baseUser->username), 'referral_code');
 
             // 2) Kredensial
-            $passwordPlain = \Illuminate\Support\Str::random(10);
+            // $passwordPlain = \Illuminate\Support\Str::random(10);
+            $passwordPlain = $baseUser->password;
 
             // 3) Buat user baru (email/phone sama)
             $newUser = \App\Models\User::create([
@@ -126,7 +128,7 @@ class TreeCloneController extends Controller
                 'username'     => $newUsername,
                 'email'        => $baseUser->email,
                 'phone'        => $baseUser->phone,
-                'password'     => bcrypt($passwordPlain),
+                'password'     => $passwordPlain,
                 'referral_code' => $newSponsor,
             ]);
 
