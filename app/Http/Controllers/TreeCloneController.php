@@ -130,6 +130,7 @@ class TreeCloneController extends Controller
                 'phone'        => $baseUser->phone,
                 'password'     => $passwordPlain,
                 'referral_code' => $newSponsor,
+                'sponsor_id' => $auth->id,
             ]);
 
             // 4) Clone profil (opsional)
