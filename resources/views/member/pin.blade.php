@@ -341,12 +341,12 @@
                                             </button>
                                         @endif
 
-                                        <button class="btn btn-outline-info"
+                                        {{-- <button class="btn btn-outline-info"
                                             onclick="showPinHistory({{ $p->id }})" data-bs-toggle="tooltip"
                                             title="Lihat History">
                                             <i class="fas fa-history"></i>
                                             History
-                                        </button>
+                                        </button> --}}
                                     </div>
                                 </td>
                             </tr>

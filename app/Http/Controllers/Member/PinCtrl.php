@@ -44,12 +44,22 @@ class PinCtrl extends Controller
 
         $hasOpen = $requests->contains(fn($r) => in_array($r->status, ['requested', 'finance_approved']));
 
-        // member downline
-        $downlines = User::where('sponsor_id', auth()->id())->get();
-        // $downlines = User::find( auth()->id());
-        // dd($downlines);
-        // $downlines = $this->getUserDownlines(auth()->user());
-        // Pastikan nama view sesuai file kamu: 'member.pins' atau 'member.pin'
+         $userId = auth()->id();
+
+            $downlines = collect(DB::select("
+                WITH RECURSIVE downlines AS (
+                    SELECT id, username,name, upline_id, sponsor_id,email,position
+                    FROM users
+                    WHERE upline_id = ?
+    
+                    UNION ALL
+    
+                    SELECT u.id, u.username,u.name, u.upline_id, u.sponsor_id,u.email,u.position
+                    FROM users u
+                    INNER JOIN downlines d ON u.upline_id = d.id
+                )
+                SELECT * FROM downlines
+            ", [$userId]));
         return view('member.pin', [
             'requests' => $requests,
             'pins'     => $pins,
@@ -191,99 +201,105 @@ class PinCtrl extends Controller
     }
 
     public function transfer(Request $request)
-    {
-        // dd($request->all());
-        $request->validate([
-            'pin_id' => 'required|exists:activation_pins,id',
-            'downline_id' => 'required|exists:users,id',
-            'transfer_notes' => 'nullable|string|max:500'
-        ]);
+{
+    $request->validate([
+        'pin_id'         => 'required|exists:activation_pins,id',
+        'downline_id'    => 'required|exists:users,id',
+        'transfer_notes' => 'nullable|string|max:500',
+    ]);
 
-        $user = auth()->user();
+    $user = auth()->user();
 
-        try {
-            DB::beginTransaction();
+    try {
+        DB::beginTransaction();
 
-            // Get PIN yang akan ditransfer
-            $pin = ActivationPin::where('id', $request->pin_id)
-                ->where('purchased_by', $user->id)
-                ->where('status', 'unused') // atau sesuaikan dengan status PIN available
-                ->first();
+        // Ambil PIN milik user login yang masih bisa ditransfer + kunci row
+        $pin = ActivationPin::query()
+            ->whereKey($request->pin_id)
+            ->where('purchased_by', $user->id)
+            ->where('status', 'unused') // sesuaikan jika istilah status beda
+            ->lockForUpdate()
+            ->first();
 
-            if (!$pin) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'PIN tidak ditemukan atau tidak dapat ditransfer'
-                ], 404);
-            }
-
-            // Validasi downline
-            $downline = User::where('id', $request->downline_id)->where('sponsor_id', $user->id)->first();
-            // dd($downline);
-            if (!$downline) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User bukan downline Anda'
-                ], 403);
-            }
-
-            // Update PIN
-            $pin->update([
-                'transferred_to' => $request->downline_id,
-                'status' => 'transferred',
-                'transferred_date' => now(),
-                'transferred_notes' => $request->transfer_notes
-            ]);
-
-            // Log activity
-            // activity()
-            //     ->performedOn($pin)
-            //     ->withProperties([
-            //         'pin_code' => $pin->code,
-            //         'transferred_to' => $downline->name,
-            //         'transfer_notes' => $request->transfer_notes
-            //     ])
-            //     ->log('PIN transferred to downline');
-
-            // Optional: Send notification ke downline
-            // $this->sendPinTransferNotification($downline, $pin);
-
-            // Simpan ke database (jika perlu histori)
-            Notification::create([
-                'user_id' => $request->downline_id,
-                'message' => 'Upline anda telah mentransfer pin terbaru ke anda, Silahkan cek/refresh halaman Dashboard anda',
-                'url' => route('member'),
-            ]);
-
-            // Broadcast via Pusher
-            event(new UplineTransferPin($request->downline_id, [
-                'type' => 'finance_approved', // atau 'preregistration_received' jika Anda ingin beda
-                'message' => 'Upline anda telah mentransfer pin terbaru ke anda, Silahkan cek/refresh halaman Dashboard anda',
-                'url' => route('member'),
-                'created_at' => now()->toDateTimeString()
-            ]));
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => "PIN {$pin->code} berhasil ditransfer ke {$downline->name}",
-                'data' => [
-                    'pin_code' => $pin->code,
-                    'recipient' => $downline->name,
-                    'transfer_date' => $pin->transferred_date
-                ]
-            ]);
-        } catch (\Exception $e) {
-            DB::rollback();
-            \Log::error('PIN Transfer Error: ' . $e->getMessage());
-
+        if (!$pin) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat mentransfer PIN'
-            ], 500);
+                'message' => 'PIN tidak ditemukan atau tidak dapat ditransfer'
+            ], 404);
         }
+
+        
+        $downlineRow = DB::selectOne("
+            WITH RECURSIVE downlines AS (
+                SELECT id, username, name, upline_id, sponsor_id, email, position
+                FROM users
+                WHERE upline_id = ?
+
+                UNION ALL
+
+                SELECT u.id, u.username, u.name, u.upline_id, u.sponsor_id, u.email, u.position
+                FROM users u
+                INNER JOIN downlines d ON u.upline_id = d.id
+            )
+            SELECT * FROM downlines WHERE id = ? LIMIT 1
+        ", [$user->id, $request->downline_id]);
+
+        if (!$downlineRow) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'User bukan downline Anda'
+            ], 403);
+        }
+
+        
+        $downline = User::findOrFail($request->downline_id);
+
+        // Update PIN → tandai sudah ditransfer
+        $pin->update([
+            'transferred_to'   => $downline->id,
+            'status'           => 'transferred',
+            'transferred_date' => now(),
+            'transferred_notes'=> $request->transfer_notes
+        ]);
+
+        // Simpan notifikasi ke database
+        Notification::create([
+            'user_id' => $downline->id,
+            'message' => 'Upline anda telah mentransfer pin terbaru ke anda, Silahkan cek/refresh halaman Dashboard anda',
+            'url'     => route('member'),
+        ]);
+
+        
+        event(new \App\Events\UplineTransferPin($downline->id, [
+            'type'       => 'finance_approved',
+            'message'    => 'Upline anda telah mentransfer pin terbaru ke anda, Silahkan cek/refresh halaman Dashboard anda',
+            'url'        => route('member'),
+            'created_at' => now()->toDateTimeString(),
+        ]));
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => "PIN {$pin->code} berhasil ditransfer ke {$downlineRow->name}",
+            'data' => [
+                'pin_code'      => $pin->code,
+                'recipient'     => $downlineRow->name,
+                'transfer_date' => $pin->transferred_date,
+            ]
+        ]);
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        \Log::error('PIN Transfer Error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan saat mentransfer PIN'
+        ], 500);
     }
+}
 
     private function getUserDownlines($user)
     {
