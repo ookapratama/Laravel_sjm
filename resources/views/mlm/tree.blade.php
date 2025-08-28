@@ -50,7 +50,7 @@
                         </li>
                         <li class="nav-item" role="presentation">
                             <button class="nav-link" id="tabAddNewBtn" data-bs-toggle="tab" data-bs-target="#tabAddNew"
-                                type="button">Add New Member</button>
+                                type="button">Member Baru</button>
                         </li>
                     </ul>
 
