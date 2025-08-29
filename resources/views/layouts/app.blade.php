@@ -479,9 +479,10 @@
 {{-- ECharts (CDN) --}}
 <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
 
-
-    <!-- Datatables -->
-    <script src="{{ asset('assets/js/plugin/datatables/datatables.min.js') }}"></script>
+ <!-- Datatables -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="{{ asset('assets/js/plugin/datatables/datatables.min.js') }}"></script>
+   
 
     <!-- Bootstrap Notify -->
     <script src="{{ asset('assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js') }}"></script>

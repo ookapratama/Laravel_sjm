@@ -380,4 +380,126 @@ class FinanceController extends Controller
             'stats' => $stats[0] ?? ['pending' => 0, 'approved' => 0, 'rejected' => 0]
         ]);
     }
+    public function cashReport(Request $r)
+{
+    $from = $r->input('from');
+    $to   = $r->input('to');
+
+    $q = DB::table('cash_transactions');
+
+    if ($from) $q->whereDate('created_at', '>=', $from);
+    if ($to)   $q->whereDate('created_at', '<=', $to);
+
+    // Ringkasan harian
+    $daily = (clone $q)
+        ->selectRaw("DATE(created_at) as tanggal,
+            SUM(CASE WHEN type='in'  THEN amount ELSE 0 END) as total_in,
+            SUM(CASE WHEN type='out' THEN amount ELSE 0 END) as total_out,
+            SUM(CASE WHEN type='in'  THEN amount ELSE 0 END) - SUM(CASE WHEN type='out' THEN amount ELSE 0 END) as saldo")
+        ->groupByRaw("DATE(created_at)")
+        ->orderByDesc('tanggal')
+        ->get();
+
+    // Ringkasan bulanan
+    $monthly = (clone $q)
+        ->selectRaw("DATE_FORMAT(created_at,'%Y-%m') as bulan,
+            SUM(CASE WHEN type='in'  THEN amount ELSE 0 END) as total_in,
+            SUM(CASE WHEN type='out' THEN amount ELSE 0 END) as total_out,
+            SUM(CASE WHEN type='in'  THEN amount ELSE 0 END) - SUM(CASE WHEN type='out' THEN amount ELSE 0 END) as saldo")
+        ->groupByRaw("DATE_FORMAT(created_at,'%Y-%m')")
+        ->orderByDesc('bulan')
+        ->get();
+
+    // Detail transaksi
+    $details = (clone $q)
+        ->orderByDesc('created_at')
+        ->limit(50)
+        ->get();
+
+    $totals = (clone $q)
+        ->selectRaw("SUM(CASE WHEN type='in' THEN amount ELSE 0 END) as total_in,
+                     SUM(CASE WHEN type='out' THEN amount ELSE 0 END) as total_out")
+        ->first();
+    $saldoAkhir = ($totals->total_in ?? 0) - ($totals->total_out ?? 0);
+
+    return view('finance.cash_report', compact('daily','monthly','details','from','to','saldoAkhir'));
+}
+
+
+public function storeOtherExpense(Request $r)
+{
+    $data = $r->validate([
+        'date'              => ['required','date'],
+        'amount'            => ['required','numeric','min:0.01'],
+        'notes'             => ['nullable','string','max:500'],
+        'payment_channel'   => ['nullable','string','max:255'],
+        'payment_reference' => ['nullable','string','max:255'],
+    ]);
+
+    DB::table('cash_transactions')->insert([
+        'user_id'           => auth()->id(),
+        'type'              => 'out',
+        'source'            => 'lain-lain',
+        'amount'            => $data['amount'],
+        'notes'             => $data['notes'] ?? null,
+        'payment_channel'   => $data['payment_channel'] ?? null,
+        'payment_reference' => $data['payment_reference'] ?? null,
+        'created_at'        => \Carbon\Carbon::parse($data['date'].' '.now()->format('H:i:s')),
+        'updated_at'        => now(),
+    ]);
+
+    return back()->with('ok', 'Pengeluaran lain-lain berhasil ditambahkan.');
+}
+public function cashReportData(Request $r)
+{
+    // Kolom yang dapat diurutkan dari DataTables (index 0..n)
+    $columns = ['created_at','type','source','amount','payment_channel','payment_reference','notes'];
+
+    $length = (int) $r->input('length', 50);
+    $start  = (int) $r->input('start', 0);
+    $draw   = (int) $r->input('draw', 1);
+
+    $orderColIdx = (int) $r->input('order.0.column', 0);
+    $orderDir    = $r->input('order.0.dir', 'desc') === 'asc' ? 'asc' : 'desc';
+    $orderCol    = $columns[$orderColIdx] ?? 'created_at';
+
+    $search = $r->input('search.value');
+
+    // Base query + filter tanggal opsional (ikuti filter di halaman)
+    $qBase = DB::table('cash_transactions');
+
+    if ($r->filled('from')) $qBase->whereDate('created_at', '>=', $r->from);
+    if ($r->filled('to'))   $qBase->whereDate('created_at', '<=', $r->to);
+
+    // Total tanpa filter pencarian
+    $recordsTotal = (clone $qBase)->count();
+
+    // Pencarian global
+    if ($search) {
+        $qBase->where(function($q) use ($search) {
+            $q->where('source', 'like', "%{$search}%")
+              ->orWhere('payment_channel', 'like', "%{$search}%")
+              ->orWhere('payment_reference', 'like', "%{$search}%")
+              ->orWhere('notes', 'like', "%{$search}%");
+        });
+    }
+
+    // Total setelah filter pencarian
+    $recordsFiltered = (clone $qBase)->count();
+
+    // Ambil data halaman saat ini
+    $rows = $qBase->orderBy($orderCol, $orderDir)
+        ->offset($start)
+        ->limit($length)
+        ->get([
+            'created_at','type','source','amount','payment_channel','payment_reference','notes'
+        ]);
+
+    return response()->json([
+        'draw'            => $draw,
+        'recordsTotal'    => $recordsTotal,
+        'recordsFiltered' => $recordsFiltered,
+        'data'            => $rows,
+    ]);
+}
 }
