@@ -114,7 +114,7 @@
                             <div class="card">
                                 <div class="card-header bg-primary text-white">
                                     <h6 class="mb-0">
-                                        <i class="fas fa-user-plus me-2"></i>Add New Member
+                                        <i class="fas fa-user-plus me-2"></i>Member baru
                                     </h6>
                                 </div>
                                 <div class="card-body">
@@ -1002,7 +1002,7 @@
                 node.filter(d => !d.data.isAddButton).append('image')
                     .attr("xlink:href", d => d.data.photo ?
                         `/${d.data.photo}` :
-                        `/assets/img/profile.jpg`)
+                        `/assets/img/profile.webp`)
                     .attr('x', -AVA / 2).attr('y', -NODE_H / 2 + 6)
                     .attr('width', AVA).attr('height', AVA)
                     .attr('clip-path', `circle(${AVA/2}px at ${AVA/2}px ${AVA/2}px)`);

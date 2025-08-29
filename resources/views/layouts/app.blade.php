@@ -403,7 +403,7 @@
                                 <a class="dropdown-toggle profile-pic" data-bs-toggle="dropdown" href="#"
                                     aria-expanded="false">
                                     <div class="avatar-sm">
-                                        <img src="{{ asset(Auth::user()->photo ?? 'assets/img/profile.jpg') }}" alt="..."
+                                        <img src="{{ asset(Auth::user()->photo ?? 'assets/img/profile.webp') }}" alt="..."
                                             class="avatar-img rounded-circle" />
                                     </div>
                                     <span class="profile-username">
@@ -416,7 +416,7 @@
                                         <li>
                                             <div class="user-box">
                                                 <div class="avatar-lg">
-                                                    <img src="{{ asset(Auth::user()->photo ?? 'assets/img/profile.jpg') }}"
+                                                    <img src="{{ asset(Auth::user()->photo ?? 'assets/img/profile.webp') }}"
                                                         alt="image profile" class="avatar-img rounded" />
                                                 </div>
                                                 <div class="u-text">

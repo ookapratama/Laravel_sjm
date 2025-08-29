@@ -13,7 +13,7 @@
 
       <div class="sjm-avatar mx-auto">
         <img id="sjmAvatar"
-             src="{{ asset($user->photo ?? 'assets/img/profile.jpg') }}"
+             src="{{ asset($user->photo ?? 'assets/img/profile.webp') }}"
              class="sjm-avatar-img"
              alt="Foto Profil">
        <button type="button" class="sjm-avatar-overlay"
