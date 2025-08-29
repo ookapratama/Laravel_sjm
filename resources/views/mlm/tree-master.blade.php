@@ -137,7 +137,7 @@ let firstRenderDone = false;
   /* ===== Avatar URL ===== */
   function getAvatarUrl(d){
     const p = d?.data?.photo;
-    if (!p) return '/assets/img/profile.jpg';
+    if (!p) return '/assets/img/profile.webp';
     if (/^(https?:)?\/\//i.test(p)) return p;          // absolute URL
     return `${location.origin}/${String(p).replace(/^\/+/, '')}`; // relative → absolute
   }
