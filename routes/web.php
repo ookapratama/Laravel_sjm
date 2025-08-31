@@ -25,10 +25,13 @@ use App\Http\Controllers\Super\SuperWithdrawController as SuperWithdrawControlle
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\AccessController;
 use App\Events\MemberCountUpdated;
+use App\Events\NotificationService;
+use App\Http\Controllers\Admin\PackageController;
 use App\Models\User;
 use App\Models\Notification;
 use App\Http\Controllers\ReferralQrController;
 use App\Http\Controllers\Admin\PinCtrl as AdminPinCtrl;
+use App\Http\Controllers\Admin\ProdukController;
 use App\Http\Controllers\Finance\PinCtrl as FinancePinCtrl;
 use App\Http\Controllers\Member\PinCtrl as MemberPinCtrl;
 use App\Http\Controllers\Auth\ReferralRegisterController;
@@ -37,6 +40,7 @@ use App\Http\Controllers\GuestEntryController;
 
 use App\Http\Controllers\GuestbookController;
 use App\Models\PinRequest;
+use Illuminate\Support\Facades\Broadcast;
 
 Route::middleware('auth')->group(function () {
     Route::get('member/guestbook',        [GuestbookController::class, 'index'])->name('guestbook.index');
@@ -194,6 +198,26 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::post('/approve-member/{id}', [PreRegistrationApprovalController::class, 'approve'])->name('approve-member');
     Route::get('/pin-requests', [AdminPinCtrl::class, 'index'])->name('admin.pin.index');
     Route::post('/pin-requests/{id}/generate', [AdminPinCtrl::class, 'generate'])->name('pin.generate');
+
+    Route::prefix('products')->group(function () {
+        Route::get('/', [ProdukController::class, 'index'])->name('products.index');
+        Route::post('/store', [ProdukController::class, 'store'])->name('products.store');
+        Route::get('/{id}/edit', [ProdukController::class, 'edit'])->name('products.edit');
+        Route::put('/update/{id}', [ProdukController::class, 'update'])->name('products.update');
+        Route::delete('/delete/{id}', [ProdukController::class, 'destroy'])->name('products.destroy');
+        
+        // kelola paket
+        Route::get('/manage-package', [PackageController::class, 'index'])->name('products.manage-package');
+        Route::post('/manage-package', [PackageController::class, 'update'])->name('products.manage-package.update');
+
+    });
+
+    Route::resource('packages', PackageController::class);
+    
+    // Additional package routes
+    Route::patch('packages/{package}/toggle-status', [PackageController::class, 'toggleStatus'])
+        ->name('packages.toggle-status');
+
 });
 
 // ✅ Admin

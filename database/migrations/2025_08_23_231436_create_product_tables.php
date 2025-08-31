@@ -12,6 +12,8 @@ return new class extends Migration {
             $table->string('sku');
             $table->decimal('price', 15, 2);
             $table->decimal('pv', 10, 2)->default(0);
+            $table->unsignedInteger('stock')->default(0);
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
 
@@ -22,6 +24,7 @@ return new class extends Migration {
             $table->integer('quantity');
             $table->decimal('total_price', 15, 2);
             $table->string('payment_type')->nullable();
+            $table->string('source')->nullable();
             $table->timestamps();
 
             $table->index('user_id', 'product_sales_user_id_foreign');
