@@ -11,7 +11,7 @@ class LandingController extends Controller
     }
 
     public function produk() {
-        return view('frontend.produk');
+    return view('admin.produk.index');
     }
 
     public function tentang() {
