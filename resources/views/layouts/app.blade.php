@@ -402,6 +402,7 @@
                                             </div>
                                         </div>
                                     </div>
+
                                 </li>
 
                                 <li class="nav-item topbar-user dropdown hidden-caret">
@@ -430,6 +431,7 @@
                                                         <a href="{{ route('profile.index') }}"
                                                             class="btn btn-xs btn-secondary btn-sm">View Profile</a>
                                                     </div>
+
                                                 </div>
                                             </li>
                                             <li>
@@ -469,6 +471,63 @@
             </div>
             <!-- End Custom template -->
         </div>
+
+        <!-- End Custom template -->
+    </div>
+
+     <!-- Core JS -->
+    <script src="{{ asset('assets/js/core/jquery-3.7.1.min.js') }}"></script>
+    <script src="{{ asset('assets/js/core/popper.min.js') }}"></script>
+    <script src="{{ asset('assets/js/core/bootstrap.min.js') }}"></script>
+
+    <!-- Bootstrap Treeview via CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-treeview/1.2.0/bootstrap-treeview.min.js"></script>
+
+    <!-- jQuery Scrollbar -->
+    <script src="{{ asset('assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js') }}"></script>
+
+{{-- ECharts (CDN) --}}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+
+
+    <!-- Datatables -->
+    <script src="{{ asset('assets/js/plugin/datatables/datatables.min.js') }}"></script>
+
+    <!-- Bootstrap Notify -->
+    <script src="{{ asset('assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js') }}"></script>
+
+    <!-- jQuery Vector Maps -->
+    <script src="{{ asset('assets/js/plugin/jsvectormap/jsvectormap.min.js') }}"></script>
+    <script src="{{ asset('assets/js/plugin/jsvectormap/world.js') }}"></script>
+
+    <!-- Sweet Alert -->
+    <script src="{{ asset('assets/js/plugin/sweetalert/sweetalert.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Toastr -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://js.pusher.com/8.0/pusher.min.js"></script>
+    <!-- Kaiadmin -->
+    <script src="{{ asset('assets/js/kaiadmin.min.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/relativeTime.js"></script>
+    <script>pt src="https://cdn.jsdelivr.net/npm/dayjs@1/plugin/relativeTime.js"></script>
+
+@stack('scripts')
+        dayjs.extend(dayjs_plugin_relativeTime);
+    </script>
+    <script>
+        // ✅ IMPROVED AUDIO NOTIFICATION SYSTEM
+        class NotificationAudioManager {
+            constructor() {
+                this.audioEnabled = false;
+                this.audioUnlocked = false;
+                this.audioElement = null;
+                this.userHasInteracted = false;
+                this.debugMode = true;
+                this.init();
+            }
+
 
         <!-- Core JS -->
         <script src="{{ asset('assets/js/core/jquery-3.7.1.min.js') }}"></script>

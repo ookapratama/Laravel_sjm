@@ -111,7 +111,7 @@ class TreeCloneController extends Controller
             abort(422, 'Ada PIN tidak valid / bukan milik Anda / sudah dipakai.');
         }
 
-        $baseProfile = \App\Models\MitraProfile::where('user_id', $baseUser->id)->first();
+        $baseProfile = MitraProfile::where('user_id', $baseUser->id)->first();
 
         foreach ($pinRows as $pin) {
             // 1) Username & sponsor_code unik (suffix angka)
@@ -123,11 +123,11 @@ class TreeCloneController extends Controller
             $passwordPlain = $baseUser->password;
 
             // 3) Buat user baru (email/phone sama)
-            $newUser = \App\Models\User::create([
+            $newUser = User::create([
                 'name'         => $baseUser->name,
                 'username'     => $newUsername,
                 'email'        => $baseUser->email,
-                'phone'        => $baseUser->phone,
+                'no_telp'        => $baseUser->no_telp,
                 'password'     => $passwordPlain,
                 'referral_code' => $newSponsor,
                 'sponsor_id' => $auth->id,
@@ -139,12 +139,25 @@ class TreeCloneController extends Controller
                     'user_id'       => $newUser->id,
                     'no_ktp'        => $baseProfile->no_ktp,
                     'jenis_kelamin' => $baseProfile->jenis_kelamin,
+                    'agama'         => $baseProfile->agama,
                     'tempat_lahir'  => $baseProfile->tempat_lahir,
                     'tanggal_lahir' => $baseProfile->tanggal_lahir,
                     'alamat'        => $baseProfile->alamat,
                     'bank'          => $baseProfile->bank,
                     'nama_rekening' => $baseProfile->nama_rekening,
-                    'no_rekening'   => $baseProfile->no_rekening,
+                    'nama_bank' => $baseProfile->nama_bank,
+                    'nomor_rekening'   => $baseProfile->nomor_rekening,
+                    'nama_ahli_waris' => $baseProfile->nama_ahli_waris,
+                    'hubungan_ahli_waris' => $baseProfile->hubungan_ahli_waris,
+                    'rt' => $baseProfile->rt,
+                    'rw' => $baseProfile->rw,
+                    'desa' => $baseProfile->desa,
+                    'kota' => $baseProfile->kota,
+                    'kecamatan' => $baseProfile->kecamatan,
+                    'kode_pos' => $baseProfile->kode_pos,
+
+                   
+
                 ]);
             }
 
@@ -171,14 +184,6 @@ class TreeCloneController extends Controller
     ]);
 }
 
-
-    /**
-     * Menambahkan angka di belakang string dasar agar unik di kolom target.
-     * - $target: 'username' | 'sponsor_code'
-     * - base: 'artmedia'  -> 'artmedia1','artmedia2',...
-     * - base: 'artmedia7' -> 'artmedia8',...
-     * - batasi panjang ke 50 char (ubah sesuai DB Anda)
-     */
     private function nextIncrement(string $base, string $target = 'username'): string
     {
         $col = in_array($target, ['username','sponsor_code']) ? $target : 'username';

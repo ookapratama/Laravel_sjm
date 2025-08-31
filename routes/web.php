@@ -310,6 +310,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/pin-requests', [FinancePinCtrl::class, 'index'])->name('finance.pin.index');
         Route::put('/pin-requests/{id}/approve', [FinancePinCtrl::class, 'approve'])->name('finance.pin.approve');
         Route::put('/pin-requests/{id}/reject', [FinancePinCtrl::class, 'reject'])->name('finance.pin.reject');
+        Route::get('/cash-report', [FinanceController::class, 'cashReport'])->name('finance.cash.report');
+        Route::get('/cash-report/data', [FinanceController::class, 'cashReportData'])->name('finance.cash.report.data');
+        Route::post('/expenses', [FinanceController::class, 'storeOtherExpense'])->name('finance.expense.store');
+        
+
     });
 
     // ✅ Member
