@@ -271,7 +271,7 @@
                     </thead>
                     <tbody>
                         @forelse($pins as $p)
-                        {{ $p->name ?? '-' }}
+                            {{ $p->name ?? '-' }}
                             <tr>
                                 <td><code>{{ $p->code }}</code></td>
                                 <td>
@@ -294,7 +294,8 @@
                                             </div>
                                             <div>
                                                 <small class="fw-bold">{{ $p->transferred_name ?? '-' }}</small><br>
-                                                <small class="text-muted">Username:{{ $p->transferred_username ?? '-' }}</small>
+                                                <small
+                                                    class="text-muted">Username:{{ $p->transferred_username ?? '-' }}</small>
                                             </div>
                                         </div>
                                     @elseif($p->status === 'used')
@@ -314,10 +315,10 @@
                                 </td>
                                 <td>
                                     @if ($p->transferred_date)
-                                        {{ date('d/M/Y H:i',strtotime($p->transferred_date)) }}
+                                        {{ date('d/M/Y H:i', strtotime($p->transferred_date)) }}
                                     @elseif($p->created_at)
                                         <small class="text-muted">Activated:
-                                            {{ date('d/M/Y H:i',strtotime($p->created_at)) }}</small>
+                                            {{ date('d/M/Y H:i', strtotime($p->created_at)) }}</small>
                                     @else
                                         <span class="text-muted">-</span>
                                     @endif
@@ -513,7 +514,8 @@
                 document.getElementById('previewUsername').textContent = selectedOption.dataset.username;
 
                 // Get position from option text
-                const position = selectedOption.text.includes('Kiri') ? 'Downline Kiri' : ( selectedOption.text.includes('Kanan') ? 'Downline Kanan' : 'Belum ada jaringan');
+                const position = selectedOption.text.includes('Kiri') ? 'Downline Kiri' : (selectedOption.text
+                    .includes('Kanan') ? 'Downline Kanan' : 'Belum ada jaringan');
                 document.getElementById('previewPosition').textContent = position;
 
                 preview.classList.remove('d-none');
@@ -540,11 +542,16 @@
             const submitBtn = document.getElementById('submitTransfer');
             const originalText = submitBtn.innerHTML;
 
-            // Show loading
+            // Cek jika sedang dalam proses
+            if (submitBtn.dataset.processing === 'true') {
+                return; // Prevent double submission
+            }
+
+            // Mark as processing
+            submitBtn.dataset.processing = 'true';
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mentransfer...';
             submitBtn.disabled = true;
 
-            // Create FormData
             const formData = new FormData(this);
 
             fetch(this.action, {
@@ -557,15 +564,15 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Show success message
                         if (typeof toastr !== 'undefined') {
                             toastr.success(data.message || 'PIN berhasil ditransfer!');
                         } else {
                             alert('PIN berhasil ditransfer!');
                         }
 
-                        // Close modal and reload
                         bootstrap.Modal.getInstance(document.getElementById('transferPinModal')).hide();
+
+                        // PERBAIKAN: Reload otomatis untuk refresh data
                         setTimeout(() => location.reload(), 1500);
                     } else {
                         throw new Error(data.message || 'Transfer gagal');
@@ -578,12 +585,13 @@
                     } else {
                         alert(error.message || 'Terjadi kesalahan saat transfer');
                     }
-                })
-                .finally(() => {
-                    // Restore button
+
+                    // PERBAIKAN: Hanya restore button jika error
                     submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;
+                    submitBtn.dataset.processing = 'false';
                 });
+            // HAPUS .finally() yang me-restore button pada success
         });
 
         // Show PIN history function
