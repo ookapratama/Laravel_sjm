@@ -64,15 +64,14 @@
                                 {{-- QRIS statis --}}
                                 <div id="qrisSection" class="border rounded p-2 mt-2 d-none">
                                     <div class="small mb-2">Scan QR berikut, lalu unggah bukti:</div>
-                                    <img src="{{ asset('images/qris.jpg') }}" alt="QRIS" style="max-height:160px">
+                                    {{-- <img src="{{ asset('images/qris.jpg') }}" alt="QRIS" style="max-height:160px"> --}}
                                 </div>
 
                                 {{-- Rekening perusahaan --}}
                                 <div id="tfSection" class="border rounded p-2 mt-2 d-none">
                                     <div class="small mb-2">Transfer ke rekening perusahaan:</div>
                                     <ul class="mb-2 small">
-                                        <li>Bank BNI • 1234567890 a.n. PT Sair Jaya Mandiri</li>
-                                        <li>Bank BRI • 777888999 a.n. PT Sair Jaya Mandiri</li>
+                                        <li>Bank MANDIRI • 1740011176609 a.n. PT Sair Jaya Mandiri</li>
                                     </ul>
                                     <label class="form-label">No/Ref Transaksi (opsional)</label>
                                     <input type="text" name="payment_reference" class="form-control"

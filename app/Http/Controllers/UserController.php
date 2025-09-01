@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 use App\Jobs\ProcessPairingJob;
 use App\Events\UserNotificationReceived;
 use App\Models\ActivationPin;
-// <<<<<<< perubahan_sjm
+
 // =======
 use App\Models\Notification;
 use App\Models\Package;
@@ -276,118 +276,139 @@ class UserController extends Controller
     }
 
     public function store_member(Request $request)
-    {
-        try {
-            // 1) Validasi input
-            $validated = $request->validate([
-                'ref'              => ['required', 'string'],
-                'pin_aktivasi'     => ['required', 'string'],
+{
+    try {
+        // 1) Validasi input
+        $validated = $request->validate([
+            'ref'              => ['required', 'string'],
+            'pin_aktivasi'     => ['required', 'string'],
 
-                // Tree placement fields
-                'tree_upline_id' => ['nullable', 'exists:users,id'],
-                'tree_position' => ['nullable', 'in:left,right'],
-                'register_method' => ['nullable', 'string'],
+            // Tree placement
+            'register_method'  => ['nullable', 'string'], // ex: 'from_tree'
+            'tree_upline_id'   => ['required_if:register_method,from_tree', 'nullable', 'exists:users,id'],
+            'tree_position'    => ['required_if:register_method,from_tree', 'nullable', 'in:left,right'],
 
-                'name'             => ['required', 'string', 'max:255'],
-                'username'         => ['required', 'alpha_dash', 'min:4', 'max:30', 'unique:users,username'],
-                'email'            => ['nullable', 'email', 'max:255'],
-                'no_telp'            => ['required', 'string', 'max:30'],
-                'password'         => ['required', 'string', 'min:6', 'confirmed'],
+            'name'             => ['required', 'string', 'max:255'],
+            'username'         => ['required', 'alpha_dash', 'min:4', 'max:30', 'unique:users,username'],
+            'email'            => ['nullable', 'email', 'max:255'],
+            'no_telp'          => ['required', 'string', 'max:30'],
+            'password'         => ['required', 'string', 'min:6', 'confirmed'],
 
-                'no_ktp'           => ['nullable', 'string', 'max:50'],
-                'jenis_kelamin'    => ['required', 'in:pria,wanita'],
-                'tempat_lahir'     => ['required', 'string', 'max:100'],
-                'tanggal_lahir'    => ['required', 'date'],
-                'agama'            => ['required', 'in:islam,kristen,katolik,budha,hindu,lainnya'],
-                'alamat'           => ['required', 'string', 'max:500'],
-                'rt'               => ['nullable', 'string', 'max:10'],
-                'rw'               => ['nullable', 'string', 'max:10'],
-                'desa'             => ['required', 'string', 'max:100'],
-                'kecamatan'        => ['required', 'string', 'max:100'],
-                'kota'             => ['required', 'string', 'max:100'],
-                'kode_pos'         => ['nullable', 'string', 'max:10'],
+            'no_ktp'           => ['nullable', 'string', 'max:50'],
+            'jenis_kelamin'    => ['required', 'in:pria,wanita'],
+            'tempat_lahir'     => ['required', 'string', 'max:100'],
+            'tanggal_lahir'    => ['required', 'date'],
+            'agama'            => ['required', 'in:islam,kristen,katolik,budha,hindu,lainnya'],
+            'alamat'           => ['required', 'string', 'max:500'],
+            'rt'               => ['nullable', 'string', 'max:10'],
+            'rw'               => ['nullable', 'string', 'max:10'],
+            'desa'             => ['required', 'string', 'max:100'],
+            'kecamatan'        => ['required', 'string', 'max:100'],
+            'kota'             => ['required', 'string', 'max:100'],
+            'kode_pos'         => ['nullable', 'string', 'max:10'],
 
-                'nama_rekening'    => ['required', 'string', 'max:150'],
-                'nama_bank'        => ['required', 'string', 'max:150'],
-                'nomor_rekening'   => ['required', 'string', 'max:50'],
+            'nama_rekening'    => ['required', 'string', 'max:150'],
+            'nama_bank'        => ['required', 'string', 'max:150'],
+            'nomor_rekening'   => ['required', 'string', 'max:50'],
 
-                'nama_ahli_waris'      => ['nullable', 'string', 'max:150'],
-                'hubungan_ahli_waris'  => ['nullable', 'string', 'max:100'],
+            'nama_ahli_waris'      => ['nullable', 'string', 'max:150'],
+            'hubungan_ahli_waris'  => ['nullable', 'string', 'max:100'],
 
-                'agree'            => ['accepted'],
+            'agree'            => ['accepted'],
+        ], [
+            'agree.accepted' => 'Anda harus menyetujui syarat & ketentuan.',
+        ]);
 
-            ], [
-                'agree.accepted' => 'Anda harus menyetujui syarat & ketentuan.',
-            ]);
+        // 2) Validasi sponsor
+        $sponsor = User::where('referral_code', $validated['ref'])
+            ->orWhere('username', $validated['ref'])
+            ->first();
 
+        if (!$sponsor) {
+            return response()->json([
+                'message' => 'Validasi gagal.',
+                'errors'  => ['ref' => ['Kode referal tidak valid.']],
+            ], 422);
+        }
 
-            // 2) Validasi sponsor
-            $sponsor = User::where('referral_code', $validated['ref'])
-                ->orWhere('username', $validated['ref'])
+        // 3) Buat user + profil + klaim PIN (transaksi tunggal)
+        $user = DB::transaction(function () use ($validated, $sponsor) {
+            $pin = ActivationPin::where('code', $validated['pin_aktivasi'])
+                ->lockForUpdate()
                 ->first();
 
-            if (!$sponsor) {
-                return response()->json([
-                    'message' => 'Validasi gagal.',
-                    'errors'  => ['ref' => ['Kode referal tidak valid.']],
-                ], 422);
+            if (!$pin) {
+                throw ValidationException::withMessages(['pin_aktivasi' => 'PIN tidak ditemukan.']);
+            }
+            if (!in_array($pin->status, ['unused','reserved'], true)) {
+                throw ValidationException::withMessages(['pin_aktivasi' => 'PIN sudah terpakai / tidak aktif.']);
             }
 
+            $user = User::create([
+                'name'        => $validated['name'],
+                'username'    => $validated['username'],
+                'email'       => $validated['email'] ?? null,
+                'no_telp'     => $validated['no_telp'],
+                'password'    => Hash::make($validated['password']),
+                'role'        => 'member',
+                'status'      => 'active',
+                'sponsor_id'  => $sponsor->id,
+                'upline_id'   => null, // dipasang oleh service
+                'position'    => null, // dipasang oleh service
+            ]);
 
+            MitraProfile::create([
+                'user_id'             => $user->id,
+                'no_ktp'              => $validated['no_ktp'] ?? null,
+                'jenis_kelamin'       => $validated['jenis_kelamin'],
+                'tempat_lahir'        => $validated['tempat_lahir'],
+                'tanggal_lahir'       => $validated['tanggal_lahir'],
+                'agama'               => $validated['agama'],
+                'alamat'              => $validated['alamat'],
+                'rt'                  => $validated['rt'] ?? null,
+                'rw'                  => $validated['rw'] ?? null,
+                'desa'                => $validated['desa'],
+                'kecamatan'           => $validated['kecamatan'],
+                'kota'                => $validated['kota'],
+                'kode_pos'            => $validated['kode_pos'] ?? null,
+                'nama_rekening'       => $validated['nama_rekening'],
+                'nama_bank'           => $validated['nama_bank'],
+                'nomor_rekening'      => $validated['nomor_rekening'],
+                'nama_ahli_waris'     => $validated['nama_ahli_waris'] ?? null,
+                'hubungan_ahli_waris' => $validated['hubungan_ahli_waris'] ?? null,
+            ]);
 
+            $pin->update([
+                'status'  => 'used',
+                'used_by' => $user->id,
+                'used_at' => now(),
+            ]);
 
+            return $user;
+        });
 
-            // 3) Transaksi: klaim PIN + buat user + profil
-            $user = DB::transaction(function () use ($validated, $sponsor) {
-                // 3a) Ambil & kunci PIN
-                $pin = ActivationPin::where('code', $validated['pin_aktivasi'])
-                    ->lockForUpdate()
-                    ->first();
+        // 4) Tentukan upline & posisi—berdasarkan REQUEST, bukan auto
+       
+        $bonus = app(\App\Services\BonusManager::class);
 
-                if (!$pin) {
-                    throw ValidationException::withMessages(['pin_aktivasi' => 'PIN tidak ditemukan.']);
-                }
-                if (!in_array($pin->status, ['unused', 'reserved'], true)) {
-                    throw ValidationException::withMessages(['pin_aktivasi' => 'PIN sudah terpakai / tidak aktif.']);
-                }
-                // (opsional) kalau reserved hanya boleh dipakai pihak tertentu
-                // if ($pin->status === 'reserved' && $pin->purchased_by && (int)$pin->purchased_by !== (int)$sponsor->id) {
-                //     throw ValidationException::withMessages(['pin_aktivasi' => 'PIN ini sedang di-reserve untuk pengguna lain.']);
-                // }
-                // 3b) Buat user (referral_code diisi otomatis oleh model User::booted())
-                $user = User::create([
-                    'name'       => $validated['name'],
-                    'username'   => $validated['username'],
-                    'email'      => $validated['email'] ?? null,
-                    'no_telp'      => $validated['no_telp'],
-                    'password'   => Hash::make($validated['password']),
-                    'role'       => 'member',
-                    'status'     => 'active',
-                    'sponsor_id' => $sponsor->id,
-                    'upline_id'  => $sponsor->id,
+        if ($request->register_method === 'from_tree') {
+            $upline   = User::findOrFail($validated['tree_upline_id']);
+            $position = $validated['tree_position']; // wajib (sudah divalidasi required_if)
+        } else {
+            // Bukan dari tree → tetap minta position dari request (pakai field yang sama)
+            $upline   = $sponsor;
+            $position = $request->input('tree_position'); // ikuti permintaan Anda
+            if (!$position) {
+                throw ValidationException::withMessages([
+                    'tree_position' => ['Posisi wajib diisi.']
                 ]);
-
-                // 3c) Buat mitra profile
-                MitraProfile::create([
-                    'user_id'            => $user->id,
-                    'no_ktp'             => $validated['no_ktp'] ?? null,
-                    'jenis_kelamin'      => $validated['jenis_kelamin'],
-                    'tempat_lahir'       => $validated['tempat_lahir'],
-                    'tanggal_lahir'      => $validated['tanggal_lahir'],
-                    'agama'              => $validated['agama'],
-                    'alamat'             => $validated['alamat'],
-                    'rt'                 => $validated['rt'] ?? null,
-                    'rw'                 => $validated['rw'] ?? null,
-                    'desa'               => $validated['desa'],
-                    'kecamatan'          => $validated['kecamatan'],
-                    'kota'               => $validated['kota'],
-                    'kode_pos'           => $validated['kode_pos'] ?? null,
-                    'nama_rekening'      => $validated['nama_rekening'],
-                    'nama_bank'          => $validated['nama_bank'],
-                    'nomor_rekening'     => $validated['nomor_rekening'],
-                    'nama_ahli_waris'    => $validated['nama_ahli_waris'] ?? null,
-                    'hubungan_ahli_waris' => $validated['hubungan_ahli_waris'] ?? null,
+            }
+            if (!in_array($position, ['left','right'], true)) {
+                throw ValidationException::withMessages([
+                    'tree_position' => ['Posisi harus left atau right.']
                 ]);
+            }
+        }
 
                 $packages = Package::where('is_active', true)->get();
                 if ($packages->isEmpty()) {
@@ -416,49 +437,45 @@ class UserController extends Controller
                 $user->position = $validated['tree_position'];
                 $user->save();
 
+        // Pasang + validasi slot + set upline/position + (opsional) cascade counters
+        $bonus->assignToUpline($user, $upline, $position, false);
 
-                DB::commit();
+        // Pilih salah satu: sinkron ATAU job (jangan keduanya)
+        //$bonus->processPairing($user);
+         ProcessPairingJob::dispatch($user);
 
-                ProcessPairingJob::dispatch($user);
+        // 5) Event & notifikasi
+        event(new MemberCountUpdated(User::count()));
 
-                // Jika ingin tetap asynchronous
-                Notification::create([
-                    'user_id' => $user->id,
-                    'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
-                    'url' => route('tree.index'),
-                ]);
+        Notification::create([
+            'user_id' => $user->id,
+            'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
+            'url'     => route('tree.index'),
+        ]);
 
-                // Broadcast via Pusher
-                event(new PairingDownline($user->id, [
-                    'type' => 'pairing_downProcessPairingJobline', // atau 'preregistration_received' jika Anda ingin beda
-                    'message' => 'User berhasil dipasang ke tree dan pairing diproses.',
-                    'url' => route('tree.index'),
-                    'created_at' => now()->toDateTimeString()
-                ]));
+        event(new PairingDownline($user->id, [
+            'type'       => 'pairing_downline',
+            'message'    => 'User berhasil dipasang ke tree dan pairing diproses.',
+            'url'        => route('tree.index'),
+            'created_at' => now()->toDateTimeString()
+        ]));
 
-                \Log::info('PIN Request Rejected and Notification Sent', [
-                    'user_id' => 'User berhasil dipasang ke tree dan pairing diproses.',
-                    'message' => $user->id,
-                ]);
-            }
+        $route   = $request->register_method === 'from_tree' ? route('tree.index') : route('users.downline');
+        $message = $request->register_method === 'from_tree'
+            ? 'User berhasil disimpan dan dipairing. Akun user telah aktif.'
+            : 'User berhasil disimpan. Akun user telah aktif.';
 
-            $route = $request->register_method === 'from_tree' ? route('tree.index') :  route('users.downline');
-            $message = $request->register_method === 'from_tree' ? 'User berhasil disimpan dan di pairing. Akun user telah aktif.' :  'User berhasil disimpan. Akun user telah aktif.';
+        return response()->json([
+            'success'  => $message,
+            'redirect' => $route,
+        ]);
 
-            return response()->json([
-                'success'  => $message,
-                // 'redirect' => route('users.downline'),
-                'redirect' => $route,
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            \Log::error('Registration error: ' . $e->getMessage());
-            return response()->json([
-                'message' => 'Terjadi kesalahan internal server. Silakan coba lagi nanti.'
-            ], 500);
-        }
+    } catch (ValidationException $e) {
+        return response()->json(['errors' => $e->errors()], 422);
+    } catch (\Exception $e) {
+        \Log::error('Registration error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+        return response()->json(['message' => 'Terjadi kesalahan internal server. Silakan coba lagi nanti.'], 500);
     }
+}
+
 }
