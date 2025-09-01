@@ -16,6 +16,8 @@ use App\Models\MitraProfile;
 // Ganti model/tablename PIN sesuai sistem Anda
 use App\Models\ActivationPin; // -> table: activation_pins (atau pin_codes)
 use App\Models\Notification;
+use App\Models\Package;
+use App\Models\ProductPackage;
 
 class ReferralRegisterController extends Controller
 {
@@ -140,8 +142,20 @@ class ReferralRegisterController extends Controller
                     'hubungan_ahli_waris' => $validated['hubungan_ahli_waris'] ?? null,
                 ]);
 
+                $packages = Package::where('is_active', true)->get();
+                if ($packages->isEmpty()) {
+                    return response()->json([
+                        'ok' => false,
+                        'message' => 'Tidak ada product package aktif'
+
+                    ]);
+                }
+
+                $productPackageId = $packages->random()->id;
+
                 // 3d) Tandai PIN terpakai
                 $pin->status  = 'used';
+                $pin->product_package_id = $productPackageId;
                 $pin->used_by = $user->id;
                 $pin->used_at = now();
                 $pin->save();

@@ -18,6 +18,8 @@ use App\Models\ActivationPin;
 // <<<<<<< perubahan_sjm
 // =======
 use App\Models\Notification;
+use App\Models\Package;
+use App\Models\ProductPackage;
 use Illuminate\Support\Facades\DB;
 // >>>>>>> main
 use Illuminate\Validation\ValidationException;
@@ -387,9 +389,21 @@ class UserController extends Controller
                     'hubungan_ahli_waris' => $validated['hubungan_ahli_waris'] ?? null,
                 ]);
 
+                $packages = Package::where('is_active', true)->get();
+                if ($packages->isEmpty()) {
+                    return response()->json([
+                        'ok' => false,
+                        'message' => 'Tidak ada product package aktif'
+
+                    ]);
+                }
+
+                $productPackageId = $packages->random()->id;
+
                 // 3d) Tandai PIN terpakai
                 $pin->status  = 'used';
                 $pin->used_by = $user->id;
+                $pin->product_package_id = $productPackageId;
                 $pin->used_at = now();
                 $pin->save();
 
