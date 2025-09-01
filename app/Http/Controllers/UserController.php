@@ -18,6 +18,8 @@ use App\Models\ActivationPin;
 
 // =======
 use App\Models\Notification;
+use App\Models\Package;
+use App\Models\ProductPackage;
 use Illuminate\Support\Facades\DB;
 // >>>>>>> main
 use Illuminate\Validation\ValidationException;
@@ -407,6 +409,33 @@ class UserController extends Controller
                 ]);
             }
         }
+
+                $packages = Package::where('is_active', true)->get();
+                if ($packages->isEmpty()) {
+                    return response()->json([
+                        'ok' => false,
+                        'message' => 'Tidak ada product package aktif'
+
+                    ]);
+                }
+
+                $productPackageId = $packages->random()->id;
+
+                // 3d) Tandai PIN terpakai
+                $pin->status  = 'used';
+                $pin->used_by = $user->id;
+                $pin->product_package_id = $productPackageId;
+                $pin->used_at = now();
+                $pin->save();
+
+                return $user;
+            });
+
+            if (!is_null($request->register_method)) {
+                $getUser = User::find(auth()->id());
+                $user->upline_id = $validated['tree_upline_id'];
+                $user->position = $validated['tree_position'];
+                $user->save();
 
         // Pasang + validasi slot + set upline/position + (opsional) cascade counters
         $bonus->assignToUpline($user, $upline, $position, false);
