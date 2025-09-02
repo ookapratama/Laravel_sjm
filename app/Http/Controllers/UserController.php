@@ -280,39 +280,40 @@ class UserController extends Controller
     try {
         // 1) Validasi input
         $validated = $request->validate([
-            'ref'              => ['required', 'string'],
-            'pin_aktivasi'     => ['required', 'string'],
+            'ref'              => ['required','string'],
+            'pin_aktivasi'     => ['required','string'],
 
-            // Tree placement
-            'register_method'  => ['nullable', 'string'], // ex: 'from_tree'
-            'tree_upline_id'   => ['required_if:register_method,from_tree', 'nullable', 'exists:users,id'],
-            'tree_position'    => ['required_if:register_method,from_tree', 'nullable', 'in:left,right'],
+            'register_method'  => ['nullable','string'], // 'from_tree' atau null
 
-            'name'             => ['required', 'string', 'max:255'],
-            'username'         => ['required', 'alpha_dash', 'min:4', 'max:30', 'unique:users,username'],
-            'email'            => ['nullable', 'email', 'max:255'],
-            'no_telp'          => ['required', 'string', 'max:30'],
-            'password'         => ['required', 'string', 'min:6', 'confirmed'],
+            // Wajib hanya kalau from_tree (tanpa nullable)
+            'tree_upline_id'   => ['required_if:register_method,from_tree','exists:users,id'],
+            'tree_position'    => ['required_if:register_method,from_tree','in:left,right'],
 
-            'no_ktp'           => ['nullable', 'string', 'max:50'],
-            'jenis_kelamin'    => ['required', 'in:pria,wanita'],
-            'tempat_lahir'     => ['required', 'string', 'max:100'],
-            'tanggal_lahir'    => ['required', 'date'],
-            'agama'            => ['required', 'in:islam,kristen,katolik,budha,hindu,lainnya'],
-            'alamat'           => ['required', 'string', 'max:500'],
-            'rt'               => ['nullable', 'string', 'max:10'],
-            'rw'               => ['nullable', 'string', 'max:10'],
-            'desa'             => ['required', 'string', 'max:100'],
-            'kecamatan'        => ['required', 'string', 'max:100'],
-            'kota'             => ['required', 'string', 'max:100'],
-            'kode_pos'         => ['nullable', 'string', 'max:10'],
+            'name'             => ['required','string','max:255'],
+            'username'         => ['required','alpha_dash','min:4','max:30','unique:users,username'],
+            'email'            => ['nullable','email','max:255'],
+            'no_telp'          => ['required','string','max:30'],
+            'password'         => ['required','string','min:6','confirmed'],
 
-            'nama_rekening'    => ['required', 'string', 'max:150'],
-            'nama_bank'        => ['required', 'string', 'max:150'],
-            'nomor_rekening'   => ['required', 'string', 'max:50'],
+            'no_ktp'           => ['nullable','string','max:50'],
+            'jenis_kelamin'    => ['required','in:pria,wanita'],
+            'tempat_lahir'     => ['required','string','max:100'],
+            'tanggal_lahir'    => ['required','date'],
+            'agama'            => ['required','in:islam,kristen,katolik,budha,hindu,lainnya'],
+            'alamat'           => ['required','string','max:500'],
+            'rt'               => ['nullable','string','max:10'],
+            'rw'               => ['nullable','string','max:10'],
+            'desa'             => ['required','string','max:100'],
+            'kecamatan'        => ['required','string','max:100'],
+            'kota'             => ['required','string','max:100'],
+            'kode_pos'         => ['nullable','string','max:10'],
 
-            'nama_ahli_waris'      => ['nullable', 'string', 'max:150'],
-            'hubungan_ahli_waris'  => ['nullable', 'string', 'max:100'],
+            'nama_rekening'    => ['required','string','max:150'],
+            'nama_bank'        => ['required','string','max:150'],
+            'nomor_rekening'   => ['required','string','max:50'],
+
+            'nama_ahli_waris'      => ['nullable','string','max:150'],
+            'hubungan_ahli_waris'  => ['nullable','string','max:100'],
 
             'agree'            => ['accepted'],
         ], [
@@ -331,8 +332,16 @@ class UserController extends Controller
             ], 422);
         }
 
-        // 3) Buat user + profil + klaim PIN (transaksi tunggal)
-        $user = DB::transaction(function () use ($validated, $sponsor) {
+        // 3) Ambil paket aktif (sebelum transaksi)
+        $package = Package::where('is_active', true)->inRandomOrder()->first();
+        if (!$package) {
+            return response()->json([
+                'message' => 'Tidak ada product package aktif.',
+            ], 422);
+        }
+
+        // 4) Transaksi: buat user, profil, klaim PIN + set package
+        $user = DB::transaction(function () use ($validated, $sponsor, $package) {
             $pin = ActivationPin::where('code', $validated['pin_aktivasi'])
                 ->lockForUpdate()
                 ->first();
@@ -353,8 +362,8 @@ class UserController extends Controller
                 'role'        => 'member',
                 'status'      => 'active',
                 'sponsor_id'  => $sponsor->id,
-                'upline_id'   => null, // dipasang oleh service
-                'position'    => null, // dipasang oleh service
+                'upline_id'   => null,
+                'position'    => null,
             ]);
 
             MitraProfile::create([
@@ -378,73 +387,40 @@ class UserController extends Controller
                 'hubungan_ahli_waris' => $validated['hubungan_ahli_waris'] ?? null,
             ]);
 
+            // Tandai PIN terpakai + set paket produk SEKALI DI SINI
             $pin->update([
-                'status'  => 'used',
-                'used_by' => $user->id,
-                'used_at' => now(),
+                'status'              => 'used',
+                'used_by'             => $user->id,
+                'product_package_id'  => $package->id,
+                'used_at'             => now(),
             ]);
 
             return $user;
         });
 
-        // 4) Tentukan upline & posisi—berdasarkan REQUEST, bukan auto
-       
-        $bonus = app(\App\Services\BonusManager::class);
-
+        // 5) Tentukan upline & posisi dari request
         if ($request->register_method === 'from_tree') {
             $upline   = User::findOrFail($validated['tree_upline_id']);
-            $position = $validated['tree_position']; // wajib (sudah divalidasi required_if)
+            $position = $validated['tree_position'];
         } else {
-            // Bukan dari tree → tetap minta position dari request (pakai field yang sama)
             $upline   = $sponsor;
-            $position = $request->input('tree_position'); // ikuti permintaan Anda
-            if (!$position) {
-                throw ValidationException::withMessages([
-                    'tree_position' => ['Posisi wajib diisi.']
-                ]);
-            }
+            $position = $request->input('tree_position');
             if (!in_array($position, ['left','right'], true)) {
                 throw ValidationException::withMessages([
-                    'tree_position' => ['Posisi harus left atau right.']
+                    'tree_position' => 'Posisi harus left atau right.'
                 ]);
             }
         }
 
-                $packages = Package::where('is_active', true)->get();
-                if ($packages->isEmpty()) {
-                    return response()->json([
-                        'ok' => false,
-                        'message' => 'Tidak ada product package aktif'
-
-                    ]);
-                }
-
-                $productPackageId = $packages->random()->id;
-
-                // 3d) Tandai PIN terpakai
-                $pin->status  = 'used';
-                $pin->used_by = $user->id;
-                $pin->product_package_id = $productPackageId;
-                $pin->used_at = now();
-                $pin->save();
-
-                return $user;
-            });
-
-            if (!is_null($request->register_method)) {
-                $getUser = User::find(auth()->id());
-                $user->upline_id = $validated['tree_upline_id'];
-                $user->position = $validated['tree_position'];
-                $user->save();
-
-        // Pasang + validasi slot + set upline/position + (opsional) cascade counters
+        // 6) Pasang ke tree (JANGAN set manual upline_id/position lagi)
+        $bonus = app(\App\Services\BonusManager::class);
         $bonus->assignToUpline($user, $upline, $position, false);
 
-        // Pilih salah satu: sinkron ATAU job (jangan keduanya)
-        //$bonus->processPairing($user);
-         ProcessPairingJob::dispatch($user);
+        // Proses pairing via job (atau sinkron—pilih salah satu)
+        // $bonus->processPairing($user);
+        ProcessPairingJob::dispatch($user);
 
-        // 5) Event & notifikasi
+        // 7) Event & notifikasi
         event(new MemberCountUpdated(User::count()));
 
         Notification::create([
@@ -472,10 +448,11 @@ class UserController extends Controller
 
     } catch (ValidationException $e) {
         return response()->json(['errors' => $e->errors()], 422);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
         \Log::error('Registration error: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
         return response()->json(['message' => 'Terjadi kesalahan internal server. Silakan coba lagi nanti.'], 500);
     }
 }
+
 
 }

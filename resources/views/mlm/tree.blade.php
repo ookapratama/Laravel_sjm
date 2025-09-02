@@ -1207,35 +1207,46 @@
                 }
             }
 
-            async function loadUnusedPinsIntoSelect() {
-                const sel = document.getElementById('pinCodes');
-                if (!sel) return;
-                sel.innerHTML = '<option disabled>Memuat PIN...</option>';
-                try {
-                    const r = await fetch(`{{ route('pins.unused') }}`, {
-                        headers: {
-                            'Accept': 'application/json'
-                        }
-                    });
-                    if (!r.ok) throw 0;
-                    const {
-                        pins
-                    } = await r.json();
-                    sel.innerHTML = '';
-                    if (!pins || !pins.length) {
-                        sel.innerHTML = '<option disabled>Tidak ada PIN tersedia</option>';
-                    } else {
-                        pins.forEach(p => {
-                            const opt = document.createElement('option');
-                            opt.value = p.code;
-                            opt.textContent = p.code;
-                            sel.appendChild(opt);
-                        });
-                    }
-                } catch {
-                    sel.innerHTML = '<option disabled>Gagal memuat PIN</option>';
-                }
-            }
+           async function loadUnusedPinsIntoSelect() {
+  const sel = document.getElementById('pinCodes');
+  if (!sel) return;
+
+  sel.innerHTML = '<option disabled>Memuat PIN...</option>';
+
+  try {
+    const r = await fetch(`{{ route('pins.unused') }}`, {
+      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+
+    const data = await r.json();
+    const pins = data?.pins ?? [];
+
+    sel.innerHTML = '';
+
+    if (!Array.isArray(pins) || pins.length === 0) {
+      sel.innerHTML = '<option disabled>Tidak ada PIN tersedia</option>';
+      return;
+    }
+
+    pins.forEach(item => {
+      const code = (typeof item === 'string') ? item : item?.code; // dukung dua bentuk
+      if (!code) return;
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = code;
+      sel.appendChild(opt);
+    });
+
+  } catch (e) {
+    console.error('loadUnusedPinsIntoSelect error:', e);
+    sel.innerHTML = '<option disabled>Gagal memuat PIN</option>';
+  }
+}
+
+// pastikan dipanggil
+document.addEventListener('DOMContentLoaded', loadUnusedPinsIntoSelect);
             async function previewCloneCandidates() {
                 const parentId = document.getElementById('cloneParentId').value;
                 const useLogin = document.getElementById('cloneUseLogin').value === '1';

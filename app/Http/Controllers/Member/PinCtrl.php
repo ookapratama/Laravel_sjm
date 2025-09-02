@@ -24,12 +24,17 @@ class PinCtrl extends Controller
         $requests = PinRequest::where('requester_id', auth()->id())
             ->latest()
             ->get();
-
+$userId = auth()->id();
         $pins = DB::table('activation_pins as ap')
             ->leftJoin('users as purchaser', 'ap.purchased_by', '=', 'purchaser.id')
             ->leftJoin('users as transferred', 'ap.transferred_to', '=', 'transferred.id')
             ->leftJoin('users as used', 'ap.used_by', '=', 'used.id')
-            ->where('ap.purchased_by', auth()->id())
+             ->where(function ($q) use ($userId) {
+                    $q->where('ap.purchased_by',  $userId)
+                    ->orWhere('ap.transferred_to', $userId)
+                    ->orWhere('ap.used_by', $userId); // kalau mau tampil juga PIN yang dipakai user
+                })
+            ->orwhere('ap.transferred_to',$userId)
             ->orderBy('ap.status', 'asc')
             ->select(
                 'ap.*',
@@ -44,7 +49,7 @@ class PinCtrl extends Controller
 
         $hasOpen = $requests->contains(fn($r) => in_array($r->status, ['requested', 'finance_approved']));
 
-        $userId = auth()->id();
+     
 
         $downlines = collect(DB::select("
                 WITH RECURSIVE downlines AS (

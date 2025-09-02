@@ -25,14 +25,18 @@ class TreeCloneController extends Controller
     public function unusedPins(Request $r)
     {
         try {
-            // Cek apakah kolomnya benar 'owner_id'
-            // Jika di DB kamu namanya lain (mis: 'buyer_id', 'user_id'), ganti di sini.
-            $pins = ActivationPin::query()
-                ->where('purchased_by', $r->user()->id)
-                ->where('status', 'unused')
-                ->orderBy('created_at', 'asc')
-                ->get(['code']);
+            
+           $userId = $r->user()->id;
 
+$pins = ActivationPin::query()
+    ->where('purchased_by', $userId)
+    ->orWhere(function ($q) use ($userId) {
+        $q->where('transferred_to', $userId)
+          ->where('status', 'unused');
+    })
+    ->orWhere('status', 'transferred')
+    ->orderBy('created_at', 'asc')
+    ->pluck('code');
             return response()->json(['ok' => true, 'pins' => $pins]);
         } catch (\Throwable $e) {
             \Log::error('unusedPins error', ['msg' => $e->getMessage()]);

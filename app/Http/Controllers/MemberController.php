@@ -25,11 +25,11 @@ public function upgradeBagan(Request $request, $bagan)
     ]);
 
     $biaya = [
-        1 => 1500000,
-        2 => 3000000,
-        3 => 6000000,
-        4 => 12000000,
-        5 => 24000000,
+        2 => 1500000,
+        3 => 3000000,
+        4 => 6000000,
+        5 => 12000000,
+        6 => 24000000,
     ];
 
     $upgradeCost = $biaya[$bagan] ?? null;
@@ -49,7 +49,7 @@ public function upgradeBagan(Request $request, $bagan)
     // Hitung saldo bonus
     $totalBonus = BonusTransaction::where('user_id', $user->id)
         ->where('status', 'paid')
-        ->sum('net_amount');
+        ->sum('amount');
 
     $totalWithdrawn = Withdrawal::where('user_id', $user->id)
         ->where('status', 'approved')
@@ -132,11 +132,11 @@ public function cekSaldo(Request $request, $bagan)
     $user = auth()->user();
 
     $biaya = [
-        1 => 1500000,
-        2 => 3000000,
-        3 => 6000000,
-        4 => 12000000,
-        5 => 24000000,
+        2 => 1500000,
+        3 => 3000000,
+        4 => 6000000,
+        5 => 12000000,
+        6 => 24000000,
     ];
 
     $upgradeCost = $biaya[$bagan] ?? null;
@@ -144,7 +144,7 @@ public function cekSaldo(Request $request, $bagan)
 
     $totalBonus = BonusTransaction::where('user_id', $user->id)
         ->where('status', 'paid')
-        ->sum('net_amount');
+        ->sum('amount');
 
     $totalWithdrawn = Withdrawal::where('user_id', $user->id)
         ->where('status', 'approved')
