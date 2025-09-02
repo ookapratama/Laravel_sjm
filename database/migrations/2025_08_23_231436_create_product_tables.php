@@ -20,7 +20,7 @@ return new class extends Migration {
         Schema::create('product_sales', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('user_id');
-            $table->unsignedBigInteger('product_id');
+            $table->unsignedBigInteger('product_packages_id');
             $table->integer('quantity');
             $table->decimal('total_price', 15, 2);
             $table->string('payment_type')->nullable();
@@ -28,7 +28,7 @@ return new class extends Migration {
             $table->timestamps();
 
             $table->index('user_id', 'product_sales_user_id_foreign');
-            $table->index('product_id', 'product_sales_product_id_foreign');
+            $table->index('product_packages_id', 'product_sales_product_packages_id_foreign');
         });
 
         Schema::create('user_products', function (Blueprint $table) {
@@ -45,13 +45,13 @@ return new class extends Migration {
         // FK sesuai dump
         Schema::table('product_sales', function (Blueprint $table) {
             $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
-            $table->foreign('product_id')->references('id')->on('products')->cascadeOnDelete();
+            $table->foreign('product_packages_id')->references('id')->on('product_packages')->cascadeOnDelete();
         });
     }
 
     public function down(): void {
         Schema::table('product_sales', function (Blueprint $table) {
-            $table->dropForeign(['product_id']);
+            $table->dropForeign(['product_packages_id']);
             $table->dropForeign(['user_id']);
         });
         Schema::dropIfExists('user_products');

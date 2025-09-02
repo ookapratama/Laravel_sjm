@@ -32,6 +32,7 @@ use App\Models\Notification;
 use App\Http\Controllers\ReferralQrController;
 use App\Http\Controllers\Admin\PinCtrl as AdminPinCtrl;
 use App\Http\Controllers\Admin\ProdukController;
+use App\Http\Controllers\Admin\TransactionPackageController;
 use App\Http\Controllers\Finance\PinCtrl as FinancePinCtrl;
 use App\Http\Controllers\Member\PinCtrl as MemberPinCtrl;
 use App\Http\Controllers\Auth\ReferralRegisterController;
@@ -205,19 +206,28 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/{id}/edit', [ProdukController::class, 'edit'])->name('products.edit');
         Route::put('/update/{id}', [ProdukController::class, 'update'])->name('products.update');
         Route::delete('/delete/{id}', [ProdukController::class, 'destroy'])->name('products.destroy');
-        
+
         // kelola paket
         Route::get('/manage-package', [PackageController::class, 'index'])->name('products.manage-package');
         Route::post('/manage-package', [PackageController::class, 'update'])->name('products.manage-package.update');
 
+        Route::get('/transaction-packages', [TransactionPackageController::class, 'index'])->name('products.transaction.index');
+        Route::get('/assigned', [TransactionPackageController::class, 'assignedPins'])->name('product.transaction.assigned');
+        Route::post('/bulk-assign-package', [TransactionPackageController::class, 'bulkAssignPackage'])->name('product.transaction.bulk-assign-package');
+
+        Route::post('/{id}/transaction-packages', [TransactionPackageController::class, 'assignPackage'])->name('products.transaction.assigned');
+        Route::delete('/{pin}/unassign-package', [TransactionPackageController::class, 'unassignPackage'])->name('product.transaction.unassign-package');
+        Route::get('stats', [TransactionPackageController::class, 'getDashboardStats'])->name('product.transaction.stats');
     });
 
+    Route::get('packages/{package}/preview', [TransactionPackageController::class, 'getPackagePreview'])->name('packages.preview');
+
+
     Route::resource('packages', PackageController::class);
-    
+
     // Additional package routes
     Route::patch('packages/{package}/toggle-status', [PackageController::class, 'toggleStatus'])
         ->name('packages.toggle-status');
-
 });
 
 // ✅ Admin
@@ -313,8 +323,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/cash-report', [FinanceController::class, 'cashReport'])->name('finance.cash.report');
         Route::get('/cash-report/data', [FinanceController::class, 'cashReportData'])->name('finance.cash.report.data');
         Route::post('/expenses', [FinanceController::class, 'storeOtherExpense'])->name('finance.expense.store');
-        
-
     });
 
     // ✅ Member
