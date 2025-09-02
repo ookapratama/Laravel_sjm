@@ -29,11 +29,11 @@ class TreeCloneController extends Controller
            $userId = $r->user()->id;
 
 $pins = ActivationPin::query()
-    ->where('purchased_by', $userId)
-    ->orWhere(function ($q) use ($userId) {
-        $q->where('transferred_to', $userId)
-          ->where('status', 'unused');
+    ->where(function ($q) use ($userId) {
+        $q->where('purchased_by', $userId)
+          ->orWhere('transferred_to', $userId);
     })
+    ->whereIn('status', ['unused', 'transferred']) // tidak termasuk 'used'
     ->orderBy('created_at', 'asc')
     ->pluck('code');
             return response()->json(['ok' => true, 'pins' => $pins]);
