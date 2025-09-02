@@ -34,7 +34,6 @@ $pins = ActivationPin::query()
         $q->where('transferred_to', $userId)
           ->where('status', 'unused');
     })
-    ->orWhere('status', 'transferred')
     ->orderBy('created_at', 'asc')
     ->pluck('code');
             return response()->json(['ok' => true, 'pins' => $pins]);
