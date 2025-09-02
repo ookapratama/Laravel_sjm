@@ -88,160 +88,126 @@ $pins = ActivationPin::query()
      * - pin_codes[] (required, minimal 1)
      */
     public function store(Request $r)
-    {
-        $r->validate([
-            'parent_id'   => ['required', 'exists:users,id'],
-            'position'    => ['required', 'in:left,right'],
-            'bagan'       => ['nullable', 'integer', 'in:1,2,3,4,5'], // dikirim UI tapi tidak dipakai langsung oleh BonusManager
-            'use_login'   => ['required', 'boolean'],
-            'pin_codes'   => ['required', 'array', 'min:1'],
-            'pin_codes.*' => ['string', 'distinct'],
-        ]);
+{
+    // 1) Validasi request
+    $r->validate([
+        'parent_id'   => ['required','exists:users,id'],
+        'position'    => ['required','in:left,right'],
+        'bagan'       => ['nullable','integer','in:1,2,3,4,5'], // tidak dipakai langsung
+        'use_login'   => ['required','boolean'],
+        'pin_codes'   => ['required','array','min:1'],
+        'pin_codes.*' => ['string','distinct'],
+    ]);
 
-// <<<<<<< fitur_trigger_product
-        $auth    = $r->user();
-        $pins    = (array)$r->pin_codes;
-        $qty     = count($pins);
-        $parent  = \App\Models\User::findOrFail($r->parent_id);
-        $baseUser = $r->boolean('use_login') ? $auth : $parent;
+    $auth     = $r->user();
+    $pins     = array_values((array) $r->input('pin_codes', []));
+    $qty      = count($pins);
+    $parent   = User::findOrFail($r->parent_id);
+    $baseUser = $r->boolean('use_login') ? $auth : $parent;
 
-
-        DB::transaction(function () use ($r, $auth, $pins, $qty, $baseUser, $parent) {
-            // Lock PIN milik user login
-            $pinRows = ActivationPin::whereIn('code', $pins)
-                ->where('purchased_by', $auth->id)
-                ->where('status', 'unused')
-                ->lockForUpdate()
-                ->get();
-
-            if ($pinRows->count() !== $qty) {
-                abort(422, 'Ada PIN tidak valid / bukan milik Anda / sudah dipakai.');
-// =======
-//         $baseProfile = MitraProfile::where('user_id', $baseUser->id)->first();
-
-//         foreach ($pinRows as $pin) {
-//             // 1) Username & sponsor_code unik (suffix angka)
-//             $newUsername = $this->nextIncrement($baseUser->username, 'username');
-//             $newSponsor  = $this->nextIncrement(($baseUser->referral_code ?? $baseUser->username), 'referral_code');
-
-//             // 2) Kredensial
-//             // $passwordPlain = \Illuminate\Support\Str::random(10);
-//             $passwordPlain = $baseUser->password;
-
-//             // 3) Buat user baru (email/phone sama)
-//             $newUser = User::create([
-//                 'name'         => $baseUser->name,
-//                 'username'     => $newUsername,
-//                 'email'        => $baseUser->email,
-//                 'no_telp'        => $baseUser->no_telp,
-//                 'password'     => $passwordPlain,
-//                 'referral_code' => $newSponsor,
-//                 'sponsor_id' => $auth->id,
-//             ]);
-
-//             // 4) Clone profil (opsional)
-//             if ($baseProfile) {
-//                 MitraProfile::create([
-//                     'user_id'       => $newUser->id,
-//                     'no_ktp'        => $baseProfile->no_ktp,
-//                     'jenis_kelamin' => $baseProfile->jenis_kelamin,
-//                     'agama'         => $baseProfile->agama,
-//                     'tempat_lahir'  => $baseProfile->tempat_lahir,
-//                     'tanggal_lahir' => $baseProfile->tanggal_lahir,
-//                     'alamat'        => $baseProfile->alamat,
-//                     'bank'          => $baseProfile->bank,
-//                     'nama_rekening' => $baseProfile->nama_rekening,
-//                     'nama_bank' => $baseProfile->nama_bank,
-//                     'nomor_rekening'   => $baseProfile->nomor_rekening,
-//                     'nama_ahli_waris' => $baseProfile->nama_ahli_waris,
-//                     'hubungan_ahli_waris' => $baseProfile->hubungan_ahli_waris,
-//                     'rt' => $baseProfile->rt,
-//                     'rw' => $baseProfile->rw,
-//                     'desa' => $baseProfile->desa,
-//                     'kota' => $baseProfile->kota,
-//                     'kecamatan' => $baseProfile->kecamatan,
-//                     'kode_pos' => $baseProfile->kode_pos,
-
-                   
-
-//                 ]);
-// >>>>>>> main
-            }
-
-            $baseProfile = \App\Models\MitraProfile::where('user_id', $baseUser->id)->first();
-
-            foreach ($pinRows as $pin) {
-                // 1) Username & sponsor_code unik (suffix angka)
-                $newUsername = $this->nextIncrement($baseUser->username, 'username');
-                $newSponsor  = $this->nextIncrement(($baseUser->referral_code ?? $baseUser->username), 'referral_code');
-
-                // 2) Kredensial
-                // $passwordPlain = \Illuminate\Support\Str::random(10);
-                $passwordPlain = $baseUser->password;
-
-                // 3) Buat user baru (email/phone sama)
-                $newUser = \App\Models\User::create([
-                    'name'         => $baseUser->name,
-                    'username'     => $newUsername,
-                    'email'        => $baseUser->email,
-                    'phone'        => $baseUser->phone,
-                    'password'     => $passwordPlain,
-                    'referral_code' => $newSponsor,
-                    'sponsor_id' => $auth->id,
-                ]);
-
-                // 4) Clone profil (opsional)
-                if ($baseProfile) {
-                    MitraProfile::create([
-                        'user_id'       => $newUser->id,
-                        'no_ktp'        => $baseProfile->no_ktp,
-                        'jenis_kelamin' => $baseProfile->jenis_kelamin,
-                        'tempat_lahir'  => $baseProfile->tempat_lahir,
-                        'tanggal_lahir' => $baseProfile->tanggal_lahir,
-                        'alamat'        => $baseProfile->alamat,
-                        'bank'          => $baseProfile->bank,
-                        'nama_rekening' => $baseProfile->nama_rekening,
-                        'no_rekening'   => $baseProfile->no_rekening,
-                    ]);
-                }
-
-                $packages = Package::where('is_active', true)->get();
-                if ($packages->isEmpty()) {
-                    return response()->json([
-                        'ok' => false,
-                        'message' => 'Tidak ada product package aktif'
-
-                    ]);
-                }
-
-                $productPackageId = $packages->random()->id;
-
-
-                // 5) Consume PIN
-                $pin->update([
-                    'status'  => 'used',
-                    'used_by' => $newUser->id,
-                    'product_package_id' => $productPackageId,
-                    'used_at' => now(),
-                ]);
-
-
-
-
-                try {
-                    app(\App\Services\BonusManager::class)->assignToUpline($newUser, $parent, $r->position, false);
-                } catch (\InvalidArgumentException $e) {
-                    // biarkan pending (upline_id null), beritahu ke UI
-                    \Log::warning('Placement gagal (slot penuh): ' . $e->getMessage());
-                }
-            }
-        });
-
+    // 2) Pastikan ada package aktif
+    $package = Package::where('is_active', true)->inRandomOrder()->first();
+    if (!$package) {
         return response()->json([
-            'ok'      => true,
-            'message' => "{$qty} ID berhasil di-clone & ditempatkan.",
-        ]);
+            'ok'      => false,
+            'message' => 'Tidak ada product package aktif.',
+        ], 422);
     }
+
+    // 3) Transaksi: lock PIN, buat user2 baru, konsumsi PIN, tempatkan ke tree
+    DB::transaction(function () use ($r, $auth, $pins, $qty, $baseUser, $parent, $package) {
+
+        // 3a) Lock PIN milik user login (pembeli atau penerima transfer) dan status valid
+        $pinRows = ActivationPin::whereIn('code', $pins)
+            ->where(function ($q) use ($auth) {
+                $q->where('purchased_by', $auth->id)
+                  ->orWhere('transferred_to', $auth->id);
+            })
+            ->whereIn('status', ['unused','transferred'])
+            ->lockForUpdate()
+            ->get();
+
+        if ($pinRows->count() !== $qty) {
+            $found = $pinRows->pluck('code')->all();
+            $missing = collect($pins)->diff($found)->values()->all();
+            throw ValidationException::withMessages([
+                'pin_codes' => ['Ada PIN tidak valid / bukan milik Anda / tidak tersedia: '.implode(', ', $missing)]
+            ]);
+        }
+
+        // 3b) Ambil profil dasar (kalau ada)
+        $baseProfile = MitraProfile::where('user_id', $baseUser->id)->first();
+
+        // 3c) Loop tiap PIN → buat user baru, clone profil (opsional), konsumsi PIN, tempatkan ke tree
+        foreach ($pinRows as $pin) {
+            // Username & referral unik (pakai helper kamu)
+            $newUsername = $this->nextIncrement($baseUser->username, 'username');
+            $newSponsor  = $this->nextIncrement($baseUser->referral_code ?? $baseUser->username, 'referral_code');
+
+            // Password: pakai yang sudah di-hash dari baseUser (as is)
+            $newUser = User::create([
+                'name'          => $baseUser->name,
+                'username'      => $newUsername,
+                'email'         => $baseUser->email,
+                'no_telp'       => $baseUser->no_telp,
+                'password'      => $baseUser->password, // diasumsikan sudah hashed
+                'referral_code' => $newSponsor,
+                'sponsor_id'    => $auth->id,
+                'role'          => 'member',
+                'status'        => 'active',
+            ]);
+
+            // Clone profil bila ada
+            if ($baseProfile) {
+                MitraProfile::create([
+                    'user_id'             => $newUser->id,
+                    'no_ktp'              => $baseProfile->no_ktp,
+                    'jenis_kelamin'       => $baseProfile->jenis_kelamin,
+                    'agama'               => $baseProfile->agama,
+                    'tempat_lahir'        => $baseProfile->tempat_lahir,
+                    'tanggal_lahir'       => $baseProfile->tanggal_lahir,
+                    'alamat'              => $baseProfile->alamat,
+                    'nama_rekening'       => $baseProfile->nama_rekening,
+                    'nama_bank'           => $baseProfile->nama_bank,
+                    'nomor_rekening'      => $baseProfile->nomor_rekening,
+                    'nama_ahli_waris'     => $baseProfile->nama_ahli_waris,
+                    'hubungan_ahli_waris' => $baseProfile->hubungan_ahli_waris,
+                    'rt'                  => $baseProfile->rt,
+                    'rw'                  => $baseProfile->rw,
+                    'desa'                => $baseProfile->desa,
+                    'kecamatan'           => $baseProfile->kecamatan,
+                    'kota'                => $baseProfile->kota,
+                    'kode_pos'            => $baseProfile->kode_pos,
+                ]);
+            }
+
+            // Konsumsi PIN + set paket
+            $pin->update([
+                'status'             => 'used',
+                'used_by'            => $newUser->id,
+                'product_package_id' => $package->id,
+                'used_at'            => now(),
+            ]);
+
+            // Tempatkan ke tree (jika slot penuh, biarkan pending & log)
+            try {
+                app(\App\Services\BonusManager::class)->assignToUpline($newUser, $parent, $r->position, false);
+            } catch (\InvalidArgumentException $e) {
+                \Log::warning('Placement gagal (slot penuh)', [
+                    'msg'      => $e->getMessage(),
+                    'user_id'  => $newUser->id,
+                    'parent'   => $parent->id,
+                    'position' => $r->position,
+                ]);
+            }
+        }
+    });
+
+    return response()->json([
+        'ok'      => true,
+        'message' => "{$qty} ID berhasil di-clone & ditempatkan.",
+    ]);
+}
 
     private function nextIncrement(string $base, string $target = 'username'): string
     {
