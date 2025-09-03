@@ -102,11 +102,12 @@
     @php
         $baganNames = [
             1 => 'Basic',
-            2 => 'Starter',
-            3 => 'Booster',
-            4 => 'Growth',
-            5 => 'Champion',
-            6 => 'Legacy',
+            2 => 'Bintang 1',
+            3 => 'Bintang 2',
+            4 => 'Bintang 3',
+            5 => 'Bintang 4',
+            6 => 'Bintang 5',
+            7 => 'Bintang 6',
         ];
         $biaya = [
             1 => 750000,
@@ -115,6 +116,7 @@
             4 => 6000000,
             5 => 12000000,
             6 => 24000000,
+            7 => 48000000,
         ];
         $userBaganAktif = collect($userBagans)->filter(fn($b) => $b->is_active)->pluck('bagan')->toArray();
 

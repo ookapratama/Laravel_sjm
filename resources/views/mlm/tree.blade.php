@@ -963,10 +963,12 @@
                     if (d.depth >= 2) d.children = null; // tampil 3 level
                 });
 
-                const getStarCount = () => {
-                    const n = parseInt(String(window.currentBagan).trim(), 10);
-                    return Math.max(0, Math.min(5, Number.isFinite(n) ? (n - 1) : 0));
-                };
+                const MAX_STARS = 7;
+                function getStarCount() {
+                const n = Number(window.currentBagan) || 0; // mis. Basic=1 → 0 bintang, Bintang 1=2 → 1 bintang, dst
+                return Math.max(0, Math.min(MAX_STARS, n - 1));
+                }
+
 
                 const layout = d3.tree().nodeSize([hGap + NODE_W, vGap + NODE_H]);
                 layout(root);
@@ -1138,7 +1140,7 @@
                 items.forEach(a => {
                     a.addEventListener('click', e => {
                         e.preventDefault();
-                        const n = parseInt(a.dataset.bagan, 10);
+                        const n = parseInt(a.dataset.bagan);
                         if (!Number.isFinite(n)) return;
                         window.currentBagan = n;
                         localStorage.setItem('selectedBagan', String(n));

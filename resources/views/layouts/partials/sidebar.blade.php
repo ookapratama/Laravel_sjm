@@ -45,18 +45,22 @@
                         </a>
                         <div class="collapse" id="jaringan">
                             <ul class="nav nav-collapse">
-                                <li><a href="/tree" class="menu-bagan" data-bagan="1"><span class="sub-item">Basic</span></a>
-                                </li>
-                                <li><a href="#" class="menu-bagan" data-bagan="2"><span class="sub-item">Starter
+                                <ul class="nav nav-collapse">
+                                <li><a href="/tree" class="menu-bagan" data-bagan="1"><span
+                                            class="sub-item">Basic</span></a></li>
+                                <li><a href="#" class="menu-bagan" data-bagan="2"><span class="sub-item">Bintang 1
                                             P1</span></a></li>
-                                <li><a href="#" class="menu-bagan"data-bagan="3"><span class="sub-item">Booster
+                                <li><a href="#" class="menu-bagan"data-bagan="3"><span class="sub-item">Bintang 2
                                             P2</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="4"> <span class="sub-item">Growth
+                                <li><a href="#" class="menu-bagan" data-bagan="4"> <span class="sub-item">Bintang 3
                                             P3</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="5"> <span class="sub-item">Champion
+                                <li><a href="#" class="menu-bagan" data-bagan="5"> <span class="sub-item">Bintang 4
                                             P4</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="6"> <span class="sub-item">Legacy
+                                <li><a href="#" class="menu-bagan" data-bagan="6"> <span class="sub-item">Bintang 5
                                             P5</span></a></li>
+                                <li><a href="#" class="menu-bagan" data-bagan="7"> <span class="sub-item">Bintang 6
+                                            P6</span></a></li>
+                            </ul>
 
                             </ul>
                         </div>
@@ -222,18 +226,22 @@
                         </a>
                         <div class="collapse" id="jaringan">
                             <ul class="nav nav-collapse">
+                                <ul class="nav nav-collapse">
                                 <li><a href="/tree" class="menu-bagan" data-bagan="1"><span
                                             class="sub-item">Basic</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="2"><span class="sub-item">Starter
+                                <li><a href="#" class="menu-bagan" data-bagan="2"><span class="sub-item">Bintang 1
                                             P1</span></a></li>
-                                <li><a href="#" class="menu-bagan"data-bagan="3"><span class="sub-item">Booster
+                                <li><a href="#" class="menu-bagan"data-bagan="3"><span class="sub-item">Bintang 2
                                             P2</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="4"> <span class="sub-item">Growth
+                                <li><a href="#" class="menu-bagan" data-bagan="4"> <span class="sub-item">Bintang 3
                                             P3</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="5"> <span class="sub-item">Champion
+                                <li><a href="#" class="menu-bagan" data-bagan="5"> <span class="sub-item">Bintang 4
                                             P4</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="6"> <span class="sub-item">Legacy
+                                <li><a href="#" class="menu-bagan" data-bagan="6"> <span class="sub-item">Bintang 5
                                             P5</span></a></li>
+                                <li><a href="#" class="menu-bagan" data-bagan="7"> <span class="sub-item">Bintang 6
+                                            P6</span></a></li>
+                            </ul>
 
                             </ul>
                         </div>
@@ -313,17 +321,18 @@
                             <ul class="nav nav-collapse">
                                 <li><a href="/tree" class="menu-bagan" data-bagan="1"><span
                                             class="sub-item">Basic</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="2"><span class="sub-item">Starter
-                                            P1</span></a></li>
-                                <li><a href="#" class="menu-bagan"data-bagan="3"><span class="sub-item">Booster
-                                            P2</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="4"> <span class="sub-item">Growth
-                                            P3</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="5"> <span class="sub-item">Champion
-                                            P4</span></a></li>
-                                <li><a href="#" class="menu-bagan" data-bagan="6"> <span class="sub-item">Legacy
-                                            P5</span></a></li>
-
+                                <li><a href="#" class="menu-bagan" data-bagan="2"><span class="sub-item">Bintang 1
+                                            </span></a></li>
+                                <li><a href="#" class="menu-bagan"data-bagan="3"><span class="sub-item">Bintang 2
+                                            </span></a></li>
+                                <li><a href="#" class="menu-bagan" data-bagan="4"> <span class="sub-item">Bintang 3
+                                            </span></a></li>
+                                <li><a href="#" class="menu-bagan" data-bagan="5"> <span class="sub-item">Bintang 4
+                                            </span></a></li>
+                                <li><a href="#" class="menu-bagan" data-bagan="6"> <span class="sub-item">Bintang 5
+                                            </span></a></li>
+                                <li><a href="#" class="menu-bagan" data-bagan="7"> <span class="sub-item">Bintang 6
+                                            </span></a></li>
                             </ul>
                         </div>
                     </li>
