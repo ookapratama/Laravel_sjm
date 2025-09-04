@@ -329,9 +329,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('member')->middleware('role:member,super-admin')->group(function () {
         Route::get('/downline', [UserController::class, 'index'])->name('users.downline');
         Route::post('/register', [UserController::class, 'store_member'])->name('users.downline.store');
+
         Route::get('/pins', [MemberPinCtrl::class, 'index'])->name('member.pin.index');
         Route::post('/pins/request', [MemberPinCtrl::class, 'store'])->name('member.pin.request');
         Route::post('/transfer', [MemberPinCtrl::class, 'transfer'])->name('member.pin.transfer');
+        Route::post('/pin/bulk-transfer', [MemberPinCtrl::class, 'bulkTransfer'])->name('member.pin.bulk-transfer');
+        Route::get('/pin/available-for-bulk', [MemberPinCtrl::class, 'getAvailablePins'])->name('member.pin.available-for-bulk');
+
         Route::get('/', [DashboardController::class, 'member'])->name('member');
         Route::get('/withdraw', [MemberWithdrawController::class, 'index'])->name('member.withdraw');
         Route::post('/withdraw', [MemberWithdrawController::class, 'store'])->name('member.withdraw.store');
