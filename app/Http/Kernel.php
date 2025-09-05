@@ -65,5 +65,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \App\Http\Middleware\RoleMiddleware::class,
         'force.change.credentials' => \App\Http\Middleware\ForceChangeCredentials::class,
+        'tree.access' => \App\Http\Middleware\TreeAccessMiddleware::class,
     ];
 }

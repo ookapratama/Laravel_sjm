@@ -1474,7 +1474,7 @@
                 'admin_generate': 'Finance telah generate pin aktivasi anda',
                 'member_request_bonus': 'Member meminta pengajuan penarikan bonus',
                 'pairing_downline': 'User berhasil dipasang ke tree',
-                'new_member_registered': 'User berhasil register menggunakan Kode Referal dan Pin anda'
+                'new_member_registered': 'User berhasil register menggunakan Kode Referal dan Pin anda',
                 'transfer_pin': 'Upline anda telah mentransfer beberapa pin terbaru ke anda, Silahkan cek/refresh halaman Dashboard anda'
             };
             return titles[type] || 'Notifikasi Baru';

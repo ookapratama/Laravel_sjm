@@ -643,8 +643,72 @@
     <script>
         (() => {
             "use strict";
+
+            const securityStyles = `
+<style>
+.tree-nav.restricted {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.node-restricted {
+    opacity: 0.6;
+    filter: grayscale(0.5);
+}
+
+.node-restricted .node-name {
+    font-style: italic;
+    color: #6c757d !important;
+}
+
+.access-denied-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: white;
+    pointer-events: none;
+}
+
+.member-navigation-hint {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(255, 193, 7, 0.9);
+    color: #000;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    max-width: 250px;
+    z-index: 50;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.member-navigation-hint.hidden {
+    display: none;
+}
+
+.member-navigation-hint .close-hint {
+    float: right;
+    margin-left: 8px;
+    cursor: pointer;
+    font-weight: bold;
+}
+</style>`;
+
+            // Inject styles
+            document.head.insertAdjacentHTML('beforeend', securityStyles);
             /* =============== STATE =============== */
             const AUTH_USER_ID = {{ auth()->user()->id }};
+            const AUTH_USER_ROLE = @json(auth()->user()->role ?? 'member'); // Ambil dari backend
+            const AUTH_USER_UPLINE_ID = @json(auth()->user()->referrer_id ?? null);
+
             window.currentRootId = {{ $root->id }};
             window.currentBagan = Number(localStorage.getItem('selectedBagan') || 1);
 
@@ -666,6 +730,52 @@
                 const n = Number(String(v ?? '').trim());
                 return Number.isFinite(n) ? n : null;
             };
+
+            function canAccessNode(nodeId) {
+                const currentUserId = AUTH_USER_ID;
+                const userRole = AUTH_USER_ROLE;
+                const userUplineId = AUTH_USER_UPLINE_ID;
+
+                // Super admin bisa akses semua
+                if (userRole === 'super-admin' || userRole === 'admin') {
+                    return true;
+                }
+
+                // Member bisa akses lebih luas dalam jaringan MLM
+                if (userRole === 'member') {
+                    // Bisa akses diri sendiri
+                    if (nodeId === currentUserId) {
+                        return true;
+                    }
+
+                    // Untuk node lain, akan divalidasi oleh backend
+                    // Frontend tidak perlu logic complex karena backend sudah handle
+                    // Member bisa akses upline member dan downline mereka
+                    return true; // Biarkan backend yang validasi detail
+                }
+
+                return false;
+            }
+
+            function canNavigateUp(targetNodeId) {
+                const userRole = AUTH_USER_ROLE;
+                const userUplineId = AUTH_USER_UPLINE_ID;
+
+                // Super admin bisa navigasi kemana saja
+                if (userRole === 'super-admin' || userRole === 'admin') {
+                    return true;
+                }
+
+                // Member bisa navigate up dalam jaringan member
+                if (userRole === 'member') {
+                    // Biarkan backend yang handle validasi
+                    // Frontend hanya cek basic logic
+                    return true;
+                }
+
+                return false;
+            }
+
 
             function activeBagansFrom(d) {
                 if (!d || typeof d !== 'object') return [];
@@ -727,18 +837,28 @@
             }
 
             async function fetchJSON(url, opts = {}) {
-                if (pendingController) pendingController.abort();
-                pendingController = new AbortController();
-                const res = await fetch(url, {
-                    ...opts,
-                    signal: pendingController.signal,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        ...(opts.headers || {})
+
+                try {
+                    if (pendingController) pendingController.abort();
+                    pendingController = new AbortController();
+                    const res = await fetch(url, {
+                        ...opts,
+                        signal: pendingController.signal,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            ...(opts.headers || {})
+                        }
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return res.json();
+
+                } catch (error) {
+                    if (error.status === 403) {
+                        handleAccessDenied(error);
+                        throw error;
                     }
-                });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                return res.json();
+                    throw error;
+                }
             }
             async function fetchTEXT(url) {
                 const res = await fetch(url, {
@@ -786,7 +906,7 @@
                 const cur = toNum(currentId);
                 if (!cur || cur <= 0) return null;
 
-                if (parentCache.has(cur)) return parentCache.get(cur); // cache
+                if (parentCache.has(cur)) return parentCache.get(cur);
 
                 const local = [
                     lastLoadedData?.parent_id,
@@ -802,27 +922,30 @@
                 try {
                     const r = await fetchTEXT(`/tree/parent/${cur}`);
                     if (r.ok) {
-                        const pid = pickParentId(r.text);
-                        if (pid && pid > 0) {
-                            parentCache.set(cur, pid);
-                            return pid;
+                        const result = tryJSON(r.text);
+                        if (result && !result.error) {
+                            const pid = pickParentId(r.text);
+                            if (pid && pid > 0) {
+                                parentCache.set(cur, pid);
+                                return pid;
+                            }
+                        } else if (result && result.error) {
+                            // Backend menolak akses
+                            throw {
+                                status: 403,
+                                message: result.message
+                            };
                         }
                     }
-                } catch {}
+                } catch (error) {
+                    if (error.status === 403) {
+                        throw error; // Re-throw untuk handling di navUp
+                    }
+                }
 
+                // Fallback attempts dengan error handling
                 try {
                     const r = await fetchTEXT(`/users/ajax/${cur}`);
-                    if (r.ok) {
-                        const pid = pickParentId(r.text);
-                        if (pid && pid > 0) {
-                            parentCache.set(cur, pid);
-                            return pid;
-                        }
-                    }
-                } catch {}
-
-                try {
-                    const r = await fetchTEXT(`/tree/node/${cur}`);
                     if (r.ok) {
                         const pid = pickParentId(r.text);
                         if (pid && pid > 0) {
@@ -866,13 +989,22 @@
             /* =============== LOAD =============== */
             async function loadTree() {
                 if (isLoading) return;
+
                 isLoading = true;
 
                 const prev = document.querySelector('#tree-container svg');
                 const keepT = prev ? d3.zoomTransform(prev) : null;
 
                 try {
-                    const data = await fetchJSON(`/tree/load/${window.currentRootId}?limit=3`);
+                    // Tambahkan parameter role untuk validasi backend
+                    const data = await fetchJSON(
+                        `/tree/load/${window.currentRootId}?limit=3&user_role=${AUTH_USER_ROLE}`);
+
+                    // Validasi response dari backend
+                    if (data.error || data.access_denied) {
+                        throw new Error(data.message || 'Akses ditolak');
+                    }
+
                     if (data && data.parent_id == null && data.upline_id != null) data.parent_id = data.upline_id;
                     lastLoadedData = normalizeIds(data);
 
@@ -883,8 +1015,19 @@
                     drawTree(lastLoadedData, true, (keepT && keepT.k) ? keepT : null);
                 } catch (e) {
                     if (e.name !== 'AbortError') {
-                        toastr?.error?.('Gagal memuat tree ');
-                        console.log(e)
+                        console.log('Load tree error:', e);
+
+                        if (e.status === 403) {
+                            handleAccessDenied(e, 'navigation');
+                        } else {
+                            toastr?.error?.('Gagal memuat tree: ' + e.message);
+
+                            // Redirect ke node yang aman jika error
+                            if (window.currentRootId !== AUTH_USER_ID) {
+                                window.currentRootId = AUTH_USER_ID;
+                                setTimeout(() => loadTreeSecure(), 1000);
+                            }
+                        }
                     }
                 } finally {
                     isLoading = false;
@@ -964,11 +1107,11 @@
                 });
 
                 const MAX_STARS = 7;
-                function getStarCount() {
-                const n = Number(window.currentBagan) || 0; // mis. Basic=1 → 0 bintang, Bintang 1=2 → 1 bintang, dst
-                return Math.max(0, Math.min(MAX_STARS, n - 1));
-                }
 
+                function getStarCount() {
+                    const n = Number(window.currentBagan) || 0;
+                    return Math.max(0, Math.min(MAX_STARS, n - 1));
+                }
 
                 const layout = d3.tree().nodeSize([hGap + NODE_W, vGap + NODE_H]);
                 layout(root);
@@ -984,24 +1127,29 @@
                     .join('path')
                     .attr('d', d => {
                         return `
-          M${d.source.x},${d.source.y}
-          V${(d.source.y + d.target.y) / 2}
-          H${d.target.x}
-          V${d.target.y}
-        `;
+      M${d.source.x},${d.source.y}
+      V${(d.source.y + d.target.y) / 2}
+      H${d.target.x}
+      V${d.target.y}
+    `;
                     });
 
                 // nodes
                 const node = g.append('g').selectAll('g').data(root.descendants()).join('g')
                     .attr('transform', d => `translate(${d.x},${d.y})`)
+                    .attr('class', d => d.data.restricted ? 'node-restricted' : '')
                     .on('mouseover', showTooltip).on('mouseout', hideTooltip);
 
                 node.append('rect')
                     .attr('x', -NODE_W / 2).attr('y', -NODE_H / 2)
                     .attr('width', NODE_W).attr('height', NODE_H).attr('rx', RADIUS)
-                    .attr('fill', d => getNodeColor(d.data));
+                    .attr('fill', d => {
+                        if (d.data.restricted) return 'url(#grayGradient)';
+                        return getNodeColor(d.data);
+                    });
 
-                node.filter(d => !d.data.isAddButton).append('image')
+                // Avatar untuk node normal
+                node.filter(d => !d.data.isAddButton && !d.data.restricted).append('image')
                     .attr("xlink:href", d => d.data.photo ?
                         `/${d.data.photo}` :
                         `/assets/img/profile.webp`)
@@ -1009,20 +1157,38 @@
                     .attr('width', AVA).attr('height', AVA)
                     .attr('clip-path', `circle(${AVA/2}px at ${AVA/2}px ${AVA/2}px)`);
 
-                node.filter(d => !d.data.isAddButton).append('text')
+                // Icon lock untuk node restricted
+                node.filter(d => d.data.restricted).append('text')
+                    .attr('y', -5).attr('text-anchor', 'middle')
+                    .text('🔒')
+                    .style('font-size', Math.max(14, Math.floor(NODE_W * 0.2)) + 'px');
+
+                // Stars untuk node normal
+                node.filter(d => !d.data.isAddButton && !d.data.restricted).append('text')
                     .attr('y', 10).attr('text-anchor', 'middle')
                     .text(() => '⭐️'.repeat(getStarCount()))
                     .style('font-size', Math.max(9, Math.floor(NODE_W * 0.11)) + 'px')
                     .attr('fill', 'gold');
 
-                node.filter(d => !d.data.isAddButton).append('text')
+                // Text nama untuk node normal
+                node.filter(d => !d.data.isAddButton && !d.data.restricted).append('text')
                     .attr('y', NODE_H / 2 - 8).attr('text-anchor', 'middle')
+                    .attr('class', 'node-name')
                     .text(d => shortName(d.data.name || d.data.username || '', NODE_W <= 80 ? 7 : 9))
                     .attr('fill', d => isActiveOnSelected(d.data) ? '#fff' : '#cbd5e1')
                     .style('font-size', Math.max(10, Math.floor(NODE_W * 0.12)) + 'px');
 
+                // Text untuk node restricted
+                node.filter(d => d.data.restricted).append('text')
+                    .attr('y', NODE_H / 2 - 8).attr('text-anchor', 'middle')
+                    .attr('class', 'node-name')
+                    .text('Akses Terbatas')
+                    .attr('fill', '#6c757d')
+                    .style('font-size', Math.max(9, Math.floor(NODE_W * 0.1)) + 'px')
+                    .style('font-style', 'italic');
+
                 // Tombol + Tambah (buka modal: default tab Clone)
-                const addNodes = node.filter(d => d.data.isAddButton);
+                const addNodes = node.filter(d => d.data.isAddButton && !d.data.restricted);
                 addNodes.style('cursor', 'pointer').on('click', (e, d) => {
                     e.stopPropagation();
                     const pos = d.data.position || d.parent?.data?.position || 'left';
@@ -1031,33 +1197,109 @@
                         toastr?.warning?.('Upline tidak terdeteksi.');
                         return;
                     }
+
+                    // Security check sebelum buka modal
+                    if (!canAccessNode(up)) {
+                        toastr?.error?.('Anda tidak memiliki akses untuk menambah member di posisi ini.');
+                        return;
+                    }
+
                     openAddModalUnified({
                         parentId: up,
                         position: pos,
                         mode: 'clone'
                     });
                 });
+
                 addNodes.append('text').attr('y', 2).attr('text-anchor', 'middle')
                     .text('+ Tambah').style('font-size', Math.max(10, Math.floor(NODE_W * 0.12)) + 'px').attr('fill',
                         '#fff');
+
+                // Update navigation UI setelah draw
+                updateNavigationUI();
+
+                // Show hint untuk member
+                showMemberNavigationHint();
+
+
             }
+
+            function drawTreeWithSecurity(data, preserveZoom = false, zoomOverride = null) {
+                drawTree(data, preserveZoom, zoomOverride);
+                updateNavigationUI();
+            }
+
+            window.showTooltip = showTooltip;
+
+            window.drawTree = drawTreeWithSecurity;
 
             /* =============== TOOLTIP =============== */
             function showTooltip(event, d) {
                 const el = document.getElementById('tree-tooltip');
                 if (!el || d.data.isAddButton) return;
-                const aktif = isActiveOnSelected(d.data) ? 'Ya' : 'Tidak';
-                el.innerHTML = `
-          <strong>${d.data.name}</strong><br>
-          Bagan P${window.currentBagan}: <b>${aktif}</b><br>
-          Status: ${d.data.status}<br>
-          Pairing: ${d.data.pairing_count ?? '-'}<br>
-          Kiri: ${d.data.left_count ?? 0} • Kanan: ${d.data.right_count ?? 0}
+
+                let content = '';
+
+                if (d.data.restricted) {
+                    content = `
+            <strong>Akses Terbatas</strong><br>
+            <small>Anda tidak memiliki izin<br>untuk melihat detail member ini</small>
         `;
+                } else {
+                    const aktif = isActiveOnSelected(d.data) ? 'Ya' : 'Tidak';
+                    content = `
+            <strong>${d.data.name}</strong><br>
+            Bagan P${window.currentBagan}: <b>${aktif}</b><br>
+            Status: ${d.data.status}<br>
+            Pairing: ${d.data.pairing_count ?? '-'}<br>
+            Kiri: ${d.data.left_count ?? 0} • Kanan: ${d.data.right_count ?? 0}
+        `;
+
+                    // Tambahkan info akses untuk member
+                    if (AUTH_USER_ROLE === 'member') {
+                        if (d.data.id === AUTH_USER_ID) {
+                            content += '<br><small><i class="fas fa-user"></i> Ini adalah Anda</small>';
+                        } else if (d.data.id === AUTH_USER_UPLINE_ID) {
+                            content += '<br><small><i class="fas fa-level-up-alt"></i> Upline Anda</small>';
+                        } else {
+                            content += '<br><small><i class="fas fa-level-down-alt"></i> Downline Anda</small>';
+                        }
+                    }
+                }
+
+                el.innerHTML = content;
                 const box = document.getElementById('tree-scroll').getBoundingClientRect();
                 el.style.left = `${event.clientX - box.left + 10}px`;
                 el.style.top = `${event.clientY - box.top + 10}px`;
                 el.classList.remove('hidden');
+            }
+
+            function handleAccessDenied(response, context = '') {
+                if (response.status === 403) {
+                    let message = 'Akses ditolak.';
+
+                    if (AUTH_USER_ROLE === 'member') {
+                        if (context === 'navigation') {
+                            message =
+                                'Anda telah mencapai batas area yang dapat diakses. Area di atas mungkin milik manajemen perusahaan.';
+                        } else {
+                            message =
+                                'Anda hanya dapat melihat data dalam jaringan MLM Anda (upline member dan downline).';
+                        }
+                    }
+
+                    toastr?.error?.message;
+
+                    // Redirect ke node yang aman
+                    if (window.currentRootId !== AUTH_USER_ID) {
+                        setTimeout(() => {
+                            window.currentRootId = AUTH_USER_ID;
+                            loadTree();
+                        }, 2000);
+                    }
+                    return true;
+                }
+                return false;
             }
 
             function hideTooltip() {
@@ -1071,54 +1313,168 @@
                 return kids.length ? kids[0] : null;
             }
 
-            function goDown(toId) {
+            function goDownSecure(toId) {
                 const to = toNum(toId);
                 if (!to || to <= 0) return;
+
+                if (!canAccessNode(to)) {
+                    toastr?.error?.('Anda tidak memiliki akses untuk melihat member tersebut.');
+                    return;
+                }
+
                 if (Number.isFinite(window.currentRootId) && window.currentRootId !== to) {
                     upStack.push(window.currentRootId);
                 }
                 window.currentRootId = to;
                 loadTree();
             }
+
+            function updateNavigationUI() {
+                const userRole = AUTH_USER_ROLE;
+                const userUplineId = AUTH_USER_UPLINE_ID;
+                const currentNodeId = window.currentRootId;
+
+                if (userRole === 'member') {
+                    // Update visibility dan state tombol navigasi
+                    const upButton = document.querySelector('.tree-nav.up button');
+                    const leftButton = document.querySelector('.tree-nav.left button');
+                    const rightButton = document.querySelector('.tree-nav.right button');
+                    const downButton = document.querySelector('.tree-nav.down button');
+
+                    // Tombol Up - hanya bisa naik jika belum di upline teratas
+                    if (upButton) {
+                        const canGoUp = (currentNodeId === AUTH_USER_ID && userUplineId) ||
+                            (currentNodeId !== userUplineId && currentNodeId !== AUTH_USER_ID);
+
+                        if (!canGoUp) {
+                            upButton.parentElement.classList.add('restricted');
+                            upButton.setAttribute('title', 'Anda sudah di level teratas yang dapat diakses');
+                        } else {
+                            upButton.parentElement.classList.remove('restricted');
+                            upButton.setAttribute('title', 'Naik ke upline');
+                        }
+                    }
+
+                    // Update tombol zoom dengan info member
+                    const zoomContainer = document.querySelector('.absolute.right-5.top-3');
+                    if (zoomContainer && !zoomContainer.querySelector('.member-info')) {
+                        const memberInfo = document.createElement('div');
+                        memberInfo.className = 'member-info text-xs text-gray-600 mt-1';
+                        memberInfo.innerHTML = `Mode: Member<br>ID: ${AUTH_USER_ID}`;
+                        zoomContainer.appendChild(memberInfo);
+                    }
+                }
+            }
+
+            function showMemberNavigationHint() {
+                const userRole = AUTH_USER_ROLE;
+
+                if (userRole === 'member' && !localStorage.getItem('member-hint-dismissed')) {
+                    // Cek apakah hint sudah ada
+                    if (!document.querySelector('.member-navigation-hint')) {
+                        const hint = document.createElement('div');
+                        hint.className = 'member-navigation-hint';
+                        hint.innerHTML = `
+                <span class="close-hint" onclick="dismissMemberHint()">&times;</span>
+                <strong>Info Navigasi Member:</strong><br>
+                Anda dapat melihat:<br>
+                • Data diri Anda<br>
+                • Upline member dalam jaringan<br>
+                • Semua downline Anda<br>
+                <small>Area admin/perusahaan dibatasi.</small>
+            `;
+                        document.body.appendChild(hint);
+
+                        // Auto hide setelah 12 detik
+                        setTimeout(() => {
+                            if (hint.parentElement) {
+                                hint.classList.add('hidden');
+                            }
+                        }, 12000);
+                    }
+                }
+            }
+
+            window.dismissMemberHint = function() {
+                const hint = document.querySelector('.member-navigation-hint');
+                if (hint) {
+                    hint.classList.add('hidden');
+                    localStorage.setItem('member-hint-dismissed', 'true');
+                }
+            };
+
+
             window.navUp = async function() {
+                const userRole = AUTH_USER_ROLE;
+
                 if (upStack.length) {
+                    const targetId = upStack[upStack.length - 1];
                     window.currentRootId = upStack.pop();
-                    loadTree();
+
+                    try {
+                        await loadTreeSecure();
+                    } catch (error) {
+                        if (error.status === 403) {
+                            toastr?.error?.('Anda telah mencapai batas akses yang diizinkan.');
+                            // Kembalikan ke posisi sebelumnya jika gagal
+                            upStack.push(targetId);
+                            window.currentRootId = targetId;
+                        }
+                    }
                     return;
                 }
+
                 const cur = toNum(window.currentRootId);
                 if (!cur || cur <= 0) {
                     toastr?.info?.('Root tidak valid.');
                     return;
                 }
-                const pid = await resolveParentId(cur);
-                if (!pid || pid <= 0) {
-                    toastr?.info?.('Tidak ada upline.');
-                    return;
+
+                try {
+                    const pid = await resolveParentId(cur);
+                    if (!pid || pid <= 0) {
+                        toastr?.info?.('Anda sudah berada di level teratas yang dapat diakses.');
+                        return;
+                    }
+
+                    if (pid === cur) {
+                        toastr?.info?.('Sudah di upline yang sama.');
+                        return;
+                    }
+
+                    window.currentRootId = pid;
+                    await loadTree();
+
+                } catch (error) {
+                    if (error.status === 403) {
+                        toastr?.error?.(
+                            'Anda tidak memiliki akses ke level tersebut. Ini mungkin area khusus perusahaan.'
+                        );
+                    } else {
+                        toastr?.error?.('Gagal navigasi ke atas: ' + (error.message || 'Kesalahan sistem'));
+                    }
                 }
-                if (pid === cur) {
-                    toastr?.info?.('Sudah di upline yang sama.');
-                    return;
-                }
-                window.currentRootId = pid;
-                loadTree();
             };
+
+
             window.navLeft = () => {
                 const L = realChild('left');
                 if (!L) {
                     toastr?.info?.('Tidak ada anak kiri.');
                     return;
                 }
-                goDown(L.id);
+                goDownSecure(L.id);
             };
+
             window.navRight = () => {
                 const R = realChild('right');
                 if (!R) {
                     toastr?.info?.('Tidak ada anak kanan.');
                     return;
                 }
-                goDown(R.id);
+                goDownSecure(R.id);
             };
+
             window.navDown = () => {
                 const L = realChild('left'),
                     R = realChild('right');
@@ -1131,8 +1487,10 @@
                     return;
                 }
                 const mid = kids[Math.floor(kids.length / 2)] || kids[0];
-                goDown(mid.id);
+                goDownSecure(mid.id);
             };
+
+
 
             /* =============== MENU BAGAN =============== */
             function bindBaganMenu() {
@@ -1209,46 +1567,49 @@
                 }
             }
 
-           async function loadUnusedPinsIntoSelect() {
-  const sel = document.getElementById('pinCodes');
-  if (!sel) return;
+            async function loadUnusedPinsIntoSelect() {
+                const sel = document.getElementById('pinCodes');
+                if (!sel) return;
 
-  sel.innerHTML = '<option disabled>Memuat PIN...</option>';
+                sel.innerHTML = '<option disabled>Memuat PIN...</option>';
 
-  try {
-    const r = await fetch(`{{ route('pins.unused') }}`, {
-      headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-      credentials: 'same-origin'
-    });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
+                try {
+                    const r = await fetch(`{{ route('pins.unused') }}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        credentials: 'same-origin'
+                    });
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
 
-    const data = await r.json();
-    const pins = data?.pins ?? [];
+                    const data = await r.json();
+                    const pins = data?.pins ?? [];
 
-    sel.innerHTML = '';
+                    sel.innerHTML = '';
 
-    if (!Array.isArray(pins) || pins.length === 0) {
-      sel.innerHTML = '<option disabled>Tidak ada PIN tersedia</option>';
-      return;
-    }
+                    if (!Array.isArray(pins) || pins.length === 0) {
+                        sel.innerHTML = '<option disabled>Tidak ada PIN tersedia</option>';
+                        return;
+                    }
 
-    pins.forEach(item => {
-      const code = (typeof item === 'string') ? item : item?.code; // dukung dua bentuk
-      if (!code) return;
-      const opt = document.createElement('option');
-      opt.value = code;
-      opt.textContent = code;
-      sel.appendChild(opt);
-    });
+                    pins.forEach(item => {
+                        const code = (typeof item === 'string') ? item : item?.code; // dukung dua bentuk
+                        if (!code) return;
+                        const opt = document.createElement('option');
+                        opt.value = code;
+                        opt.textContent = code;
+                        sel.appendChild(opt);
+                    });
 
-  } catch (e) {
-    console.error('loadUnusedPinsIntoSelect error:', e);
-    sel.innerHTML = '<option disabled>Gagal memuat PIN</option>';
-  }
-}
+                } catch (e) {
+                    console.error('loadUnusedPinsIntoSelect error:', e);
+                    sel.innerHTML = '<option disabled>Gagal memuat PIN</option>';
+                }
+            }
 
-// pastikan dipanggil
-document.addEventListener('DOMContentLoaded', loadUnusedPinsIntoSelect);
+            // pastikan dipanggil
+            document.addEventListener('DOMContentLoaded', loadUnusedPinsIntoSelect);
             async function previewCloneCandidates() {
                 const parentId = document.getElementById('cloneParentId').value;
                 const useLogin = document.getElementById('cloneUseLogin').value === '1';
@@ -1441,7 +1802,21 @@ document.addEventListener('DOMContentLoaded', loadUnusedPinsIntoSelect);
             /* =============== BOOT =============== */
             document.addEventListener('DOMContentLoaded', () => {
                 bindBaganMenu();
+                if (AUTH_USER_ROLE === 'member' && window.currentRootId !== AUTH_USER_ID) {
+                    window.currentRootId = AUTH_USER_ID;
+                }
                 loadTree();
+
+                if (AUTH_USER_ROLE === 'member') {
+                    setTimeout(() => {
+                        if (!localStorage.getItem('member-security-notice-shown')) {
+                            toastr?.info?.(
+                                'Mode Member: Anda hanya dapat melihat data diri, upline langsung, dan downline Anda.'
+                            );
+                            localStorage.setItem('member-security-notice-shown', 'true');
+                        }
+                    }, 2000);
+                }
             });
 
         })();

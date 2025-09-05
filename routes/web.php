@@ -372,16 +372,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/tree-master', [MLMController::class, 'master'])->name('master.index');
     });
     // ✅ Tree & Binary MLM
-    Route::get('/tree', [MLMController::class, 'tree'])->name('tree.index');
+    Route::prefix('')->middleware(['auth', 'tree.access'])->group(function () {
+        Route::get('/tree', [MLMController::class, 'tree'])->name('tree.index');
 
-    Route::get('/tree/node/{id}', [MLMController::class, 'getNode']);
-    Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
-    Route::get('/users/ajax/{id}', [MLMController::class, 'ajax']);
-    Route::get('/tree/load/{id}', [MLMController::class, 'loadTree']);
-    Route::get('/tree/search', [MLMController::class, 'searchDownline']);
-    Route::get('/tree/available-users/{id}', [MLMController::class, 'getAvailableUsers']);
-    Route::put('/tree/{id}', [UserController::class, 'update'])->name('users.update');
-    Route::get('/tree/parent/{id}', [MLMController::class, 'parentId']);
+        Route::get('/tree/node/{id}', [MLMController::class, 'getNode']);
+        Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+        Route::get('/users/ajax/{id}', [MLMController::class, 'ajax']);
+        Route::get('/tree/load/{id}', [MLMController::class, 'loadTree']);
+        Route::get('/tree/search', [MLMController::class, 'searchDownline']);
+        Route::get('/tree/available-users/{id}', [MLMController::class, 'getAvailableUsers']);
+        Route::put('/tree/{id}', [UserController::class, 'update'])->name('users.update');
+        Route::get('/tree/parent/{id}', [MLMController::class, 'parentId']);
+    });
 });
 
 // ✅ Tree API (Public)
