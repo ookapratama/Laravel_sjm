@@ -24,17 +24,17 @@ class PinCtrl extends Controller
         $requests = PinRequest::where('requester_id', auth()->id())
             ->latest()
             ->get();
-$userId = auth()->id();
+        $userId = auth()->id();
         $pins = DB::table('activation_pins as ap')
             ->leftJoin('users as purchaser', 'ap.purchased_by', '=', 'purchaser.id')
             ->leftJoin('users as transferred', 'ap.transferred_to', '=', 'transferred.id')
             ->leftJoin('users as used', 'ap.used_by', '=', 'used.id')
-             ->where(function ($q) use ($userId) {
-                    $q->where('ap.purchased_by',  $userId)
+            ->where(function ($q) use ($userId) {
+                $q->where('ap.purchased_by',  $userId)
                     ->orWhere('ap.transferred_to', $userId)
                     ->orWhere('ap.used_by', $userId); // kalau mau tampil juga PIN yang dipakai user
-                })
-            ->orwhere('ap.transferred_to',$userId)
+            })
+            ->orwhere('ap.transferred_to', $userId)
             ->orderBy('ap.status', 'asc')
             ->select(
                 'ap.*',
@@ -49,7 +49,7 @@ $userId = auth()->id();
 
         $hasOpen = $requests->contains(fn($r) => in_array($r->status, ['requested', 'finance_approved']));
 
-     
+
 
         $downlines = collect(DB::select("
                 WITH RECURSIVE downlines AS (
@@ -212,21 +212,21 @@ $userId = auth()->id();
             'downline_id'    => 'required|exists:users,id',
             'transfer_notes' => 'nullable|string|max:500',
         ]);
-        
+
         $user = auth()->user();
 
         try {
             DB::beginTransaction();
-            
+
             // Ambil PIN milik user login yang masih bisa ditransfer + kunci row
             $pin = ActivationPin::query()
-            ->whereKey($request->pin_id)
-            ->where('purchased_by', $user->id)
-            ->where('status', 'unused') // sesuaikan jika istilah status beda
-            ->whereNull('transferred_to') 
-            ->lockForUpdate()
-            ->first();
-            
+                ->whereKey($request->pin_id)
+                ->where('purchased_by', $user->id)
+                ->where('status', 'unused') // sesuaikan jika istilah status beda
+                ->whereNull('transferred_to')
+                ->lockForUpdate()
+                ->first();
+
             if (!$pin) {
                 DB::rollBack();
                 return response()->json([
@@ -372,32 +372,162 @@ $userId = auth()->id();
         return $children;
     }
 
-    private function isUserDownline($upline, $downline)
+    public function getAvailablePins(Request $request)
     {
-        if (!$downline) return false;
+        try {
+            $user = auth()->user();
 
-        // Check if user is direct child
-        $leftChild = $upline->getLeftChild();
-        $rightChild = $upline->getRightChild();
+            $availablePins = ActivationPin::where('purchased_by', $user->id)
+                ->where('status', 'unused')
+                ->select('id', 'code', 'created_at')
+                ->orderBy('created_at', 'desc')
+                ->get();
 
-        if ($leftChild && $leftChild->id === $downline->id) return true;
-        if ($rightChild && $rightChild->id === $downline->id) return true;
-
-        // Check grand children (optional, adjust based on your business logic)
-        if ($leftChild) {
-            $leftGrandLeft = $leftChild->getLeftChild();
-            $leftGrandRight = $leftChild->getRightChild();
-            if ($leftGrandLeft && $leftGrandLeft->id === $downline->id) return true;
-            if ($leftGrandRight && $leftGrandRight->id === $downline->id) return true;
+            return response()->json([
+                'success' => true,
+                'pins' => $availablePins
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data PIN: ' . $e->getMessage()
+            ], 500);
         }
+    }
 
-        if ($rightChild) {
-            $rightGrandLeft = $rightChild->getLeftChild();
-            $rightGrandRight = $rightChild->getRightChild();
-            if ($rightGrandLeft && $rightGrandLeft->id === $downline->id) return true;
-            if ($rightGrandRight && $rightGrandRight->id === $downline->id) return true;
+    /**
+     * Bulk transfer multiple PINs to downlines
+     */
+    public function bulkTransfer(Request $request)
+    {
+        $request->validate([
+            'pin_ids' => 'required|array|min:1',
+            'pin_ids.*' => 'required|integer|exists:activation_pins,id',
+            'transfers' => 'required|array|min:1',
+            'transfers.*.pin_id' => 'required|integer',
+            'transfers.*.downline_id' => 'required|integer|exists:users,id',
+            'transfers.*.notes' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $user = auth()->user();
+            $pinIds = $request->pin_ids;
+            $transfers = $request->transfers;
+            $successCount = 0;
+            $failedTransfers = [];
+            DB::beginTransaction();
+
+            foreach ($transfers as $transfer) {
+                try {
+
+                    $pinId = $transfer['pin_id'];
+                    $downlineId = $transfer['downline_id'];
+                    $notes = $transfer['notes'] ?? null;
+
+                    // Validasi PIN milik user dan status unused
+                    $pin = ActivationPin::where('id', $pinId)
+                        ->where('purchased_by', $user->id)
+                        ->where('status', 'unused')
+                        ->first();
+
+                    if (!$pin) {
+                        $failedTransfers[] = [
+                            'pin_id' => $pinId,
+                            'reason' => 'PIN tidak ditemukan atau sudah digunakan'
+                        ];
+                        continue;
+                    }
+
+                    // Validasi downline adalah benar-benar downline user
+                    $downline = User::where('id', $downlineId)
+                        ->where('sponsor_id', $user->id)
+                        ->first();
+
+                    if (!$downline) {
+                        $failedTransfers[] = [
+                            'pin_id' => $pinId,
+                            'reason' => 'Downline tidak valid'
+                        ];
+                        continue;
+                    }
+
+                    // Update PIN status
+                    $pin->update([
+                        'status' => 'transferred',
+                        'transferred_to' => $downline->id,
+                        'transferred_date' => now(),
+                        'transfer_notes' => $notes
+                    ]);
+
+                    // Log transfer history (jika ada tabel history)
+                    // if (Schema::hasTable('pin_histories')) {
+                    //     PinHistory::create([
+                    //         'pin_id' => $pin->id,
+                    //         'action' => 'transferred',
+                    //         'from_user_id' => $user->id,
+                    //         'to_user_id' => $downline->id,
+                    //         'notes' => $notes,
+                    //         'created_at' => now()
+                    //     ]);
+                    // }
+
+                    // Send notification to downline (opsional)
+                    try {
+                        // Simpan notifikasi ke database
+                        Notification::create([
+                            'user_id' => $downline->id,
+                            'message' => 'Upline anda telah mentransfer beberapa pin terbaru ke anda, Silahkan cek/refresh halaman Dashboard anda',
+                            'url'     => route('member'),
+                        ]);
+
+
+                        event(new \App\Events\UplineTransferPin($downline->id, [
+                            'type'       => 'transfer_pin',
+                            'message'    => 'Upline anda telah mentransfer beberapa pin terbaru ke anda, Silahkan cek/refresh halaman Dashboard anda',
+                            'url'        => route('member'),
+                            'created_at' => now()->toDateTimeString(),
+                        ]));
+                        // Notification::send($downline, new PinTransferredNotification($pin, $user));
+                    } catch (\Exception $e) {
+                        // Log notification error but don't fail the transfer
+                        \Log::warning('Failed to send PIN transfer notification: ' . $e->getMessage());
+                    }
+
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $failedTransfers[] = [
+                        'pin_id' => $pinId,
+                        'reason' => $e->getMessage()
+                    ];
+                }
+            }
+
+            DB::commit();
+
+            // Prepare response message
+            $message = "Bulk transfer selesai. {$successCount} PIN berhasil ditransfer.";
+
+            if (count($failedTransfers) > 0) {
+                $message .= " " . count($failedTransfers) . " PIN gagal ditransfer.";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'result' => [
+                    'success_count' => $successCount,
+                    'failed_count' => count($failedTransfers),
+                    'failed_transfers' => $failedTransfers
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Bulk transfer error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+            ], 500);
         }
-
-        return false;
     }
 }

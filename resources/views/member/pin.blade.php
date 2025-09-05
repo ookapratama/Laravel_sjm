@@ -204,9 +204,219 @@
             </div>
         </div>
 
+        {{-- Modal Bulk Transfer PIN --}}
+        <div class="modal fade" id="bulkTransferPinModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <form class="modal-content" id="bulkTransferForm">
+                    @csrf
+                    <div class="modal-header"
+                        style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white;">
+                        <h5 class="modal-title">
+                            <i class="fas fa-share-alt me-2"></i>Bulk Transfer PIN ke Downline
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        {{-- Progress Bar --}}
+                        <div id="bulkProgress" class="progress mb-3 d-none">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                                style="width: 0%">0%</div>
+                        </div>
+
+                        {{-- PIN Selection Section --}}
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-key me-2"></i>Pilih PIN yang akan ditransfer
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="selectAllPins">
+                                                <label class="form-check-label fw-bold" for="selectAllPins">
+                                                    Pilih Semua PIN
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <div id="availablePinsList" class="border rounded p-2"
+                                            style="max-height: 300px; overflow-y: auto;">
+                                            <div class="text-center p-3">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <p class="mt-2 mb-0">Memuat PIN available...</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-2">
+                                            <small class="text-muted">
+                                                <span id="selectedPinCount">0</span> PIN dipilih
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="card-title mb-0">
+                                            <i class="fas fa-users me-2"></i>Pengaturan Transfer
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        {{-- Transfer Method --}}
+                                        <div class="mb-3">
+                                            <label class="form-label">Mode Transfer</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="transferMode"
+                                                    id="modeSequential" value="sequential" checked>
+                                                <label class="form-check-label" for="modeSequential">
+                                                    <strong>Sequential</strong> - Satu PIN ke satu downline
+                                                </label>
+                                            </div>
+                                            {{-- <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="transferMode"
+                                                    id="modeDistribute" value="distribute">
+                                                <label class="form-check-label" for="modeDistribute">
+                                                    <strong>Distribute</strong> - Bagikan ke multiple downlines
+                                                </label>
+                                            </div> --}}
+                                        </div>
+
+                                        {{-- Sequential Mode --}}
+                                        <div id="sequentialSection">
+                                            <label class="form-label">Pilih Downline</label>
+                                            <select id="singleDownlineSelect" class="form-select">
+                                                <option value="">-- Pilih Downline --</option>
+                                                @foreach ($downlines as $downline)
+                                                    <option value="{{ $downline->id }}"
+                                                        data-username="{{ $downline->username }}"
+                                                        data-name="{{ $downline->name }}">
+                                                        {{ $downline->name }} ({{ $downline->username }})
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <div class="form-text">Semua PIN akan ditransfer ke downline ini</div>
+                                        </div>
+
+                                        {{-- Distribute Mode --}}
+                                        <div id="distributeSection" class="d-none">
+                                            <div class="alert alert-info">
+                                                <small>
+                                                    <i class="fas fa-info-circle me-1"></i>
+                                                    Mode distribute akan membagi PIN secara merata ke downlines yang dipilih
+                                                </small>
+                                            </div>
+
+                                            <label class="form-label">Pilih Downlines</label>
+                                            <div id="downlineCheckboxes" style="max-height: 150px; overflow-y: auto;">
+                                                @foreach ($downlines as $downline)
+                                                    <div class="form-check">
+                                                        <input class="form-check-input downline-checkbox" type="checkbox"
+                                                            value="{{ $downline->id }}"
+                                                            id="downline_{{ $downline->id }}"
+                                                            data-username="{{ $downline->username }}"
+                                                            data-name="{{ $downline->name }}">
+                                                        <label class="form-check-label"
+                                                            for="downline_{{ $downline->id }}">
+                                                            {{ $downline->name }} ({{ $downline->username }})
+                                                        </label>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+
+                                        {{-- Global Notes --}}
+                                        <div class="mt-3">
+                                            <label class="form-label">
+                                                <i class="fas fa-comment me-1"></i>Catatan untuk semua transfer
+                                            </label>
+                                            <textarea id="bulkTransferNotes" class="form-control" rows="3"
+                                                placeholder="Catatan yang akan ditambahkan ke semua transfer..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Transfer Preview --}}
+                        <div id="transferPreview" class="mt-3 d-none">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning">
+                                    <h6 class="card-title mb-0">
+                                        <i class="fas fa-eye me-2"></i>Preview Transfer
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="transferPreviewContent" style="max-height: 200px; overflow-y: auto;">
+                                        <!-- Preview content will be populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Confirmation --}}
+                        <div class="form-check mt-3">
+                            <input class="form-check-input" type="checkbox" id="confirmBulkTransfer" required>
+                            <label class="form-check-label" for="confirmBulkTransfer">
+                                Saya yakin akan mentransfer PIN yang dipilih ke downline terpilih.
+                                <strong class="text-danger">Aksi ini tidak dapat dibatalkan.</strong>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Batal
+                        </button>
+                        <button type="button" id="generatePreview" class="btn btn-info" disabled>
+                            <i class="fas fa-eye me-2"></i>Preview Transfer
+                        </button>
+                        <button type="submit" id="submitBulkTransfer" class="btn btn-success" disabled>
+                            <i class="fas fa-share-alt me-2"></i>Mulai Bulk Transfer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {{-- Results Modal --}}
+        <div class="modal fade" id="bulkResultModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-chart-bar me-2"></i>Hasil Bulk Transfer
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="bulkResultContent">
+                            <!-- Results will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                            <i class="fas fa-check me-2"></i>Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
         {{-- Tabel Status Permintaan --}}
         <div class="card mb-3">
-            <div class="card-header bg-dark text-warning">Status Permintaan</div>
+            <div class="card-header bg-dark text-warning">
+                Status Permintaan
+
+            </div>
             <div class="card-body table-responsive">
                 <table class="table table-sm align-middle">
                     <thead>
@@ -250,12 +460,21 @@
 
         {{-- Enhanced Tabel PIN --}}
         <div class="card">
-            <div class="card-header bg-dark text-warning d-flex justify-content-between align-items-center">
+            <div class="card-header bg-dark text-warning d-flex justify-content-between align-items-center flex-wrap">
                 <span>PIN Saya</span>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    {{-- Status badges --}}
                     <span class="badge bg-success">Available: {{ $pins->where('status', 'unused')->count() }}</span>
                     <span class="badge bg-info">Transferred: {{ $pins->where('status', 'transferred')->count() }}</span>
                     <span class="badge bg-secondary">Used: {{ $pins->where('status', 'used')->count() }}</span>
+
+                    {{-- Bulk Transfer Button --}}
+                    @if ($pins->where('status', 'unused')->count() > 1)
+                        <button class="btn btn-warning btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#bulkTransferPinModal" title="Transfer Multiple PIN Sekaligus">
+                            <i class="fas fa-share-alt me-1"></i>Bulk Transfer
+                        </button>
+                    @endif
                 </div>
             </div>
             <div class="card-body table-responsive">
@@ -271,7 +490,6 @@
                     </thead>
                     <tbody>
                         @forelse($pins as $p)
-                            {{ $p->name ?? '-' }}
                             <tr>
                                 <td><code>{{ $p->code }}</code></td>
                                 <td>
@@ -601,20 +819,20 @@
                 Swal.fire({
                     title: 'PIN History',
                     html: `
-        <div class="text-start">
-          <div class="timeline">
-            <div class="timeline-item">
-              <div class="timeline-marker bg-success"></div>
-              <div class="timeline-content">
-                <h6 class="timeline-title">PIN Created</h6>
-                <p class="timeline-info">PIN berhasil dibuat</p>
-                <small class="text-muted">2 hari lalu</small>
-              </div>
-            </div>
-          </div>
-          <p class="text-muted mt-3">History lengkap dalam pengembangan...</p>
-        </div>
-      `,
+                            <div class="text-start">
+                            <div class="timeline">
+                                <div class="timeline-item">
+                                <div class="timeline-marker bg-success"></div>
+                                <div class="timeline-content">
+                                    <h6 class="timeline-title">PIN Created</h6>
+                                    <p class="timeline-info">PIN berhasil dibuat</p>
+                                    <small class="text-muted">2 hari lalu</small>
+                                </div>
+                                </div>
+                            </div>
+                            <p class="text-muted mt-3">History lengkap dalam pengembangan...</p>
+                            </div>
+                        `,
                     confirmButtonText: 'Tutup',
                     confirmButtonColor: '#6c757d'
                 });
@@ -622,6 +840,331 @@
                 alert('Fitur history dalam pengembangan');
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            let availablePins = [];
+            let selectedPins = [];
+
+            // Load available pins when modal opens
+            $('#bulkTransferPinModal').on('shown.bs.modal', function() {
+                loadAvailablePins();
+            });
+
+            // Transfer mode change handler
+            document.querySelectorAll('input[name="transferMode"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    const isDistribute = this.value === 'distribute';
+                    document.getElementById('sequentialSection').classList.toggle('d-none',
+                        isDistribute);
+                    document.getElementById('distributeSection').classList.toggle('d-none', !
+                        isDistribute);
+                    updateButtons();
+                });
+            });
+
+            // Select all pins handler
+            document.getElementById('selectAllPins').addEventListener('change', function() {
+                const checkboxes = document.querySelectorAll('.pin-checkbox');
+                checkboxes.forEach(cb => {
+                    cb.checked = this.checked;
+                });
+                updateSelectedPins();
+            });
+
+            // Generate preview handler
+            document.getElementById('generatePreview').addEventListener('click', generateTransferPreview);
+
+            // Form submit handler
+            document.getElementById('bulkTransferForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                performBulkTransfer();
+            });
+
+            // Confirmation checkbox handler
+            document.getElementById('confirmBulkTransfer').addEventListener('change', updateButtons);
+
+            // Downline select handler
+            document.getElementById('singleDownlineSelect').addEventListener('change', updateButtons);
+
+            // Downline checkboxes handler
+            document.querySelectorAll('.downline-checkbox').forEach(cb => {
+                cb.addEventListener('change', updateButtons);
+            });
+
+            function loadAvailablePins() {
+                fetch('{{ route('member.pin.available-for-bulk') }}', {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            availablePins = data.pins;
+                            renderAvailablePins();
+                        } else {
+                            throw new Error(data.message);
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('availablePinsList').innerHTML =
+                            `<div class="alert alert-danger">Gagal memuat PIN: ${error.message}</div>`;
+                    });
+            }
+
+            function renderAvailablePins() {
+                const container = document.getElementById('availablePinsList');
+
+                if (availablePins.length === 0) {
+                    container.innerHTML = '<div class="text-center p-3 text-muted">Tidak ada PIN available</div>';
+                    return;
+                }
+
+                const html = availablePins.map(pin => `
+            <div class="form-check">
+                <input class="form-check-input pin-checkbox" type="checkbox" 
+                       value="${pin.id}" id="pin_${pin.id}"
+                       data-code="${pin.code}">
+                <label class="form-check-label" for="pin_${pin.id}">
+                    <code>${pin.code}</code>
+                    <small class="text-muted ms-2">
+                        ${new Date(pin.created_at).toLocaleDateString('id-ID')}
+                    </small>
+                </label>
+            </div>
+        `).join('');
+
+                container.innerHTML = html;
+
+                // Add change listeners to checkboxes
+                container.querySelectorAll('.pin-checkbox').forEach(cb => {
+                    cb.addEventListener('change', updateSelectedPins);
+                });
+            }
+
+            function updateSelectedPins() {
+                const checkboxes = document.querySelectorAll('.pin-checkbox:checked');
+                selectedPins = Array.from(checkboxes).map(cb => ({
+                    id: cb.value,
+                    code: cb.dataset.code
+                }));
+
+                document.getElementById('selectedPinCount').textContent = selectedPins.length;
+                updateButtons();
+
+                // Update select all checkbox state
+                const selectAll = document.getElementById('selectAllPins');
+                const totalPins = document.querySelectorAll('.pin-checkbox').length;
+                selectAll.indeterminate = selectedPins.length > 0 && selectedPins.length < totalPins;
+                selectAll.checked = selectedPins.length === totalPins && totalPins > 0;
+            }
+
+            function updateButtons() {
+                const hasPins = selectedPins.length > 0;
+                const hasDownlines = getSelectedDownlines().length > 0;
+                const confirmed = document.getElementById('confirmBulkTransfer').checked;
+
+                document.getElementById('generatePreview').disabled = !hasPins || !hasDownlines;
+                document.getElementById('submitBulkTransfer').disabled = !hasPins || !hasDownlines || !confirmed;
+            }
+
+            function getSelectedDownlines() {
+                const mode = document.querySelector('input[name="transferMode"]:checked').value;
+
+                if (mode === 'sequential') {
+                    const select = document.getElementById('singleDownlineSelect');
+                    if (select.value) {
+                        return [{
+                            id: select.value,
+                            name: select.options[select.selectedIndex].dataset.name,
+                            username: select.options[select.selectedIndex].dataset.username
+                        }];
+                    }
+                } else {
+                    const checkboxes = document.querySelectorAll('.downline-checkbox:checked');
+                    return Array.from(checkboxes).map(cb => ({
+                        id: cb.value,
+                        name: cb.dataset.name,
+                        username: cb.dataset.username
+                    }));
+                }
+
+                return [];
+            }
+
+            function generateTransferPreview() {
+                const downlines = getSelectedDownlines();
+                const mode = document.querySelector('input[name="transferMode"]:checked').value;
+                const notes = document.getElementById('bulkTransferNotes').value;
+
+                let transfers = [];
+
+                if (mode === 'sequential') {
+                    // All PINs to one downline
+                    transfers = selectedPins.map(pin => ({
+                        pin_id: pin.id,
+                        pin_code: pin.code,
+                        downline_id: downlines[0].id,
+                        downline_name: downlines[0].name,
+                        downline_username: downlines[0].username,
+                        notes: notes
+                    }));
+                } else {
+                    // Distribute PINs among downlines
+                    for (let i = 0; i < selectedPins.length; i++) {
+                        const downline = downlines[i % downlines.length];
+                        transfers.push({
+                            pin_id: selectedPins[i].id,
+                            pin_code: selectedPins[i].code,
+                            downline_id: downline.id,
+                            downline_name: downline.name,
+                            downline_username: downline.username,
+                            notes: notes
+                        });
+                    }
+                }
+
+                // Render preview
+                const previewHtml = `
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>PIN</th>
+                            <th>Transfer ke</th>
+                            <th>Catatan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transfers.map(t => `
+                                <tr>
+                                    <td><code>${t.pin_code}</code></td>
+                                    <td>
+                                        <strong>${t.downline_name}</strong><br>
+                                        <small class="text-muted">@${t.downline_username}</small>
+                                    </td>
+                                    <td><small>${t.notes || '-'}</small></td>
+                                </tr>
+                            `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+                document.getElementById('transferPreviewContent').innerHTML = previewHtml;
+                document.getElementById('transferPreview').classList.remove('d-none');
+
+                // Store transfers for later use
+                window.bulkTransfers = transfers;
+            }
+
+            function performBulkTransfer() {
+                if (!window.bulkTransfers) {
+                    alert('Harap generate preview terlebih dahulu');
+                    return;
+                }
+
+                const submitBtn = document.getElementById('submitBulkTransfer');
+                const progressBar = document.getElementById('bulkProgress');
+                const progressBarInner = progressBar.querySelector('.progress-bar');
+
+                // Show progress and disable button
+                progressBar.classList.remove('d-none');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Memproses...';
+
+                const formData = new FormData();
+                formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+
+                // Kirim sebagai array, bukan JSON string
+                selectedPins.forEach((pin, index) => {
+                    formData.append(`pin_ids[${index}]`, pin.id);
+                });
+
+                window.bulkTransfers.forEach((transfer, index) => {
+                    formData.append(`transfers[${index}][pin_id]`, transfer.pin_id);
+                    formData.append(`transfers[${index}][downline_id]`, transfer.downline_id);
+                    formData.append(`transfers[${index}][notes]`, transfer.notes || '');
+                });
+
+                fetch('{{ route('member.pin.bulk-transfer') }}', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Hide progress and show results
+                        progressBar.classList.add('d-none');
+                        showBulkResults(data);
+
+                        if (data.success) {
+                            bootstrap.Modal.getInstance(document.getElementById('bulkTransferPinModal')).hide();
+
+                            // Reload page after showing results
+                            setTimeout(() => location.reload(), 3000);
+                        }
+                    })
+                    .catch(error => {
+                        progressBar.classList.add('d-none');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fas fa-share-alt me-2"></i>Mulai Bulk Transfer';
+
+                        if (typeof toastr !== 'undefined') {
+                            toastr.error(error.message || 'Terjadi kesalahan');
+                        } else {
+                            alert(error.message || 'Terjadi kesalahan');
+                        }
+                    });
+            }
+
+            function showBulkResults(data) {
+                const resultHtml = `
+            <div class="row text-center mb-3">
+                <div class="col-4">
+                    <div class="bg-success text-white rounded p-3">
+                        <h3>${data.result.success_count}</h3>
+                        <small>Berhasil</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="bg-danger text-white rounded p-3">
+                        <h3>${data.result.failed_count}</h3>
+                        <small>Gagal</small>
+                    </div>
+                </div>
+                <div class="col-4">
+                    <div class="bg-info text-white rounded p-3">
+                        <h3>${data.result.success_count + data.result.failed_count}</h3>
+                        <small>Total</small>
+                    </div>
+                </div>
+            </div>
+            
+            ${data.result.failed_transfers.length > 0 ? `
+                    <div class="alert alert-warning">
+                        <h6>Transfer Gagal:</h6>
+                        <ul class="mb-0">
+                            ${data.result.failed_transfers.map(f => `
+                            <li>PIN ID ${f.pin_id}: ${f.reason}</li>
+                        `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            
+            <div class="alert alert-success">
+                ${data.message}
+            </div>
+        `;
+
+                document.getElementById('bulkResultContent').innerHTML = resultHtml;
+                new bootstrap.Modal(document.getElementById('bulkResultModal')).show();
+            }
+        });
     </script>
 
     <style>
