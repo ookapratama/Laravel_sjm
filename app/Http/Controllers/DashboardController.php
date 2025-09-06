@@ -166,7 +166,10 @@ class DashboardController extends Controller
             $pajakSaldo = $saldoBonusTersedia * 0.05;
     
             // member downline
-            $downlines = ActivationPin::where('transferred_to', $user->id)->orderBy('id', 'asc')->get();
+            $downlines = ActivationPin::where('transferred_to', $user->id)
+    ->where('status', 'transferred') // hanya pin yang ditransfer & belum dipakai
+    ->orderBy('id', 'asc')
+    ->get();
             // dd($downlines);
     
             return view('dashboards.member', [

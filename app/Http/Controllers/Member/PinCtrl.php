@@ -399,135 +399,158 @@ class PinCtrl extends Controller
      * Bulk transfer multiple PINs to downlines
      */
     public function bulkTransfer(Request $request)
-    {
-        $request->validate([
-            'pin_ids' => 'required|array|min:1',
-            'pin_ids.*' => 'required|integer|exists:activation_pins,id',
-            'transfers' => 'required|array|min:1',
-            'transfers.*.pin_id' => 'required|integer',
-            'transfers.*.downline_id' => 'required|integer|exists:users,id',
-            'transfers.*.notes' => 'nullable|string|max:500'
-        ]);
+{
+    $request->validate([
+        'pin_ids'                 => 'required|array|min:1',
+        'pin_ids.*'               => 'required|integer|exists:activation_pins,id',
+        'transfers'               => 'required|array|min:1',
+        'transfers.*.pin_id'      => 'required|integer|exists:activation_pins,id',
+        'transfers.*.downline_id' => 'required|integer|exists:users,id',
+        'transfers.*.notes'       => 'nullable|string|max:500',
+    ]);
 
-        try {
-            $user = auth()->user();
-            $pinIds = $request->pin_ids;
-            $transfers = $request->transfers;
-            $successCount = 0;
-            $failedTransfers = [];
-            DB::beginTransaction();
+    $user   = auth()->user();
+    $userId = $user->id;
 
-            foreach ($transfers as $transfer) {
-                try {
+    // 1) Semua ID di placement tree (upline_id) di bawah Anda
+    $placementIds = collect(DB::select("
+        WITH RECURSIVE downlines AS (
+            SELECT id, upline_id
+            FROM users
+            WHERE upline_id = ?
 
-                    $pinId = $transfer['pin_id'];
-                    $downlineId = $transfer['downline_id'];
-                    $notes = $transfer['notes'] ?? null;
+            UNION ALL
 
-                    // Validasi PIN milik user dan status unused
-                    $pin = ActivationPin::where('id', $pinId)
-                        ->where('purchased_by', $user->id)
-                        ->where('status', 'unused')
-                        ->first();
+            SELECT u.id, u.upline_id
+            FROM users u
+            INNER JOIN downlines d ON u.upline_id = d.id
+        )
+        SELECT id FROM downlines
+    ", [$userId]))->pluck('id')->all();
 
-                    if (!$pin) {
-                        $failedTransfers[] = [
-                            'pin_id' => $pinId,
-                            'reason' => 'PIN tidak ditemukan atau sudah digunakan'
-                        ];
-                        continue;
-                    }
+    // 2) Semua referral langsung (sponsor_id Anda), termasuk yang belum dipasang (upline_id NULL)
+    $sponsoredIds = \App\Models\User::where('sponsor_id', $userId)->pluck('id')->all();
 
-                    // Validasi downline adalah benar-benar downline user
-                    $downline = User::where('id', $downlineId)
-                        ->where('sponsor_id', $user->id)
-                        ->first();
+    // Gabungkan keduanya jadi "allowed"
+    $allowedDownlineIds = array_values(array_unique(array_merge($placementIds, $sponsoredIds)));
 
-                    if (!$downline) {
-                        $failedTransfers[] = [
-                            'pin_id' => $pinId,
-                            'reason' => 'Downline tidak valid'
-                        ];
-                        continue;
-                    }
+    $successCount    = 0;
+    $failedTransfers = [];
 
-                    // Update PIN status
-                    $pin->update([
-                        'status' => 'transferred',
-                        'transferred_to' => $downline->id,
-                        'transferred_date' => now(),
-                        'transfer_notes' => $notes
-                    ]);
+    DB::beginTransaction();
+    try {
+        foreach ($request->transfers as $transfer) {
+            $pinId      = $transfer['pin_id'] ?? null;
+            $downlineId = $transfer['downline_id'] ?? null;
+            $notes      = $transfer['notes'] ?? null;
 
-                    // Log transfer history (jika ada tabel history)
-                    // if (Schema::hasTable('pin_histories')) {
-                    //     PinHistory::create([
-                    //         'pin_id' => $pin->id,
-                    //         'action' => 'transferred',
-                    //         'from_user_id' => $user->id,
-                    //         'to_user_id' => $downline->id,
-                    //         'notes' => $notes,
-                    //         'created_at' => now()
-                    //     ]);
-                    // }
+            try {
+                if ($downlineId === $userId) {
+                    $failedTransfers[] = ['pin_id' => $pinId, 'reason' => 'Tidak boleh transfer ke diri sendiri'];
+                    continue;
+                }
 
-                    // Send notification to downline (opsional)
-                    try {
-                        // Simpan notifikasi ke database
-                        Notification::create([
-                            'user_id' => $downline->id,
-                            'message' => 'Upline anda telah mentransfer beberapa pin terbaru ke anda, Silahkan cek/refresh halaman Dashboard anda',
-                            'url'     => route('member'),
-                        ]);
+                // Validasi “downline sah”: placement tree ATAU referral langsung
+                $isAllowed = in_array($downlineId, $allowedDownlineIds, true);
 
+                // Fallback (opsional & kuat): panjat ancestor dari target; apakah Anda ada di rantai upline?
+                if (!$isAllowed) {
+                    $ancestor = DB::selectOne("
+                        WITH RECURSIVE ancestors AS (
+                            SELECT id, upline_id FROM users WHERE id = ?
+                            UNION ALL
+                            SELECT u.id, u.upline_id
+                            FROM users u
+                            JOIN ancestors a ON a.upline_id = u.id
+                        )
+                        SELECT 1 AS ok FROM ancestors WHERE id = ? LIMIT 1
+                    ", [$downlineId, $userId]);
 
-                        event(new \App\Events\UplineTransferPin($downline->id, [
-                            'type'       => 'transfer_pin',
-                            'message'    => 'Upline anda telah mentransfer beberapa pin terbaru ke anda, Silahkan cek/refresh halaman Dashboard anda',
-                            'url'        => route('member'),
-                            'created_at' => now()->toDateTimeString(),
-                        ]));
-                        // Notification::send($downline, new PinTransferredNotification($pin, $user));
-                    } catch (\Exception $e) {
-                        // Log notification error but don't fail the transfer
-                        \Log::warning('Failed to send PIN transfer notification: ' . $e->getMessage());
-                    }
+                    $isAllowed = (bool) $ancestor;
+                }
 
-                    $successCount++;
-                } catch (\Exception $e) {
+                if (!$isAllowed) {
                     $failedTransfers[] = [
                         'pin_id' => $pinId,
-                        'reason' => $e->getMessage()
+                        'reason' => 'Downline tidak valid (bukan jaringan Anda)',
                     ];
+                    continue;
                 }
+
+                // Validasi PIN milik Anda & unused
+                $pin = \App\Models\ActivationPin::where('id', $pinId)
+                    ->where('purchased_by', $userId)
+                    ->where('status', 'unused')
+                    ->first();
+
+                if (!$pin) {
+                    $failedTransfers[] = [
+                        'pin_id' => $pinId,
+                        'reason' => 'PIN tidak ditemukan / bukan milik Anda / sudah digunakan',
+                    ];
+                    continue;
+                }
+
+                // Update PIN
+                $pin->update([
+                    'status'           => 'transferred',
+                    'transferred_to'   => $downlineId,
+                    'transferred_date' => now(),
+                    'transfer_notes'   => $notes,
+                ]);
+
+                // Notifikasi (abaikan error kirim)
+                try {
+                    \App\Models\Notification::create([
+                        'user_id' => $downlineId,
+                        'message' => 'Upline anda telah mentransfer beberapa PIN. Silakan cek Dashboard.',
+                        'url'     => route('member'),
+                    ]);
+
+                    event(new \App\Events\UplineTransferPin($downlineId, [
+                        'type'       => 'transfer_pin',
+                        'message'    => 'Upline anda telah mentransfer beberapa PIN. Silakan cek Dashboard.',
+                        'url'        => route('member'),
+                        'created_at' => now()->toDateTimeString(),
+                    ]));
+                } catch (\Throwable $notifyEx) {
+                    \Log::warning('Notif transfer PIN gagal: '.$notifyEx->getMessage());
+                }
+
+                $successCount++;
+            } catch (\Throwable $e) {
+                $failedTransfers[] = [
+                    'pin_id' => $pinId,
+                    'reason' => $e->getMessage(),
+                ];
             }
-
-            DB::commit();
-
-            // Prepare response message
-            $message = "Bulk transfer selesai. {$successCount} PIN berhasil ditransfer.";
-
-            if (count($failedTransfers) > 0) {
-                $message .= " " . count($failedTransfers) . " PIN gagal ditransfer.";
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => $message,
-                'result' => [
-                    'success_count' => $successCount,
-                    'failed_count' => count($failedTransfers),
-                    'failed_transfers' => $failedTransfers
-                ]
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Bulk transfer error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
-            ], 500);
         }
+
+        DB::commit();
+
+        $msg = "Bulk transfer selesai. {$successCount} PIN berhasil.";
+        if (count($failedTransfers) > 0) {
+            $msg .= " ".count($failedTransfers)." PIN gagal.";
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $msg,
+            'result'  => [
+                'success_count'    => $successCount,
+                'failed_count'     => count($failedTransfers),
+                'failed_transfers' => $failedTransfers,
+            ],
+        ]);
+    } catch (\Throwable $e) {
+        DB::rollBack();
+        \Log::error('Bulk transfer error: '.$e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan sistem: '.$e->getMessage(),
+        ], 500);
     }
+}
+
 }

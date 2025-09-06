@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Services\NetworkPlacer;
 use App\Services\BonusManager;
+use Illuminate\Validation\ValidationException;
 
 class TreeCloneController extends Controller
 {
@@ -126,13 +127,13 @@ $pins = ActivationPin::query()
             ->lockForUpdate()
             ->get();
 
-        if ($pinRows->count() !== $qty) {
-            $found = $pinRows->pluck('code')->all();
-            $missing = collect($pins)->diff($found)->values()->all();
-            throw ValidationException::withMessages([
-                'pin_codes' => ['Ada PIN tidak valid / bukan milik Anda / tidak tersedia: '.implode(', ', $missing)]
-            ]);
-        }
+        // if ($pinRows->count() !== $qty) {
+        //     $found = $pinRows->pluck('code')->all();
+        //     $missing = collect($pins)->diff($found)->values()->all();
+        //     throw ValidationException::withMessages([
+        //         'pin_codes' => ['Ada PIN tidak valid / bukan milik Anda / tidak tersedia: '.implode(', ', $missing)]
+        //     ]);
+        // }
 
         // 3b) Ambil profil dasar (kalau ada)
         $baseProfile = MitraProfile::where('user_id', $baseUser->id)->first();
