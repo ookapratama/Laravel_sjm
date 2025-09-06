@@ -28,7 +28,7 @@ class MLMController extends Controller
         $user = auth()->user();
 
         // Hanya admin dan super_admin yang bisa akses master view
-        if (!in_array($user->role, ['super_admin', 'admin'])) {
+        if (!in_array($user->role, ['super_admin', 'admin','finance'])) {
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }
 
@@ -45,7 +45,7 @@ class MLMController extends Controller
         $nodeId = (int) $nodeId;
 
         // Super admin dan admin bisa akses semua
-        if (in_array($user->role, ['super-admin', 'admin'])) {
+        if (in_array($user->role, ['super-admin', 'admin','finance'])) {
             return true;
         }
         

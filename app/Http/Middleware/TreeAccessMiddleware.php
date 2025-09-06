@@ -1,92 +1,159 @@
 <?php
-
-// App/Http/Middleware/TreeAccessMiddleware.php
-
 namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use App\Models\User;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class TreeAccessMiddleware
 {
-    /**
-     * Handle an incoming request.
-     */
     public function handle(Request $request, Closure $next)
     {
-        $user = auth()->user();
-        
+        $user = Auth::user();
         if (!$user) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return $this->deny($request, 401, 'Unauthorized');
         }
-        
-        // Super admin dan admin bypass semua validasi
-        if (in_array($user->role, ['super-admin', 'admin'])) {
+
+        // Bypass untuk peran istimewa
+        if (in_array($user->role, ['super-admin', 'admin', 'finance'], true)) {
             return $next($request);
         }
-        
-        // Untuk member, validasi akses
-        if ($user->role === 'member') {
-            $nodeId = $request->route('nodeId') ?? $request->route('id') ?? $request->get('node_id');
-            
-            if ($nodeId) {
-                $nodeId = (int) $nodeId;
-                
-                // Log akses untuk monitoring
-                Log::info("Member {$user->id} trying to access node {$nodeId}");
-                
-                if (!$this->canMemberAccessNode($nodeId, $user)) {
-                    return response()->json([
-                        'error' => true,
-                        'access_denied' => true,
-                        'message' => 'Anda tidak memiliki akses untuk melihat data ini.'
-                    ], 403);
-                }
+
+        // --- Ambil target node yang diminta ---
+        // Dukungan beragam nama param: /tree/load/{id?}?root_id=...&node_id=...
+        $nodeId = $request->route('nodeId')
+            ?? $request->route('id')
+            ?? $request->query('node_id')
+            ?? $request->query('root_id');
+
+        if ($nodeId !== null) {
+            $nodeId = (int) $nodeId;
+
+            // Log audit
+            Log::info("TreeAccess: member {$user->id} requests node {$nodeId}");
+
+            if (!$this->canMemberAccessNode($user->id, $nodeId)) {
+                return $this->deny($request, 403, 'Anda tidak memiliki akses untuk melihat data ini.');
             }
         }
-        
+
         return $next($request);
     }
-    
+
     /**
-     * Check if member can access specific node
+     * Aturan akses member:
+     * - diri sendiri
+     * - siapa pun di rantai UPLINE (ancestor) mereka
+     * - siapa pun di rantai DOWNLINE (descendant) mereka
      */
-    private function canMemberAccessNode($nodeId, $user)
+    private function canMemberAccessNode(int $authId, int $targetId): bool
     {
-        // Bisa akses diri sendiri
-        if ($nodeId === $user->id) {
+        if ($authId === $targetId) {
             return true;
         }
-        
-        // Bisa akses upline langsung (sponsor)
-        if ($nodeId === $user->referrer_id) {
+
+        // Cek: target adalah downline saya?
+        if ($this->isDescendantOf($targetId, $authId)) {
             return true;
         }
-        
-        // Cek apakah nodeId adalah downline user
-        return $this->isUserDownline($nodeId, $user->id);
+
+        // Cek: target adalah upline saya?
+        if ($this->isAncestorOf($targetId, $authId)) {
+            return true;
+        }
+
+        return false;
     }
-    
+
     /**
-     * Check if targetUserId is downline of parentUserId
+     * Cek apakah $candidate adalah **descendant** dari $ancestor.
+     * Struktur tree memakai kolom `upline_id`.
+     *
+     * WITH RECURSIVE downlines( id ) AS (
+     *   SELECT id FROM users WHERE upline_id = :ancestor
+     *   UNION ALL
+     *   SELECT u.id FROM users u
+     *     JOIN downlines d ON u.upline_id = d.id
+     * )
+     * SELECT 1 FROM downlines WHERE id = :candidate LIMIT 1;
      */
-    private function isUserDownline($targetUserId, $parentUserId, $maxDepth = 10)
+    private function isDescendantOf(int $candidateId, int $ancestorId): bool
     {
-        if ($maxDepth <= 0) return false;
-        
-        $targetUser = User::find($targetUserId);
-        if (!$targetUser || !$targetUser->referrer_id) {
-            return false;
+        $row = DB::selectOne(
+            <<<SQL
+            WITH RECURSIVE downlines AS (
+              SELECT id
+              FROM users
+              WHERE upline_id = ?
+
+              UNION ALL
+
+              SELECT u.id
+              FROM users u
+              INNER JOIN downlines d ON u.upline_id = d.id
+            )
+            SELECT 1 AS ok
+            FROM downlines
+            WHERE id = ?
+            LIMIT 1
+            SQL,
+            [$ancestorId, $candidateId]
+        );
+
+        return (bool) $row;
+    }
+
+    /**
+     * Cek apakah $candidate adalah **ancestor (upline)** dari $descendant.
+     * Naikkan rantai upline mulai dari $descendant.
+     *
+     * WITH RECURSIVE ancestors( id ) AS (
+     *   SELECT upline_id FROM users WHERE id = :descendant
+     *   UNION ALL
+     *   SELECT u.upline_id FROM users u
+     *     JOIN ancestors a ON u.id = a.id
+     * )
+     * SELECT 1 FROM ancestors WHERE id = :candidate LIMIT 1;
+     */
+    private function isAncestorOf(int $candidateId, int $descendantId): bool
+    {
+        $row = DB::selectOne(
+            <<<SQL
+            WITH RECURSIVE ancestors AS (
+              SELECT upline_id AS id
+              FROM users
+              WHERE id = ?
+
+              UNION ALL
+
+              SELECT u.upline_id
+              FROM users u
+              INNER JOIN ancestors a ON u.id = a.id
+            )
+            SELECT 1 AS ok
+            FROM ancestors
+            WHERE id = ?
+            LIMIT 1
+            SQL,
+            [$descendantId, $candidateId]
+        );
+
+        return (bool) $row;
+    }
+
+    private function deny(Request $request, int $status, string $message)
+    {
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'error'         => true,
+                'access_denied' => true,
+                'message'       => $message,
+            ], $status);
         }
-        
-        // Direct downline
-        if ($targetUser->referrer_id === $parentUserId) {
-            return true;
-        }
-        
-        // Recursive check untuk indirect downline
-        return $this->isUserDownline($targetUser->referrer_id, $parentUserId, $maxDepth - 1);
+
+        // Non-AJAX: arahkan balik dengan pesan
+        return redirect()->back()->withErrors(['access' => $message])->setStatusCode($status);
     }
 }
