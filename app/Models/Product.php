@@ -25,15 +25,4 @@ class Product extends Model
     ];
 
 
-    public function packageProducts()
-    {
-        return $this->hasMany(ProductPackage::class);
-    }
-
-    public function packages()
-    {
-        return $this->belongsToMany(Package::class, 'package_products')
-            ->withPivot('quantity')
-            ->withTimestamps();
-    }
 }

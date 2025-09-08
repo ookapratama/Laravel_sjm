@@ -10,7 +10,7 @@
                 <p class="mb-2">Manajemen produk untuk sistem MLM</p>
             </div>
             <div class="ms-md-auto py-2 py-md-0">
-                <a href="{{ route('admin.products.manage-package') }}" class="btn btn-success me-2">
+                <a href="{{ route('admin.pos.dashboard') }}" class="btn btn-success me-2">
                     <i class="fas fa-package"></i> Kelola Paket
                 </a>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">

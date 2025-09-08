@@ -31,6 +31,7 @@ use App\Models\User;
 use App\Models\Notification;
 use App\Http\Controllers\ReferralQrController;
 use App\Http\Controllers\Admin\PinCtrl as AdminPinCtrl;
+use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProdukController;
 use App\Http\Controllers\Admin\TransactionPackageController;
 use App\Http\Controllers\Finance\PinCtrl as FinancePinCtrl;
@@ -228,6 +229,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
     // Additional package routes
     Route::patch('packages/{package}/toggle-status', [PackageController::class, 'toggleStatus'])
         ->name('packages.toggle-status');
+
+    Route::prefix('pos')->name('pos.')->group(function () {
+        Route::get('/', [PosController::class, 'dashboard'])->name('dashboard');
+        Route::post('/start-session/{pin}', [PosController::class, 'startSession'])->name('start-session');
+        Route::get('/session/{session}', [PosController::class, 'session'])->name('session');
+        Route::post('/session/{session}/add-product', [PosController::class, 'addProduct'])->name('add-product');
+        Route::delete('/session/{session}/remove-item/{item}', [PosController::class, 'removeItem'])->name('remove-item');
+        Route::post('/session/{session}/complete', [PosController::class, 'completeSession'])->name('complete-session');
+        Route::post('/session/{session}/cancel', [PosController::class, 'cancelSession'])->name('cancel-session');
+        Route::get('/history', [PosController::class, 'history'])->name('history');
+    });
 });
 
 // ✅ Admin
