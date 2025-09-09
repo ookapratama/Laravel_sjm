@@ -184,7 +184,8 @@
                             <ul class="nav nav-collapse">
                                 <li><a href="{{ route('admin.products.index') }}"><span class="sub-item">Produk</span></a></li>
                                 {{-- <li><a href="{{ route('admin.packages.index') }}"><span class="sub-item">Kelolal Paket</span></a></li> --}}
-                                <li><a href="{{ route('admin.pos.dashboard') }}"><span class="sub-item">Transaksi Paket</span></a></li>
+                                {{-- <li><a href="{{ route('admin.pos.dashboard') }}"><span class="sub-item">Transaksi Paket</span></a></li> --}}
+                                <li><a href="{{ route('admin.stock.index') }}"><span class="sub-item">Transaksi Produk</span></a></li>
                             </ul>
                         </div>
                     </li>

@@ -33,6 +33,7 @@ use App\Http\Controllers\ReferralQrController;
 use App\Http\Controllers\Admin\PinCtrl as AdminPinCtrl;
 use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProdukController;
+use App\Http\Controllers\Admin\StockProductController;
 use App\Http\Controllers\Admin\TransactionPackageController;
 use App\Http\Controllers\Finance\PinCtrl as FinancePinCtrl;
 use App\Http\Controllers\Member\PinCtrl as MemberPinCtrl;
@@ -219,6 +220,16 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/{id}/transaction-packages', [TransactionPackageController::class, 'assignPackage'])->name('products.transaction.assigned');
         Route::delete('/{pin}/unassign-package', [TransactionPackageController::class, 'unassignPackage'])->name('product.transaction.unassign-package');
         Route::get('stats', [TransactionPackageController::class, 'getDashboardStats'])->name('product.transaction.stats');
+
+        // management stok produk
+        Route::get('/stock/', [StockProductController::class, 'index'])->name('stock.index');
+        Route::post('/stock/process', [StockProductController::class, 'processTransaction'])->name('stock.process');
+        Route::get('/stock/product/{id}', [StockProductController::class, 'getProductInfo'])->name('stock.product-info');
+        Route::get('/stock/detail/{id}', [StockProductController::class, 'detail'])->name('stock.detail');
+        Route::delete('/stock/{id}', [StockProductController::class, 'destroy'])->name('stock.destroy');
+        Route::get('/stock/history', [StockProductController::class, 'history'])->name('stock.history');
+        Route::get('/stock/stats', [StockProductController::class, 'getStats'])->name('stock.stats');
+        Route::get('/stock/export', [StockProductController::class, 'export'])->name('stock.export');
     });
 
     Route::get('packages/{package}/preview', [TransactionPackageController::class, 'getPackagePreview'])->name('packages.preview');
