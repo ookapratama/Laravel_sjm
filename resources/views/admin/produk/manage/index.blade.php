@@ -1,221 +1,230 @@
 @extends('layouts.app')
 
-@section('title', 'Kelola Paket')
+@section('title', 'Produk - Barang Keluar')
 
 @section('content')
     <div class="page-inner">
+        <!-- Header -->
         <div class="d-flex align-items-left align-items-md-center flex-column flex-md-row pt-2 pb-4">
             <div>
-                <h3 class="fw-bold mb-3">Kelola Paket</h3>
-                <p class="mb-2">Atur paket-paket produk untuk sistem membership</p>
+                <h3 class="fw-bold mb-3">Produk - Barang Keluar</h3>
+                <p class="mb-2">Pilih produk dan catat jumlah barang yang keluar</p>
             </div>
             <div class="ms-md-auto py-2 py-md-0">
-                <a href="{{ route('admin.products.index') }}" class="btn btn-secondary me-2">
-                    <i class="fas fa-box"></i> Kelola Produk
+                <a href="{{ route('admin.stock.history') }}" class="btn btn-info me-2">
+                    <i class="fas fa-history"></i> History
                 </a>
-                <a href="{{ route('admin.packages.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Buat Paket Baru
-                </a>
+                <button class="btn btn-success" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
             </div>
         </div>
 
-        @if (session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <strong><i class="fas fa-check-circle"></i></strong> {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
-        @if (session('error'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <strong><i class="fas fa-exclamation-circle"></i></strong> {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex align-items-center justify-content-between">
-                            <div class="card-title mb-0">Daftar Paket ({{ $packages->count() }} paket)</div>
-                            <div class="card-tools">
-                                <input type="text" id="searchPackages" class="form-control" placeholder="Cari paket..."
-                                    style="width: 250px;">
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card card-stats card-round">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-icon">
+                                <div class="icon-big text-center icon-info bubble-shadow-small">
+                                    <i class="fas fa-box-open"></i>
+                                </div>
+                            </div>
+                            <div class="col col-stats ms-3 ms-sm-0">
+                                <div class="numbers">
+                                    <p class="card-category">Item Keluar Hari Ini</p>
+                                    <h4 class="card-title">{{ $stats['today_count'] }}</h4>
+                                </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-stats card-round">
                     <div class="card-body">
-                        @if ($packages->count() > 0)
-                            <div class="row" id="packagesContainer">
-                                @foreach ($packages as $package)
-                                    <div class="col-md-6 col-lg-4 mb-4 package-card"
-                                        data-name="{{ strtolower($package->name) }}"
-                                        data-description="{{ strtolower($package->description ?? '') }}">
-                                        <div
-                                            class="card h-100 {{ $package->is_active ? 'border-success' : 'border-secondary' }}">
-                                            <div
-                                                class="card-header bg-{{ $package->is_active ? 'success' : 'secondary' }} text-white">
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <h6 class="card-title mb-0">
-                                                        <i class="fas fa-box-open"></i> {{ $package->name }}
-                                                    </h6>
-                                                    <div class="dropdown">
-                                                        <button class="btn btn-sm btn-outline-light" type="button"
-                                                            data-bs-toggle="dropdown">
-                                                            <i class="fas fa-ellipsis-v"></i>
-                                                        </button>
-                                                        <ul class="dropdown-menu dropdown-menu-end">
-                                                            <li>
-                                                                <a class="dropdown-item"
-                                                                    href="{{ route('admin.packages.show', $package) }}">
-                                                                    <i class="fas fa-eye text-info"></i> Detail
-                                                                </a>
-                                                            </li>
-                                                            <li>
-                                                                <a class="dropdown-item"
-                                                                    href="{{ route('admin.packages.edit', $package) }}">
-                                                                    <i class="fas fa-edit text-warning"></i> Edit
-                                                                </a>
-                                                            </li>
-                                                            <li>
-                                                                <form
-                                                                    action="{{ route('admin.packages.toggle-status', $package) }}"
-                                                                    method="POST" class="d-inline">
-                                                                    @csrf
-                                                                    @method('PATCH')
-                                                                    <button type="submit" class="dropdown-item">
-                                                                        @if ($package->is_active)
-                                                                            <i class="fas fa-pause text-warning"></i>
-                                                                            Nonaktifkan
-                                                                        @else
-                                                                            <i class="fas fa-play text-success"></i>
-                                                                            Aktifkan
-                                                                        @endif
-                                                                    </button>
-                                                                </form>
-                                                            </li>
-                                                            <li>
-                                                                <hr class="dropdown-divider">
-                                                            </li>
-                                                            <li>
-                                                                <form
-                                                                    action="{{ route('admin.packages.destroy', $package) }}"
-                                                                    method="POST"
-                                                                    onsubmit="return confirm('Yakin ingin menghapus paket ini? Data tidak dapat dipulihkan!')"
-                                                                    class="d-inline">
-                                                                    @csrf
-                                                                    @method('DELETE')
-                                                                    <button type="submit"
-                                                                        class="dropdown-item text-danger">
-                                                                        <i class="fas fa-trash"></i> Hapus
-                                                                    </button>
-                                                                </form>
-                                                            </li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="card-body">
-                                                @if ($package->description)
-                                                    <p class="text-muted mb-3">{{ $package->description }}</p>
-                                                @endif
-
-                                                <div class="row mb-3">
-                                                    <div class="col-6">
-                                                        <div class="text-center">
-                                                            <div class="h4 mb-1 text-primary">
-                                                                {{ $package->package_products_count }}</div>
-                                                            <div class="text-muted small">Jenis Produk</div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <div class="text-center">
-                                                            <div class="h4 mb-1 text-info">{{ $package->total_items }}
-                                                            </div>
-                                                            <div class="text-muted small">Total Item</div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="border rounded p-3 mb-3 bg-light">
-                                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                                        <span class="fw-bold">Total Nilai:</span>
-                                                        <span class="h5 mb-0 text-success">
-                                                            Rp {{ number_format($package->calculated_total, 0, ',', '.') }}
-                                                        </span>
-                                                    </div>
-                                                    <div class="d-flex justify-content-between align-items-center">
-                                                        <span class="text-muted small">Batas Maksimal:</span>
-                                                        <span class="small">
-                                                            Rp {{ number_format($package->max_value, 0, ',', '.') }}
-                                                        </span>
-                                                    </div>
-
-                                                    @php
-                                                        $percentage =
-                                                            ($package->calculated_total / $package->max_value) * 100;
-                                                        $progressColor =
-                                                            $percentage > 90
-                                                                ? 'danger'
-                                                                : ($percentage > 75
-                                                                    ? 'warning'
-                                                                    : 'success');
-                                                    @endphp
-
-                                                    <div class="progress mt-2" style="height: 6px;">
-                                                        <div class="progress-bar bg-{{ $progressColor }}"
-                                                            style="width: {{ min($percentage, 100) }}%"></div>
-                                                    </div>
-                                                    <div class="text-center mt-1">
-                                                        <small
-                                                            class="text-{{ $progressColor }}">{{ number_format($percentage, 1) }}%
-                                                            dari batas</small>
-                                                    </div>
-                                                </div>
-
-                                                <div class="d-flex justify-content-between align-items-center">
-                                                    <span
-                                                        class="badge badge-{{ $package->is_active ? 'success' : 'secondary' }}">
-                                                        {{ $package->is_active ? 'Aktif' : 'Non-aktif' }}
-                                                    </span>
-                                                    <small class="text-muted">
-                                                        {{ $package->created_at->format('d/m/Y H:i') }}
-                                                    </small>
-                                                </div>
-                                            </div>
-                                            <div class="card-footer bg-transparent">
-                                                <div class="btn-group w-100" role="group">
-                                                    <a href="{{ route('admin.packages.show', $package) }}"
-                                                        class="btn btn-outline-info btn-sm">
-                                                        <i class="fas fa-eye"></i> Detail
-                                                    </a>
-                                                    <a href="{{ route('admin.packages.edit', $package) }}"
-                                                        class="btn btn-outline-warning btn-sm">
-                                                        <i class="fas fa-edit"></i> Edit
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
+                        <div class="row align-items-center">
+                            <div class="col-icon">
+                                <div class="icon-big text-center icon-danger bubble-shadow-small">
+                                    <i class="fas fa-cart-arrow-down"></i>
+                                </div>
                             </div>
+                            <div class="col col-stats ms-3 ms-sm-0">
+                                <div class="numbers">
+                                    <p class="card-category">Total barang keluar hari ini</p>
+                                    <h4 class="card-title">{{ $stats['today_stock'] }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-stats card-round">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-icon">
+                                <div class="icon-big text-center icon-success bubble-shadow-small">
+                                    <i class="fas fa-money-bill-wave"></i>
+                                </div>
+                            </div>
+                            <div class="col col-stats ms-3 ms-sm-0">
+                                <div class="numbers">
+                                    <p class="card-category">Nilai Hari Ini</p>
+                                    <h4 class="card-title">Rp {{ number_format($stats['today_value'], 0, ',', '.') }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card card-stats card-round">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-icon">
+                                <div class="icon-big text-center icon-warning bubble-shadow-small">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                            </div>
+                            <div class="col col-stats ms-3 ms-sm-0">
+                                <div class="numbers">
+                                    <p class="card-category">Stok Menipis</p>
+                                    <h4 class="card-title">{{ $stats['low_stock_count'] }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                            <div id="noResultsFound" class="text-center py-5" style="display: none;">
-                                <i class="fas fa-search fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">Tidak ada paket yang ditemukan</h5>
-                                <p class="text-muted">Coba ubah kata kunci pencarian Anda</p>
+        <div class="row">
+            <!-- Product List (Left) -->
+            <div class="col-md-8">
+
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Detail Transaksi</div>
+                        <div class="card-tools">
+                            <span class="badge badge-primary" id="cartCount">0 item</span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div id="cartItems" style="max-height: 400px; overflow-y: auto;">
+                            <div class="text-center py-4" id="emptyCart">
+                                <i class="fas fa-shopping-cart fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">Belum ada item</p>
                             </div>
-                        @else
-                            <div class="text-center py-5">
-                                <i class="fas fa-box-open fa-4x text-muted mb-4"></i>
-                                <h4 class="text-muted">Belum Ada Paket</h4>
-                                <p class="text-muted mb-4">Mulai dengan membuat paket pertama Anda!</p>
-                                <a href="{{ route('admin.packages.create') }}" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i> Buat Paket Pertama
-                                </a>
+                        </div>
+                    </div>
+
+                    <!-- Cart Summary -->
+                    <div class="card-footer" id="cartSummary" style="display: none;">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Total Item:</small>
+                                <div class="fw-bold" id="totalItems">0</div>
                             </div>
-                        @endif
+                            <div class="col-6">
+                                <small class="text-muted">Total Nilai:</small>
+                                <div class="fw-bold text-primary" id="totalValue">Rp 0</div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <small class="text-muted">Total PV:</small>
+                                <div class="fw-bold text-info" id="totalPv">0</div>
+                            </div>
+                        </div>
+
+                        <!-- Reference & Notes -->
+                        {{-- <div class="mb-3">
+                            <input type="text" class="form-control form-control-sm" id="referenceCode"
+                                placeholder="Kode Referensi (PIN, dll)">
+                        </div> --}}
+                        <div class="mb-3">
+                            <textarea class="form-control form-control-md" id="notes" rows="3" placeholder="Catatan (opsional)"></textarea>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-success" onclick="processTransaction()">
+                                <i class="fas fa-check"></i> Proses Transaksi
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="clearCart()">
+                                <i class="fas fa-trash"></i> Kosongkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction Cart (Right) -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">Daftar Produk</div>
+                        <div class="card-tools">
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="searchProduct" class="form-control"
+                                    placeholder="Cari produk...">
+                                <div class="input-group-append">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                            <table class="table table-hover table-striped">
+                                <thead class="table-light sticky-top">
+                                    <tr>
+                                        <th width="30%">Produk</th>
+                                        {{-- <th width="15%">SKU</th> --}}
+                                        <th width="15%">Harga</th>
+                                        <th width="10%">Stok</th>
+                                        <th width="20%">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="productTable">
+                                    @foreach ($products as $product)
+                                        <tr class="product-row" data-name="{{ strtolower($product->name) }}"
+                                            data-sku="{{ strtolower($product->sku) }}"
+                                            data-product-id="{{ $product->id }}">
+                                            <td>
+                                                <strong>{{ $product->name }}</strong>
+                                            </td>
+                                            {{-- <td>
+                                                <code>{{ $product->sku }}</code>
+                                            </td> --}}
+                                            <td>
+                                                Rp {{ number_format($product->price, 0, ',', '.') }}
+                                            </td>
+                                            <td>
+                                                <span
+                                                    class="badge {{ $product->stock <= 10 ? 'badge-danger' : ($product->stock <= 50 ? 'badge-warning' : 'badge-success') }}"
+                                                    id="stock-{{ $product->id }}">
+                                                    {{ $product->stock }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" class="form-control"
+                                                        id="qty-{{ $product->id }}" min="1"
+                                                        max="{{ $product->stock }}" value="1" style="width: 70px;">
+                                                    <button class="btn btn-primary btn-sm"
+                                                        onclick="addToCart({{ $product->id }}, '{{ $product->name }}', {{ $product->price }}, {{ $product->pv }}, {{ $product->stock }})">
+                                                        <i class="fas fa-plus"></i> Add
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -223,114 +232,304 @@
     </div>
 
     <script>
-        // Search functionality
-        document.getElementById('searchPackages').addEventListener('keyup', function() {
+        let cart = [];
+        let products = @json($products);
+
+        // Search products
+        document.getElementById('searchProduct').addEventListener('keyup', function() {
             const searchTerm = this.value.toLowerCase();
-            const packageCards = document.querySelectorAll('.package-card');
-            const container = document.getElementById('packagesContainer');
-            const noResults = document.getElementById('noResultsFound');
-            let visibleCount = 0;
+            const rows = document.querySelectorAll('.product-row');
 
-            packageCards.forEach(card => {
-                const name = card.getAttribute('data-name');
-                const description = card.getAttribute('data-description');
-
-                if (name.includes(searchTerm) || description.includes(searchTerm)) {
-                    card.style.display = '';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
+            rows.forEach(row => {
+                const name = row.dataset.name;
+                const sku = row.dataset.sku;
+                const visible = name.includes(searchTerm) || sku.includes(searchTerm);
+                row.style.display = visible ? '' : 'none';
             });
-
-            if (visibleCount === 0 && searchTerm !== '') {
-                container.style.display = 'none';
-                noResults.style.display = 'block';
-            } else {
-                container.style.display = '';
-                noResults.style.display = 'none';
-            }
         });
 
-        // Auto dismiss alerts after 5 seconds
-        setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert');
-            alerts.forEach(alert => {
-                if (alert.querySelector('.btn-close')) {
-                    alert.querySelector('.btn-close').click();
+        // Add product to cart
+        function addToCart(productId, productName, price, pv, stock) {
+            const quantityInput = document.getElementById(`qty-${productId}`);
+            const quantity = parseInt(quantityInput.value);
+
+            if (quantity < 1 || quantity > stock) {
+                Swal.fire('Error!', `Quantity harus antara 1 - ${stock}`, 'error');
+                return;
+            }
+
+            // Check if product already in cart
+            const existingIndex = cart.findIndex(item => item.product_id === productId);
+
+            if (existingIndex !== -1) {
+                // Update existing item
+                const newQuantity = cart[existingIndex].quantity + quantity;
+                if (newQuantity > stock) {
+                    Swal.fire('Error!', `Total quantity tidak boleh melebihi stok (${stock})`, 'error');
+                    return;
+                }
+                cart[existingIndex].quantity = newQuantity;
+                cart[existingIndex].total_price = cart[existingIndex].quantity * price;
+                cart[existingIndex].total_pv = cart[existingIndex].quantity * pv;
+            } else {
+                // Add new item
+                cart.push({
+                    product_id: productId,
+                    product_name: productName,
+                    quantity: quantity,
+                    unit_price: price,
+                    total_price: quantity * price,
+                    unit_pv: pv,
+                    total_pv: quantity * pv,
+                    max_stock: stock
+                });
+            }
+
+            // Reset quantity input
+            quantityInput.value = 1;
+
+            // Update cart display
+            updateCartDisplay();
+
+            // Show success
+            Swal.fire({
+                icon: 'success',
+                title: 'Ditambahkan!',
+                text: `${productName} x${quantity}`,
+                timer: 1000,
+                showConfirmButton: false
+            });
+        }
+
+        // Remove item from cart
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.product_id !== productId);
+            updateCartDisplay();
+        }
+
+        // Update quantity in cart
+        function updateCartQuantity(productId, newQuantity) {
+            const item = cart.find(item => item.product_id === productId);
+            if (item) {
+                if (newQuantity < 1) {
+                    removeFromCart(productId);
+                    return;
+                }
+
+                if (newQuantity > item.max_stock) {
+                    Swal.fire('Error!', `Quantity tidak boleh melebihi stok (${item.max_stock})`, 'error');
+                    return;
+                }
+
+                item.quantity = newQuantity;
+                item.total_price = item.quantity * item.unit_price;
+                item.total_pv = item.quantity * item.unit_pv;
+                updateCartDisplay();
+            }
+        }
+
+        // Update cart display
+        function updateCartDisplay() {
+            const cartItems = document.getElementById('cartItems');
+            const cartSummary = document.getElementById('cartSummary');
+            const emptyCart = document.getElementById('emptyCart');
+
+            if (cart.length === 0) {
+                cartItems.innerHTML = `
+                    <div class="text-center py-4" id="emptyCart">
+                        <i class="fas fa-shopping-cart fa-2x text-muted mb-2"></i>
+                        <p class="text-muted">Belum ada item</p>
+                    </div>`;
+                cartSummary.style.display = 'none';
+                document.getElementById('cartCount').textContent = '0 item';
+                return;
+            }
+
+            // Generate cart items HTML
+            let itemsHtml = '';
+            let totalItems = 0;
+            let totalValue = 0;
+            let totalPv = 0;
+
+            cart.forEach(item => {
+                totalItems += item.quantity;
+                totalValue += item.total_price;
+                totalPv += item.total_pv;
+
+                itemsHtml += `
+                    <div class="border-bottom p-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div style="flex: 1;">
+                                <h6 class="mb-1" style="font-size: 0.9rem;">${item.product_name}</h6>
+                                <small class="text-muted">@ Rp ${number_format(item.unit_price, 0, ',', '.')}</small>
+                                <br><small class="text-info">${item.unit_pv} PV per item</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${item.product_id})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="input-group input-group-sm" style="width: 100px;">
+                                <button class="btn btn-outline-secondary" onclick="updateCartQuantity(${item.product_id}, ${item.quantity - 1})">-</button>
+                                <input type="number" class="form-control text-center" value="${item.quantity}" 
+                                       onchange="updateCartQuantity(${item.product_id}, parseInt(this.value))" min="1" max="${item.max_stock}">
+                                <button class="btn btn-outline-secondary" onclick="updateCartQuantity(${item.product_id}, ${item.quantity + 1})">+</button>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-primary">Rp ${number_format(item.total_price, 0, ',', '.')}</div>
+                                <small class="text-info">${item.total_pv} PV</small>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+
+            cartItems.innerHTML = itemsHtml;
+            cartSummary.style.display = 'block';
+
+            // Update summary
+            document.getElementById('cartCount').textContent = `${cart.length} item`;
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('totalValue').textContent = 'Rp ' + number_format(totalValue, 0, ',', '.');
+            document.getElementById('totalPv').textContent = totalPv;
+        }
+
+        // Clear cart
+        function clearCart() {
+            if (cart.length === 0) return;
+
+            Swal.fire({
+                title: 'Kosongkan keranjang?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    cart = [];
+                    updateCartDisplay();
                 }
             });
-        }, 5000);
+        }
+
+        // Process transaction
+        function processTransaction() {
+            if (cart.length === 0) {
+                Swal.fire('Error!', 'Keranjang masih kosong', 'error');
+                return;
+            }
+
+            // const referenceCode = document.getElementById('referenceCode').value;
+            const notes = document.getElementById('notes').value;
+
+            Swal.fire({
+                title: 'Proses transaksi?',
+                text: `${cart.length} jenis produk akan dicatat keluar`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Proses',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch('{{ route('admin.stock.process') }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                items: cart,
+                                // reference_code: referenceCode,
+                                notes: notes
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire('Berhasil!', data.message, 'success').then(() => {
+                                    // Clear cart and refresh
+                                    cart = [];
+                                    updateCartDisplay();
+                                    // document.getElementById('referenceCode').value = '';
+                                    document.getElementById('notes').value = '';
+                                    refreshData();
+                                });
+                            } else {
+                                Swal.fire('Error!', data.message, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            Swal.fire('Error!', 'Terjadi kesalahan sistem', 'error');
+                        });
+                }
+            });
+        }
+
+        // Refresh data (update stock)
+        function refreshData() {
+            location.reload();
+        }
+
+        // Utility function
+        function number_format(number, decimals, dec_point, thousands_sep) {
+            number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+            var n = !isFinite(+number) ? 0 : +number,
+                prec = !isFinite(+decimals) ? 0 : Math.abs(decimals),
+                sep = (typeof thousands_sep === 'undefined') ? ',' : thousands_sep,
+                dec = (typeof dec_point === 'undefined') ? '.' : dec_point,
+                s = '',
+                toFixedFix = function(n, prec) {
+                    var k = Math.pow(10, prec);
+                    return '' + Math.round(n * k) / k;
+                };
+            s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+            if (s[0].length > 3) {
+                s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+            }
+            if ((s[1] || '').length < prec) {
+                s[1] = s[1] || '';
+                s[1] += new Array(prec - s[1].length + 1).join('0');
+            }
+            return s.join(dec);
+        }
     </script>
 
     <style>
-        .card-header {
-            border-bottom: none;
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
-        .package-card .card {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            border: 2px solid;
+        .card-stats {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
 
-        .package-card .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        .icon-big {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
         }
 
-        .progress {
-            border-radius: 10px;
+        .bubble-shadow-small {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
-        .progress-bar {
-            border-radius: 10px;
-        }
-
-        .badge {
-            font-size: 0.8em;
-            padding: 0.4em 0.8em;
-        }
-
-        .btn-group .btn {
-            border-radius: 0;
-        }
-
-        .btn-group .btn:first-child {
-            border-top-left-radius: 0.375rem;
-            border-bottom-left-radius: 0.375rem;
-        }
-
-        .btn-group .btn:last-child {
-            border-top-right-radius: 0.375rem;
-            border-bottom-right-radius: 0.375rem;
-        }
-
-        .dropdown-menu {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border: none;
-            border-radius: 8px;
-        }
-
-        .dropdown-item {
-            padding: 0.5rem 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .dropdown-item:hover {
+        .table-hover tbody tr:hover {
             background-color: #f8f9fa;
-            transform: translateX(2px);
+        }
+
+        .input-group-sm .form-control {
+            font-size: 0.875rem;
         }
 
         @media (max-width: 768px) {
-            .card-tools {
-                margin-top: 1rem;
-            }
 
-            .card-tools input {
-                width: 100% !important;
-            }
-
-            .package-card {
+            .col-md-8,
+            .col-md-4 {
                 margin-bottom: 1rem;
             }
         }
