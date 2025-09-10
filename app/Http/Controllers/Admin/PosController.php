@@ -215,6 +215,7 @@ class PosController extends Controller
 
         } catch (Exception $e) {
             DB::rollback();
+            \Log::info($e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menambah produk: ' . $e->getMessage()

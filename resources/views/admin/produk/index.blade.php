@@ -10,8 +10,8 @@
                 <p class="mb-2">Manajemen produk untuk sistem MLM</p>
             </div>
             <div class="ms-md-auto py-2 py-md-0">
-                <a href="{{ route('admin.pos.dashboard') }}" class="btn btn-success me-2">
-                    <i class="fas fa-package"></i> Kelola Paket
+                <a href="{{ route('admin.stock.index') }}" class="btn btn-success me-2">
+                    <i class="fas fa-package"></i> Kelola Stok
                 </a>
                 <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
                     <i class="fas fa-plus"></i> Tambah Produk

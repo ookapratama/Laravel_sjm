@@ -229,6 +229,11 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::delete('/stock/{id}', [StockProductController::class, 'destroy'])->name('stock.destroy');
         Route::get('/stock/history', [StockProductController::class, 'history'])->name('stock.history');
         Route::get('/stock/stats', [StockProductController::class, 'getStats'])->name('stock.stats');
+
+        Route::get('/stock/detail/{transactionGroup}', [StockProductController::class, 'detail'])->name('stock.detail');
+        Route::get('/stock/refund/{transactionGroup}', [StockProductController::class, 'getTransactionForRefund'])->name('stock.refund.get');
+        Route::post('/stock/refund/{transactionGroup}', [StockProductController::class, 'processRefund'])->name('stock.refund.process');
+
         Route::get('/stock/export', [StockProductController::class, 'export'])->name('stock.export');
     });
 
