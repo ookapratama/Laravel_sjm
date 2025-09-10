@@ -129,7 +129,7 @@
                         <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}"
                             id="endDate">
                     </div>
-                    <div class="col-md-3">
+                    {{-- <div class="col-md-3">
                         <label class="form-label">Produk</label>
                         <select name="product_id" class="form-control" id="productFilter">
                             <option value="">Semua Produk</option>
@@ -140,7 +140,7 @@
                                 </option>
                             @endforeach
                         </select>
-                    </div>
+                    </div> --}}
                     {{-- <div class="col-md-2">
                         <label class="form-label">Referensi</label>
                         <input type="text" name="reference" class="form-control" 
@@ -177,13 +177,13 @@
                 <div class="card-tools">
                     <span class="badge badge-info">{{ $outgoings->total() }} record</span>
                     <div class="btn-group ms-2">
-                        <button class="btn btn-sm btn-outline-primary active" onclick="toggleView('table')"
+                        {{-- <button class="btn btn-sm btn-outline-primary active" onclick="toggleView('table')"
                             id="tableViewBtn">
                             <i class="fas fa-table"></i> Table
                         </button>
                         <button class="btn btn-sm btn-outline-primary" onclick="toggleView('card')" id="cardViewBtn">
                             <i class="fas fa-th-large"></i> Card
-                        </button>
+                        </button> --}}
                     </div>
                 </div>
             </div>
@@ -214,16 +214,16 @@
                                             </td>
                                             <td>
                                                 <div>
-                                                    <strong>{{ $outgoing->created_at->format('d M Y') }}</strong>
-                                                    <br><small
-                                                        class="text-muted">{{ $outgoing->created_at->format('H:i:s') }}</small>
+                                                    <strong>{{ date('d M Y', strtotime($outgoing->transaction_date)) }}</strong>
+                                                    <br><small class="text-muted">Input:
+                                                        {{ $outgoing->created_at->format('H:i') }}</small>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div>
-                                                    <strong>{{ $outgoing->product->name }}</strong>
-                                                    <br><small class="text-muted">SKU:
-                                                        {{ $outgoing->product->sku }}</small>
+                                                    <strong>Transaksi Grup</strong>
+                                                    <br><small class="text-muted">ID:
+                                                        {{ $outgoing->transaction_group }}</small>
                                                     @if ($outgoing->notes)
                                                         <br><small
                                                             class="text-info">{{ Str::limit($outgoing->notes, 30) }}</small>
@@ -231,15 +231,23 @@
                                                 </div>
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge badge-primary fs-6">{{ $outgoing->quantity }}</span>
+                                                <div>
+                                                    <span
+                                                        class="badge badge-primary fs-6">{{ $outgoing->total_items }}</span>
+                                                    <br><small class="text-muted">{{ $outgoing->items_count }}
+                                                        item(s)</small>
+                                                    @if ($outgoing->total_refunded > 0)
+                                                        <br><small class="text-danger">Refund:
+                                                            {{ $outgoing->total_refunded }}</small>
+                                                    @endif
+                                                </div>
                                             </td>
                                             <td class="text-end">
-                                                <span class="text-muted">Rp
-                                                    {{ number_format($outgoing->unit_price, 0, ',', '.') }}</span>
+                                                <span class="text-muted">-</span>
                                             </td>
                                             <td class="text-end">
                                                 <strong class="text-success">Rp
-                                                    {{ number_format($outgoing->total_price, 0, ',', '.') }}</strong>
+                                                    {{ number_format($outgoing->total_amount, 0, ',', '.') }}</strong>
                                             </td>
                                             <td class="text-center">
                                                 <span class="badge badge-info">{{ $outgoing->total_pv }}</span>
@@ -247,25 +255,25 @@
                                             <td class="text-center">
                                                 {{ $outgoing->createdBy->name }}
                                             </td>
-                                            {{-- <td>
-                                                @if ($outgoing->reference_code)
-                                                    <code class="bg-light">{{ $outgoing->reference_code }}</code>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td> --}}
                                             <td>
                                                 <div class="btn-group">
                                                     <button class="btn btn-sm btn-info"
-                                                        onclick="viewDetail({{ $outgoing->id }})" title="Detail">
+                                                        onclick="viewDetail('{{ $outgoing->transaction_group }}')"
+                                                        title="Detail">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
-                                                    @if ($outgoing->created_at->isToday())
+
+                                                    {{-- Status badge --}}
+                                                    @if ($outgoing->group_status == 'active' || $outgoing->group_status == 'partial_refunded')
                                                         <button class="btn btn-sm btn-warning"
-                                                            onclick="rollbackTransaction({{ $outgoing->id }})"
-                                                            title="Refund Stock">
+                                                            onclick="showRefundModal('{{ $outgoing->transaction_group }}')"
+                                                            title="Refund Group">
                                                             <i class="fas fa-undo"></i>
                                                         </button>
+                                                    @elseif ($outgoing->group_status == 'fully_refunded')
+                                                        <span class="badge badge-danger btn-sm" title="Fully Refunded">
+                                                            <i class="fas fa-times-circle"></i>
+                                                        </span>
                                                     @endif
                                                 </div>
                                             </td>
@@ -276,7 +284,7 @@
                                     <tr>
                                         <th colspan="5" class="text-end">Total Halaman Ini:</th>
                                         <th class="text-end">Rp
-                                            {{ number_format($outgoings->sum('total_price'), 0, ',', '.') }}</th>
+                                            {{ number_format($outgoings->sum('total_amount'), 0, ',', '.') }}</th>
                                         <th class="text-center">{{ $outgoings->sum('total_pv') }}</th>
                                         <th colspan="2"></th>
                                     </tr>
@@ -294,8 +302,8 @@
                                         <div class="card-body p-3">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
                                                 <div>
-                                                    <h6 class="card-title mb-1">{{ $outgoing->product->name }}</h6>
-                                                    <small class="text-muted">{{ $outgoing->product->sku }}</small>
+                                                    <h6 class="card-title mb-1">{{ $outgoing->product->name ?? '-' }}</h6>
+                                                    <small class="text-muted">{{ $outgoing->product->sku ?? '-' }}</small>
                                                 </div>
                                                 <span class="badge badge-primary">{{ $outgoing->quantity }}x</span>
                                             </div>
@@ -312,19 +320,13 @@
                                                 </div>
                                             </div>
 
-                                            @if ($outgoing->reference_code)
-                                                <div class="mb-2">
-                                                    <small class="text-muted">Referensi:</small>
-                                                    <code class="bg-light">{{ $outgoing->reference_code }}</code>
-                                                </div>
-                                            @endif
 
                                             <div class="d-flex justify-content-between align-items-center">
                                                 <small
                                                     class="text-muted">{{ $outgoing->created_at->format('d M Y H:i') }}</small>
                                                 <div class="btn-group">
                                                     <button class="btn btn-sm btn-info"
-                                                        onclick="viewDetail({{ $outgoing->id }})">
+                                                        onclick="viewDetail('{{ $outgoing->transaction_group }}')">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     @if ($outgoing->created_at->isToday())
@@ -387,9 +389,23 @@
         </div>
     </div>
 
+    <div class="modal fade" id="refundModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Refund Transaksi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="refundContent">
+                    <!-- Content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Toggle view between table and card
-        function toggleView(viewType) {
+        function toggleView(viewType = 'table') {
             const tableView = document.getElementById('tableView');
             const cardView = document.getElementById('cardView');
             const tableBtn = document.getElementById('tableViewBtn');
@@ -424,10 +440,11 @@
         }
 
         // View detail
-        function viewDetail(id) {
+        function viewDetail(transactionGroup) {
             const modal = new bootstrap.Modal(document.getElementById('detailModal'));
             modal.show();
 
+            const encodedGroup = encodeURIComponent(transactionGroup);
             // Reset content
             document.getElementById('detailContent').innerHTML = `
                 <div class="text-center py-3">
@@ -437,11 +454,12 @@
                 </div>`;
 
             // Fetch detail data
-            fetch(`{{ route('admin.stock.detail', '') }}/${id}`)
+            fetch(`{{ route('admin.stock.detail', '') }}/${encodedGroup}`)
                 .then(response => response.json())
                 .then(data => {
+                    console.log(data)
                     if (data.success) {
-                        displayDetail(data.outgoing);
+                        displayDetail(data.items, data.transaction);
                     } else {
                         document.getElementById('detailContent').innerHTML = `
                             <div class="alert alert-danger">
@@ -459,54 +477,78 @@
         }
 
         // Display detail in modal
-        function displayDetail(outgoing) {
+        function displayDetail(items, transaction) {
+            let itemsHtml = '';
+            items.forEach(item => {
+                itemsHtml += `
+            <tr>
+                <td>${item.product.name}</td>
+                <td><code>${item.product.sku}</code></td>
+                <td class="text-center">${item.quantity}</td>
+                <td class="text-center">${item.refunded_quantity}</td>
+                <td class="text-center">${item.quantity - item.refunded_quantity}</td>
+                <td class="text-end">Rp ${number_format(item.unit_price, 0, ',', '.')}</td>
+                <td class="text-end">Rp ${number_format(item.total_price, 0, ',', '.')}</td>
+                <td class="text-center">${item.total_pv}</td>
+            </tr>`;
+            });
+
             const html = `
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6>Informasi Produk</h6>
-                        <table class="table table-sm">
-                            <tr><td>Nama:</td><td><strong>${outgoing.product.name}</strong></td></tr>
-                            <tr><td>SKU:</td><td><code>${outgoing.product.sku}</code></td></tr>
-                            <tr><td>Kategori:</td><td>${outgoing.product.category || '-'}</td></tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <h6>Informasi Transaksi</h6>
-                        <table class="table table-sm">
-                            <tr><td>Tanggal:</td><td>${outgoing.created_at}</td></tr>
-                            <tr><td>Admin:</td><td>${outgoing.created_by ? outgoing.created_by.name : 'System'}</td></tr>
-                        </table>
-                    </div>
-                </div>
-
-                <h6>Detail Item</h6>
-                <table class="table table-bordered">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Quantity</th>
-                            <th>Harga Satuan</th>
-                            <th>Total Harga</th>
-                            <th>PV Satuan</th>
-                            <th>Total PV</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="text-center"><span class="badge badge-primary">${outgoing.quantity}</span></td>
-                            <td class="text-end">Rp ${number_format(outgoing.unit_price, 0, ',', '.')}</td>
-                            <td class="text-end"><strong>Rp ${number_format(outgoing.total_price, 0, ',', '.')}</strong></td>
-                            <td class="text-center">${outgoing.unit_pv}</td>
-                            <td class="text-center"><strong>${outgoing.total_pv}</strong></td>
-                        </tr>
-                    </tbody>
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6>Informasi Transaksi</h6>
+                <table class="table table-sm">
+                    <tr><td>Kode:</td><td><strong>${transaction.transaction_group}</strong></td></tr>
+                    <tr><td>Tanggal:</td><td>${transaction.transaction_date}</td></tr>
+                    <tr><td>Status:</td><td><span class="badge badge-${getStatusColor(transaction.status)}">${getStatusText(transaction.status)}</span></td></tr>
+                    <tr><td>Admin:</td><td>${transaction.created_by ? transaction.created_by.name : 'System'}</td></tr>
                 </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Summary</h6>
+                <table class="table table-sm">
+                    <tr><td>Total Items:</td><td><strong>${transaction.total_items}</strong></td></tr>
+                    <tr><td>Total Refunded:</td><td><strong>${transaction.total_refunded || 0}</strong></td></tr>
+                    <tr><td>Total Nilai:</td><td><strong>Rp ${number_format(transaction.total_amount, 0, ',', '.')}</strong></td></tr>
+                    <tr><td>Total PV:</td><td><strong>${transaction.total_pv}</strong></td></tr>
+                </table>
+            </div>
+        </div>
 
-                ${outgoing.notes ? `
-                            <h6>Catatan</h6>
-                            <div class="alert alert-info">
-                                <i class="fas fa-sticky-note"></i> ${outgoing.notes}
-                            </div>` : ''}
-            `;
+        <h6>Detail Produk</h6>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Produk</th>
+                        <th>SKU</th>
+                        <th>Qty Asli</th>
+                        <th>Qty Refund</th>
+                        <th>Qty Tersisa</th>
+                        <th>Harga Satuan</th>
+                        <th>Total Harga</th>
+                        <th>Total PV</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHtml}
+                </tbody>
+                <tfoot class="table-dark">
+                    <tr>
+                        <th colspan="6" class="text-end">Total:</th>
+                        <th class="text-end">Rp ${number_format(transaction.total_amount, 0, ',', '.')}</th>
+                        <th class="text-center">${transaction.total_pv}</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        ${transaction.notes ? `
+                                <h6 class="mt-4">Catatan</h6>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-sticky-note"></i> ${transaction.notes}
+                                </div>` : ''}
+    `;
 
             document.getElementById('detailContent').innerHTML = html;
         }
@@ -555,6 +597,32 @@
             window.open(exportUrl, '_blank');
         }
 
+        function getStatusColor(status) {
+            switch (status) {
+                case 'active':
+                    return 'success';
+                case 'partial_refunded':
+                    return 'warning';
+                case 'fully_refunded':
+                    return 'danger';
+                default:
+                    return 'secondary';
+            }
+        }
+
+        function getStatusText(status) {
+            switch (status) {
+                case 'active':
+                    return 'Active';
+                case 'partial_refunded':
+                    return 'Partial Refunded';
+                case 'fully_refunded':
+                    return 'Fully Refunded';
+                default:
+                    return 'Unknown';
+            }
+        }
+
         // Utility function
         function number_format(number, decimals, dec_point, thousands_sep) {
             number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
@@ -592,6 +660,301 @@
                     .catch(error => console.log('Stats refresh failed:', error));
             }
         }, 300000); // 5 minutes
+
+        function showRefundModal(transactionId) {
+            const modal = new bootstrap.Modal(document.getElementById('refundModal'));
+            modal.show();
+
+            // Load transaction data
+            document.getElementById('refundContent').innerHTML = `
+                <div class="text-center py-3">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>`;
+
+            fetch(`{{ route('admin.stock.refund.get', '') }}/${transactionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        displayRefundForm(data.transaction);
+                    } else {
+                        document.getElementById('refundContent').innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i> ${data.message}
+                            </div>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error.message);
+                    document.getElementById('refundContent').innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Gagal memuat data transaksi
+                        </div>`;
+                });
+        }
+
+        function displayRefundForm(transaction) {
+            // Siapkan wadah HTML utama
+            let html = `
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h6>Detail Transaksi</h6>
+                <table class="table table-sm">
+                    <tr><td>Tanggal:</td><td>${transaction.transaction_date} - ${transaction.created_at} WITA</td></tr>
+                    <tr><td>Total Item:</td><td><strong>${transaction.total_items} item</strong></td></tr>
+                    <tr><td>Total Harga:</td><td>Rp ${number_format(transaction.total_amount, 0, ',', '.')}</td></tr>
+                    <tr><td>Total PV:</td><td>${transaction.total_pv}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Kebijakan Refund</h6>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i> 
+                    Anda dapat melakukan refund penuh atau sebagian untuk setiap produk. Stok akan dikembalikan sesuai jumlah refund.
+                </div>
+            </div>
+        </div>
+        
+        <form id="refundForm">
+    `;
+
+            // Loop melalui setiap item/produk dalam transaksi
+            transaction.items.forEach(item => {
+                if (item.can_refund) {
+                    html += `
+                <hr>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6>Informasi Produk: ${item.product.name}</h6>
+                        <table class="table table-sm">
+                            <tr><td>SKU:</td><td><code>${item.product.sku}</code></td></tr>
+                            <tr><td>Stok Sekarang:</td><td><span class="badge badge-info">${item.product.current_stock}</span></td></tr>
+                            <tr><td>Kuantitas Asli:</td><td><strong>${item.original_quantity} item</strong></td></tr>
+                            <tr><td>Tersedia untuk Refund:</td><td><span class="badge badge-success">${item.available_for_refund} item</span></td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Kuantitas Refund <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="changeRefundQty(${item.id}, -1)">-</button>
+                            <input type="number" class="form-control text-center refund-quantity-input" 
+                                   id="refundQuantity-${item.id}" value="1" min="0" max="${item.available_for_refund}">
+                            <button type="button" class="btn btn-outline-secondary" onclick="changeRefundQty(${item.id}, 1)">+</button>
+                        </div>
+                        <small class="text-muted">Maksimal: ${item.available_for_refund} item</small>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" id="refundSummary-${item.id}">
+                    <strong>Ringkasan Refund untuk ${item.product.name}:</strong>
+                    <br>Kuantitas: <span class="summary-qty">1</span> item
+                    <br>Nilai: Rp <span class="summary-value">${number_format(item.unit_price, 0, ',', '.')}</span>
+                    <br>PV: <span class="summary-pv">${number_format(item.unit_pv, 0, ',', '.')}</span>
+                </div>
+                <input type="hidden" name="itemId[]" value="${item.id}">
+                <input type="hidden" name="itemQty[]" id="itemQty-${item.id}" value="1">
+            `;
+                }
+            });
+
+            html += `
+        <div class="mb-3">
+            <label class="form-label">Alasan Refund</label>
+            <textarea class="form-control" id="refundReason" rows="3" placeholder="Jelaskan alasan refund (opsional)"></textarea>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+            <button type="button" class="btn btn-warning" onclick="processRefund('${transaction.transaction_group}')">
+                <i class="fas fa-undo"></i> Proses Refund
+            </button>
+        </div>
+    </form>
+    `;
+
+            // Tampilkan HTML yang sudah dibuat ke dalam modal
+            document.getElementById('refundContent').innerHTML = html;
+
+            // Tambahkan event listener untuk setiap input kuantitas
+            transaction.items.forEach(item => {
+                if (item.can_refund) {
+                    const inputElement = document.getElementById(`refundQuantity-${item.id}`);
+                    inputElement.addEventListener('input', function() {
+                        updateRefundSummary(item);
+                    });
+                    inputElement.addEventListener('change', function() {
+                        // Pastikan nilai tidak melebihi batas
+                        const max = parseInt(this.max);
+                        const min = parseInt(this.min);
+                        let value = parseInt(this.value);
+                        if (value > max || isNaN(value)) {
+                            this.value = max;
+                        } else if (value < min) {
+                            this.value = min;
+                        }
+                        updateRefundSummary(item);
+                    });
+                }
+            });
+
+            // Deklarasi fungsi updateSummary dan changeQty di luar scope agar bisa diakses
+            window.updateRefundSummary = function(item) {
+                const qty = parseInt(document.getElementById(`refundQuantity-${item.id}`).value) || 0;
+                const value = item.unit_price * qty;
+                const pv = item.unit_pv * qty;
+
+                document.querySelector(`#refundSummary-${item.id} .summary-qty`).textContent = qty;
+                document.querySelector(`#refundSummary-${item.id} .summary-value`).textContent = number_format(value, 0,
+                    ',', '.');
+                document.querySelector(`#refundSummary-${item.id} .summary-pv`).textContent = number_format(pv, 0, ',',
+                    '.');
+
+                // Update input hidden untuk data POST
+                document.getElementById(`itemQty-${item.id}`).value = qty;
+            };
+
+            window.changeRefundQty = function(itemId, delta) {
+                const input = document.getElementById(`refundQuantity-${itemId}`);
+                const currentQty = parseInt(input.value) || 0;
+                const max = parseInt(input.max);
+                const newQty = Math.max(0, Math.min(max, currentQty + delta));
+                input.value = newQty;
+                // Panggil event input secara manual agar summary terupdate
+                const event = new Event('input', {
+                    bubbles: true
+                });
+                input.dispatchEvent(event);
+            };
+        }
+
+        function processRefund(transactionGroup) {
+            // 1. Kumpulkan data dari setiap item yang akan di-refund
+            const itemsToRefund = [];
+            let totalItemsToRefund = 0;
+
+            // Gunakan querySelectorAll untuk menemukan semua input kuantitas tersembunyi
+            const itemIds = document.querySelectorAll('input[name="itemId[]"]');
+            const itemQtys = document.querySelectorAll('input[name="itemQty[]"]');
+
+            if (itemIds.length === 0) {
+                Swal.fire('Error!', 'Tidak ada produk yang dipilih untuk refund.', 'error');
+                return;
+            }
+
+            itemIds.forEach((itemIdInput, index) => {
+                const itemId = itemIdInput.value;
+                const refundQuantity = parseInt(itemQtys[index].value);
+
+                if (refundQuantity > 0) {
+                    itemsToRefund.push({
+                        item_id: itemId,
+                        refund_quantity: refundQuantity
+                    });
+                    totalItemsToRefund += refundQuantity;
+                }
+            });
+
+            if (itemsToRefund.length === 0) {
+                Swal.fire('Error!', 'Kuantitas refund harus lebih dari 0 untuk setidaknya satu produk.', 'error');
+                return;
+            }
+
+            // 2. Ambil alasan refund
+            const refundReason = document.getElementById('refundReason').value;
+
+            // 3. Tampilkan konfirmasi menggunakan total item yang akan di-refund
+            Swal.fire({
+                title: 'Konfirmasi Refund',
+                text: `Refund ${totalItemsToRefund} item dari transaksi ini. Stok akan dikembalikan.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Proses Refund',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#f39c12'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // 4. Lakukan pemanggilan API
+                    fetch(`{{ route('admin.stock.refund.process', '') }}/${transactionGroup}`, {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                refund_items: itemsToRefund,
+                                refund_reason: refundReason
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log(data)
+                            if (data.success) {
+                                bootstrap.Modal.getInstance(document.getElementById('refundModal')).hide();
+                                Swal.fire('Berhasil!', data.message, 'success').then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire('Error!', data.message, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error.message);
+                            Swal.fire('Error!', 'Terjadi kesalahan sistem', 'error');
+                        });
+                }
+            });
+        }
+
+        // function processRefund(transactionId) {
+        //     console.log(transactionId)
+        //     const refundQuantity = parseInt(document.getElementById('refundQuantity').value);
+        //     const refundReason = document.getElementById('refundReason').value;
+
+        //     if (!refundQuantity || refundQuantity < 1) {
+        //         Swal.fire('Error!', 'Quantity refund harus minimal 1', 'error');
+        //         return;
+        //     }
+
+        //     Swal.fire({
+        //         title: 'Konfirmasi Refund',
+        //         text: `Refund ${refundQuantity} item. Stok akan dikembalikan.`,
+        //         icon: 'warning',
+        //         showCancelButton: true,
+        //         confirmButtonText: 'Ya, Proses Refund',
+        //         cancelButtonText: 'Batal',
+        //         confirmButtonColor: '#f39c12'
+        //     }).then((result) => {
+        //         if (result.isConfirmed) {
+        //             fetch(`{{ route('admin.stock.refund.process', '') }}/${transactionId}`, {
+        //                     method: 'POST',
+        //                     headers: {
+        //                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+        //                         'Content-Type': 'application/json'
+        //                     },
+        //                     body: JSON.stringify({
+        //                         refund_quantity: refundQuantity,
+        //                         refund_reason: refundReason
+        //                     })
+        //                 })
+        //                 .then(response => response.json())
+        //                 .then(data => {
+        //                     if (data.success) {
+        //                         bootstrap.Modal.getInstance(document.getElementById('refundModal')).hide();
+        //                         Swal.fire('Berhasil!', data.message, 'success').then(() => {
+        //                             location.reload();
+        //                         });
+        //                     } else {
+        //                         Swal.fire('Error!', data.message, 'error');
+        //                     }
+        //                 })
+        //                 .catch(error => {
+        //                     console.error('Error:', error);
+        //                     Swal.fire('Error!', 'Terjadi kesalahan sistem', 'error');
+        //                 });
+        //         }
+        //     });
+        // }
     </script>
 
     <style>

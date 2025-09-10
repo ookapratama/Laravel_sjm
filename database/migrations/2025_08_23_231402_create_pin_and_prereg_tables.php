@@ -44,7 +44,7 @@ return new class extends Migration {
                 $table->foreignId('purchased_by')->nullable()->constrained('users')->nullOnDelete();
                 $table->foreignId('pin_request_id')->nullable()->constrained('pin_requests')->nullOnDelete();
                 $table->foreignId('used_by')->nullable()->constrained('users')->nullOnDelete();
-                $table->foreignId('product_package_id')->nullable()->constrained('product_packages')->nullOnDelete();
+                // $table->foreignId('product_package_id')->nullable()->constrained('product_packages')->nullOnDelete();
                 $table->timestamp('used_at')->nullable();
 
                 // <-- Kolom & FK yang benar untuk transfer

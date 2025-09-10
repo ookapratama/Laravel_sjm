@@ -139,6 +139,13 @@
                             </div>
                         </div>
 
+                        <div class="mb-3">
+                            <label class="form-label">Tanggal Transaksi</label>
+                            <input type="date" class="form-control form-control-sm" id="transactionDate"
+                                value="{{ today()->format('Y-m-d') }}">
+                            <small class="text-muted">Default: hari ini. Bisa diubah untuk input tanggal lampau.</small>
+                        </div>
+
                         <!-- Reference & Notes -->
                         {{-- <div class="mb-3">
                             <input type="text" class="form-control form-control-sm" id="referenceCode"
@@ -211,7 +218,7 @@
                                             </td>
                                             <td>
                                                 <div class="input-group input-group-sm">
-                                                    <input type="number" class="form-control"
+                                                    <input type="hidden" class="form-control"
                                                         id="qty-{{ $product->id }}" min="1"
                                                         max="{{ $product->stock }}" value="1" style="width: 70px;">
                                                     <button class="btn btn-primary btn-sm"
@@ -229,6 +236,7 @@
                 </div>
             </div>
         </div>
+        
     </div>
 
     <script>
@@ -420,6 +428,7 @@
 
             // const referenceCode = document.getElementById('referenceCode').value;
             const notes = document.getElementById('notes').value;
+            const transaction_date = document.getElementById('transactionDate').value;
 
             Swal.fire({
                 title: 'Proses transaksi?',
@@ -439,7 +448,8 @@
                             body: JSON.stringify({
                                 items: cart,
                                 // reference_code: referenceCode,
-                                notes: notes
+                                notes: notes,
+                                transaction_date: transaction_date
                             })
                         })
                         .then(response => response.json())
@@ -492,6 +502,8 @@
             }
             return s.join(dec);
         }
+
+        
     </script>
 
     <style>
