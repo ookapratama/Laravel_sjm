@@ -142,20 +142,20 @@ class ReferralRegisterController extends Controller
                     'hubungan_ahli_waris' => $validated['hubungan_ahli_waris'] ?? null,
                 ]);
 
-                $packages = Package::where('is_active', true)->get();
-                if ($packages->isEmpty()) {
-                    return response()->json([
-                        'ok' => false,
-                        'message' => 'Tidak ada product package aktif'
+                // $packages = Package::where('is_active', true)->get();
+                // if ($packages->isEmpty()) {
+                //     return response()->json([
+                //         'ok' => false,
+                //         'message' => 'Tidak ada product package aktif'
 
-                    ]);
-                }
+                //     ]);
+                // }
 
-                $productPackageId = $packages->random()->id;
+                // $productPackageId = $packages->random()->id;
 
                 // 3d) Tandai PIN terpakai
                 $pin->status  = 'used';
-                $pin->product_package_id = $productPackageId;
+                // $pin->product_package_id = $productPackageId;
                 $pin->used_by = $user->id;
                 $pin->used_at = now();
                 $pin->save();
