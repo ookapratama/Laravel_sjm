@@ -25,15 +25,15 @@ class TransactionPackageController extends Controller
             ->whereNotNull('product_package_id')
             ->count();
 
-        $packages = Package::where('is_active', true)->get();
+        // $packages = Package::where('is_active', true)->get();
 
         return view('admin.produk.transaction.index', [
             'unassignedPins' => $unassignedPins,
             'unassignedCount' => $unassignedPins->count(),
             'assignedCount' => $assignedCount,
             'totalUsedPins' => $unassignedPins->count() + $assignedCount,
-            'availablePackages' => $packages->count(),
-            'packages' => $packages
+            // 'availablePackages' => $packages->count(),
+            // 'packages' => $packages
         ]);
     }
 
@@ -46,8 +46,8 @@ class TransactionPackageController extends Controller
         }
 
         DB::table('activation_pins')
-            ->where('id', $pinId)
-            ->update(['product_package_id' => $request->package_id]);
+            ->where('id', $pinId);
+            // ->update(['product_package_id' => $request->package_id]);
 
         $productPackages = DB::table('product_packages')
             ->where('package_id', $request->package_id)
@@ -88,13 +88,13 @@ class TransactionPackageController extends Controller
             $packageId = $request->package_id;
 
             // Validasi package aktif
-            $package = Package::where('id', $packageId)
-                ->where('is_active', true)
-                ->first();
+            // $package = Package::where('id', $packageId)
+            //     ->where('is_active', true)
+            //     ->first();
 
-            if (!$package) {
-                throw new \Exception('Package tidak ditemukan atau tidak aktif');
-            }
+            // if (!$package) {
+            //     throw new \Exception('Package tidak ditemukan atau tidak aktif');
+            // }
 
             $productPackages = DB::table('product_packages')
                 ->where('package_id', $packageId)
@@ -133,25 +133,25 @@ class TransactionPackageController extends Controller
             $updatedCount = DB::table('activation_pins')
                 ->whereIn('id', $validPins->pluck('id'))
                 ->update([
-                    'product_package_id' => $packageId,
+                    // 'product_package_id' => $packageId,
                     'updated_at' => now()
                 ]);
 
             DB::commit();
 
-            $successMessage = "Berhasil assign paket '{$package->name}' ke {$updatedCount} pin";
+            // $successMessage = "Berhasil assign paket '{$package->name}' ke {$updatedCount} pin";
 
-            if (isset($warningMessage)) {
-                $successMessage .= ". {$warningMessage}";
-            }
+            // if (isset($warningMessage)) {
+            //     $successMessage .= ". {$warningMessage}";
+            // }
 
             return response()->json([
                 'success' => true,
-                'message' => $successMessage,
+                'message' => $successMessage ?? '',
                 'data' => [
                     'updated_count' => $updatedCount,
                     'invalid_count' => $invalidCount ?? 0,
-                    'package_name' => $package->name
+                    // 'package_name' => $package->name
                 ]
             ]);
         } catch (\Exception $e) {
@@ -165,42 +165,42 @@ class TransactionPackageController extends Controller
 
     public function getPackagePreview($packageId)
     {
-        try {
-            $package = Package::with(['packageProducts.product'])
-                ->where('is_active', true)
-                ->findOrFail($packageId);
+        // try {
+        //     $package = Package::with(['packageProducts.product'])
+        //         ->where('is_active', true)
+        //         ->findOrFail($packageId);
 
-            $products = $package->packageProducts->map(function ($pp) {
-                return [
-                    'id' => $pp->product->id,
-                    'name' => $pp->product->name,
-                    'sku' => $pp->product->sku,
-                    'quantity' => $pp->quantity,
-                    'stock' => $pp->product->stock,
-                    'price' => $pp->product->price,
-                    'subtotal' => $pp->product->price * $pp->quantity
-                ];
-            });
+        //     $products = $package->packageProducts->map(function ($pp) {
+        //         return [
+        //             'id' => $pp->product->id,
+        //             'name' => $pp->product->name,
+        //             'sku' => $pp->product->sku,
+        //             'quantity' => $pp->quantity,
+        //             'stock' => $pp->product->stock,
+        //             'price' => $pp->product->price,
+        //             'subtotal' => $pp->product->price * $pp->quantity
+        //         ];
+        //     });
 
-            return response()->json([
-                'success' => true,
-                'package' => [
-                    'id' => $package->id,
-                    'name' => $package->name,
-                    'description' => $package->description,
-                    'max_value' => $package->max_value
-                ],
-                'products' => $products,
-                'total_items' => $products->sum('quantity'),
-                'total_value' => $products->sum('subtotal'),
-                'total_products' => $products->count()
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Package tidak ditemukan'
-            ], 404);
-        }
+        //     return response()->json([
+        //         'success' => true,
+        //         'package' => [
+        //             'id' => $package->id,
+        //             'name' => $package->name,
+        //             'description' => $package->description,
+        //             'max_value' => $package->max_value
+        //         ],
+        //         'products' => $products,
+        //         'total_items' => $products->sum('quantity'),
+        //         'total_value' => $products->sum('subtotal'),
+        //         'total_products' => $products->count()
+        //     ]);
+        // } catch (\Exception $e) {
+        //     return response()->json([
+        //         'success' => false,
+        //         'message' => 'Package tidak ditemukan'
+        //     ], 404);
+        // }
     }
 
     // Method untuk melihat pins yang sudah diassign
@@ -270,30 +270,30 @@ class TransactionPackageController extends Controller
     // Method untuk statistik dashboard
     public function getDashboardStats()
     {
-        $stats = [
-            'total_pins' => DB::table('activation_pins')->count(),
-            'used_pins' => DB::table('activation_pins')->where('status', 'used')->count(),
-            'assigned_pins' => DB::table('activation_pins')
-                ->where('status', 'used')
-                ->whereNotNull('product_package_id')
-                ->count(),
-            'unassigned_pins' => DB::table('activation_pins')
-                ->where('status', 'used')
-                ->whereNull('product_package_id')
-                ->count(),
-            'active_packages' => Package::where('is_active', true)->count(),
-            'recent_assignments' => DB::table('activation_pins as ap')
-                ->join('users as u', 'ap.used_by', '=', 'u.id')
-                ->join('packages as p', 'ap.product_package_id', '=', 'p.id')
-                ->where('ap.status', 'used')
-                ->whereNotNull('ap.product_package_id')
-                ->whereDate('ap.updated_at', '>=', now()->subDays(7))
-                ->count()
-        ];
+        // $stats = [
+        //     'total_pins' => DB::table('activation_pins')->count(),
+        //     'used_pins' => DB::table('activation_pins')->where('status', 'used')->count(),
+        //     'assigned_pins' => DB::table('activation_pins')
+        //         ->where('status', 'used')
+        //         ->whereNotNull('product_package_id')
+        //         ->count(),
+        //     'unassigned_pins' => DB::table('activation_pins')
+        //         ->where('status', 'used')
+        //         ->whereNull('product_package_id')
+        //         ->count(),
+        //     'active_packages' => Package::where('is_active', true)->count(),
+        //     'recent_assignments' => DB::table('activation_pins as ap')
+        //         ->join('users as u', 'ap.used_by', '=', 'u.id')
+        //         ->join('packages as p', 'ap.product_package_id', '=', 'p.id')
+        //         ->where('ap.status', 'used')
+        //         ->whereNotNull('ap.product_package_id')
+        //         ->whereDate('ap.updated_at', '>=', now()->subDays(7))
+        //         ->count()
+        // ];
 
-        return response()->json([
-            'success' => true,
-            'stats' => $stats
-        ]);
+        // return response()->json([
+        //     'success' => true,
+        //     'stats' => $stats
+        // ]);
     }
 }

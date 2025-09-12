@@ -333,15 +333,15 @@ class UserController extends Controller
         }
 
         // 3) Ambil paket aktif (sebelum transaksi)
-        $package = Package::where('is_active', true)->inRandomOrder()->first();
-        if (!$package) {
-            return response()->json([
-                'message' => 'Tidak ada product package aktif.',
-            ], 422);
-        }
+        // $package = Package::where('is_active', true)->inRandomOrder()->first();
+        // if (!$package) {
+        //     return response()->json([
+        //         'message' => 'Tidak ada product package aktif.',
+        //     ], 422);
+        // }
 
         // 4) Transaksi: buat user, profil, klaim PIN + set package
-        $user = DB::transaction(function () use ($validated, $sponsor, $package) {
+        $user = DB::transaction(function () use ($validated, $sponsor) {
             $pin = ActivationPin::where('code', $validated['pin_aktivasi'])
                 ->lockForUpdate()
                 ->first();
@@ -391,7 +391,7 @@ class UserController extends Controller
             $pin->update([
                 'status'              => 'used',
                 'used_by'             => $user->id,
-                'product_package_id'  => $package->id,
+                // 'product_package_id'  => $package->id,
                 'used_at'             => now(),
             ]);
 

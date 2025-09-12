@@ -185,7 +185,7 @@ $pins = ActivationPin::query()
             $pin->update([
                 'status'             => 'used',
                 'used_by'            => $newUser->id,
-                'product_package_id' => $package->id,
+                // 'product_package_id' => $package->id,
                 'used_at'            => now(),
             ]);
 
