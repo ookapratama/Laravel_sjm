@@ -119,19 +119,6 @@ class PinCtrl extends Controller
             ]));
         }
         $this->notifyFinanceOnPinOrder($req);
-        //return back()->with('success', 'Request dikirim. Menunggu verifikasi Finance.');
-        //         $req = PinRequest::create([
-        //             'requester_id'=>auth()->id(),
-        //             'qty'=>$qty, 
-        //             'unit_price'=>$unit, 
-        //             'total_price'=>$unit*$qty, 
-        //             'status'=>'requested',
-        //             'payment_method'=>$r->payment_method,
-        //             'payment_reference'=>$r->payment_reference ?? null,
-        //             'payment_proof'=> $path,
-        //         ]);
-
-
         return back()->with('success', 'Request dikirim. Menunggu verifikasi Finance.');
     }
 
