@@ -349,7 +349,7 @@ class UserController extends Controller
             if (!$pin) {
                 throw ValidationException::withMessages(['pin_aktivasi' => 'PIN tidak ditemukan.']);
             }
-            if (!in_array($pin->status, ['unused','reserved'], true)) {
+            if (!in_array($pin->status, ['unused','transferred'], true)) {
                 throw ValidationException::withMessages(['pin_aktivasi' => 'PIN sudah terpakai / tidak aktif.']);
             }
 

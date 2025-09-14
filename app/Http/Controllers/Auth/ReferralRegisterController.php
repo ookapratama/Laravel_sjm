@@ -18,7 +18,7 @@ use App\Models\ActivationPin; // -> table: activation_pins (atau pin_codes)
 use App\Models\Notification;
 use App\Models\Package;
 use App\Models\ProductPackage;
-
+use Illuminate\Support\Facades\Log;
 class ReferralRegisterController extends Controller
 {
     public function create(Request $request)
@@ -91,17 +91,41 @@ class ReferralRegisterController extends Controller
 
             // 3) Transaksi: klaim PIN + buat user + profil
             $user = DB::transaction(function () use ($validated, $sponsor) {
-                // 3a) Ambil & kunci PIN
-                $pin = ActivationPin::where('code', $validated['pin_aktivasi'])
-                    ->lockForUpdate()
-                    ->first();
+                $pinCode = strtoupper(trim($validated['pin_aktivasi']));
+            $pin = ActivationPin::where('code', $pinCode)
+                ->lockForUpdate()
+                ->first();
 
-                if (!$pin) {
-                    throw ValidationException::withMessages(['pin_aktivasi' => 'PIN tidak ditemukan.']);
-                }
-                if (!in_array($pin->status, ['unused', 'reserved'], true)) {
-                    throw ValidationException::withMessages(['pin_aktivasi' => 'PIN sudah terpakai / tidak aktif.']);
-                }
+            if (!$pin) {
+                throw ValidationException::withMessages(['pin_aktivasi' => 'PIN tidak ditemukan.']);
+            }
+
+            // Normalisasi status dari DB
+            $statusRaw = (string) $pin->status;
+            $status = strtolower(trim($statusRaw));
+            // peta typo/sinonim umum
+            $map = [
+                'transfered' => 'transferred', // typo yang sering terjadi
+                'available'  => 'unused',
+                'ready'      => 'unused',
+                'nonaktif'   => 'inactive',
+            ];
+            $status = $map[$status] ?? $status;
+
+            // Logging sekali untuk audit
+            \Log::info('PIN status during store()', [
+                'code' => $pin->code,
+                'status_raw' => $statusRaw,
+                'status_norm' => $status,
+                'purchased_by' => $pin->purchased_by,
+                'transferred_to' => $pin->transferred_to,
+            ]);
+
+            // Hanya izinkan unused / transferred
+            if (!in_array($status, ['unused', 'transferred'], true)) {
+                throw ValidationException::withMessages(['pin_aktivasi' => 'PIN sudah terpakai / tidak aktif.']);
+            }
+
                 // (opsional) kalau reserved hanya boleh dipakai pihak tertentu
                 // if ($pin->status === 'reserved' && $pin->purchased_by && (int)$pin->purchased_by !== (int)$sponsor->id) {
                 //     throw ValidationException::withMessages(['pin_aktivasi' => 'PIN ini sedang di-reserve untuk pengguna lain.']);
