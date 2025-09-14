@@ -232,8 +232,8 @@ class ReferralRegisterController extends Controller
         // Cek apakah PIN ada di database dan belum digunakan
         // Sesuaikan dengan struktur database Anda
         $pinRecord = ActivationPin::where('code', $pin)
-            ->where('status', 'unused') // atau 'unused'
-            ->first();
+    ->whereIn('status', ['unused', 'transferred'])
+    ->first();
 
         if ($pinRecord) {
             return response()->json([

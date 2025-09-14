@@ -1345,7 +1345,7 @@
             // // izinkan huruf/angka, titik, koma, strip, underscore, dan spasi
             // this.value = this.value.replace(/[^A-Za-z0-9._,\-\s]/g, '');
             // opsional: rapikan spasi beruntun
-            this.value = this.value.replace(/\s+/g, ' ').trimStart();
+            //this.value = this.value.replace(/\s+/g, ' ').trimStart();
 
             const refInput = qs('#ref');
             if (refInput) refInput.value = this.value; // kirim apa adanya (bukan dinormalisasi)
