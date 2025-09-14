@@ -1,0 +1,11 @@
+# Folder besar / hasil build / file generate
+node_modules
+vendor
+public/build
+public/storage
+storage
+bootstrap/cache
+
+# Prettier tidak dipakai untuk PHP & Blade
+**/*.php
+resources/views/**/*.blade.php

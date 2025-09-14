@@ -266,7 +266,7 @@ class ReferralRegisterController extends Controller
         try {
             //code...
             $request->validate([
-                'sponsor_code' => 'required|string|min:3|max:20|regex:/^[A-Za-z0-9]+$/'
+                'sponsor_code' => 'required|string|min:3|max:20|'
             ]);
 
             $sponsorCode = $request->sponsor_code;
