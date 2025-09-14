@@ -268,10 +268,9 @@ class ReferralRegisterController extends Controller
             $request->validate([
                 'sponsor_code' => 'required|string|min:3|max:20|'
             ]);
-
             $sponsorCode = $request->sponsor_code;
 
-            // Cek apakah sponsor ada di database
+            // Cek apakah sponsor ada di database 
             // Sesuaikan dengan struktur database Anda
             $sponsor = User::where('username', $sponsorCode)
                 ->orWhere('referral_code', $sponsorCode)
